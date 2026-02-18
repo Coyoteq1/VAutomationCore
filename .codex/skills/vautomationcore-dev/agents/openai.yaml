@@ -1,0 +1,6 @@
+interface:
+  display_name: "VAutomationCore Dev"
+  short_description: "Build, audit, and navigate the mod suite"
+  default_prompt: "Use $vautomationcore-dev to build and audit the VAutomationCore monorepo."
+policy:
+  allow_implicit_invocation: true

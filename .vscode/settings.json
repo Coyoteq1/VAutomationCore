@@ -1,0 +1,5 @@
+{
+    "dotnet.defaultSolution": "enable",
+    "codium.codeCompletion.enable": true,
+    "CodeGPT.apiKey": "Gemini CLI"
+}

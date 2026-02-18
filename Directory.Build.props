@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <VAutoServerRoot Condition="'$(VAutoServerRoot)' == ''">D:\DedicatedServerLauncher\VRisingServer\BepInEx</VAutoServerRoot>
+    <VAutoServerInteropPath Condition="'$(VAutoServerInteropPath)' == '' and Exists('$(VAutoServerRoot)\interop\')">$(VAutoServerRoot)\interop\</VAutoServerInteropPath>
+    <VAutoServerInteropPath Condition="'$(VAutoServerInteropPath)' != '' and !HasTrailingSlash('$(VAutoServerInteropPath)')">$(VAutoServerInteropPath)\</VAutoServerInteropPath>
+  </PropertyGroup>
+</Project>

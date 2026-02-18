@@ -1,0 +1,60 @@
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\Configuration\pvp_item.json
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\Configuration\pvp_item.toml
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\Vlifecycle.deps.json
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\Vlifecycle.dll
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\Vlifecycle.pdb
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\VAutomationCore.dll
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\bin\Release\net6.0\VAutomationCore.pdb
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CopyComplete
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.dll
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\refint\Vlifecycle.dll
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.pdb
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\ref\Vlifecycle.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\refint\Vlifecycle.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\Configuration\pvp_item.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\Configuration\pvp_item.toml
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\Vlifecycle.deps.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\Vlifecycle.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\Vlifecycle.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\VAutomationCore.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\bin\Release\net6.0\VAutomationCore.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\ref\Vlifecycle.dll
+C:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\Vlifecycle\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CopyComplete
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.toml
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.deps.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CopyComplete
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Cycleborn.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\refint\Cycleborn.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Cycleborn.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\ref\Cycleborn.dll
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.json
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.toml
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.deps.json
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.dll
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.pdb
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.dll
+d:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.pdb
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Vlifecycle.csproj.CopyComplete
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Cycleborn.dll
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\refint\Cycleborn.dll
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\Cycleborn.pdb
+d:\VAutomationCore\VAutomationCore\CycleBorn\_build\obj\Vlifecycle\Release\net6.0\ref\Cycleborn.dll

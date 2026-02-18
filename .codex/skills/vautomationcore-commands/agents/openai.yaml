@@ -1,0 +1,6 @@
+interface:
+  display_name: "VAutomationCore Commands"
+  short_description: "Audit and manage command ownership"
+  default_prompt: "Use $vautomationcore-commands to audit or adjust command registrations."
+policy:
+  allow_implicit_invocation: true

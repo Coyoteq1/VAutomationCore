@@ -1,0 +1,35 @@
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.toml
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.deps.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.AssemblyInfoInputs.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.AssemblyInfo.cs
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.sourcelink.json
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.csproj.Up2Date
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Cycleborn.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\refint\Cycleborn.dll
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\Cycleborn.pdb
+c:\Users\coyot.RWE\OneDrive\Documents\Vauto (4)\VProgress\All projects\VAutomationCore\CycleBorn\obj\Release\net6.0\ref\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.json
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Configuration\pvp_item.toml
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.deps.json
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\Cycleborn.pdb
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Release\net6.0\VAutomationCore.pdb
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.AssemblyInfoInputs.cache
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.AssemblyInfo.cs
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Vlifecycle.csproj.CopyComplete
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\refint\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\Cycleborn.pdb
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Release\net6.0\ref\Cycleborn.dll

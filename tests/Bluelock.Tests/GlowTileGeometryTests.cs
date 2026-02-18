@@ -1,0 +1,49 @@
+using System;
+using System.Linq;
+using VAuto.Zone.Services;
+using Xunit;
+
+namespace VAuto.Zone.Tests
+{
+    public class GlowTileGeometryTests
+    {
+        [Fact]
+        public void Generate_ReturnsExpectedCount()
+        {
+            var radius = 10f;
+            var spacing = 5f;
+            var positions = GlowTileGeometry.GeneratePoints(0f, 0f, 0f, radius, spacing, 0f);
+            var circumference = 2f * MathF.PI * radius;
+            var expected = Math.Max(1, (int)(circumference / spacing));
+            Assert.Equal(expected, positions.Count);
+        }
+
+        [Fact]
+        public void Generate_RotationOffsetsPositions()
+        {
+            var radius = 10f;
+            var spacing = 5f;
+            var basePoint = GlowTileGeometry.GeneratePoints(0f, 0f, 0f, radius, spacing, 0f)[0];
+            var rotatedPoint = GlowTileGeometry.GeneratePoints(0f, 0f, 0f, radius, spacing, 90f)[0];
+            Assert.NotEqual(basePoint.x, rotatedPoint.x);
+            Assert.NotEqual(basePoint.z, rotatedPoint.z);
+        }
+
+        [Fact]
+        public void Generate_PointsApproximatelySpacing()
+        {
+            var radius = 5f;
+            var spacing = 2f;
+            var positions = GlowTileGeometry.GeneratePoints(100f, 50f, -25f, radius, spacing, 0f);
+            for (var i = 1; i < positions.Count; i++)
+            {
+                var previous = positions[i - 1];
+                var current = positions[i];
+                var dx = current.x - previous.x;
+                var dz = current.z - previous.z;
+                var distance = MathF.Sqrt(dx * dx + dz * dz);
+                Assert.InRange(distance, spacing - 0.25f, spacing + 0.25f);
+            }
+        }
+    }
+}

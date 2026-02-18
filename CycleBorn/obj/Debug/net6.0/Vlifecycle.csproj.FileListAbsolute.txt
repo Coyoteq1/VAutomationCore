@@ -1,0 +1,17 @@
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\Configuration\pvp_item.json
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\Configuration\pvp_item.toml
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\Cycleborn.deps.json
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\Cycleborn.pdb
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\VAutomationCore.pdb
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Vlifecycle.csproj.AssemblyReference.cache
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Vlifecycle.GeneratedMSBuildEditorConfig.editorconfig
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Vlifecycle.AssemblyInfoInputs.cache
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Vlifecycle.AssemblyInfo.cs
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Vlifecycle.csproj.CoreCompileInputs.cache
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Vlifecycle.csproj.CopyComplete
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\refint\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Cycleborn.pdb
+D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\ref\Cycleborn.dll

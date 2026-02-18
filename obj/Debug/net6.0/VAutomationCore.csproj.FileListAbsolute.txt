@@ -1,0 +1,12 @@
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\VAutomationCore.deps.json
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\VAutomationCore.pdb
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.csproj.AssemblyReference.cache
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.GeneratedMSBuildEditorConfig.editorconfig
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.AssemblyInfoInputs.cache
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.AssemblyInfo.cs
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.csproj.CoreCompileInputs.cache
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\refint\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.pdb
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\ref\VAutomationCore.dll

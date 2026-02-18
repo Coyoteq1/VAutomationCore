@@ -1,0 +1,15 @@
+D:\VAutomationCore\VAutomationCore\VAutoannounce\bin\Release\net6.0\VAutoannounce.deps.json
+D:\VAutomationCore\VAutomationCore\VAutoannounce\bin\Release\net6.0\VAutoannounce.dll
+D:\VAutomationCore\VAutomationCore\VAutoannounce\bin\Release\net6.0\VAutoannounce.pdb
+D:\VAutomationCore\VAutomationCore\VAutoannounce\bin\Release\net6.0\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\VAutoannounce\bin\Release\net6.0\VAutomationCore.pdb
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.csproj.AssemblyReference.cache
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.GeneratedMSBuildEditorConfig.editorconfig
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.AssemblyInfoInputs.cache
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.AssemblyInfo.cs
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.csproj.CoreCompileInputs.cache
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.csproj.CopyComplete
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.dll
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\refint\VAutoannounce.dll
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\VAutoannounce.pdb
+D:\VAutomationCore\VAutomationCore\VAutoannounce\obj\Release\net6.0\ref\VAutoannounce.dll

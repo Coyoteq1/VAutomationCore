@@ -1,0 +1,523 @@
+   1: using System;
+   2: using System.Collections.Generic;
+   3: using System.IO;
+   4: using System.Text.Json;
+   5: using BepInEx;
+   6: using BepInEx.Logging;
+   7: using ProjectM;
+   8: using ProjectM.Network;
+   9: using Unity.Collections;
+  10: using Unity.Entities;
+  11: using Stunlock.Core;
+  12: using VAutomationCore.Core;
+  13: 
+  14: namespace VAuto.Zone.Services
+  15: {
+  16:     /// <summary>
+  17:     /// Zone kit orchestration service.
+  18:     /// - Loads kit definitions from JSON.
+  19:     /// - Resolves zone -> kit with default fallback.
+  20:     /// - Tracks active kit per player for enter/exit flow.
+  21:     /// </summary>
+  22:     public static class KitService
+  23:     {
+  24:         private sealed class KitDefinition
+  25:         {
+  26:             public string Id { get; set; } = string.Empty;
+  27:             public bool RestoreOnExit { get; set; } = true;
+  28:             public bool BroadcastOnEquip { get; set; }
+  29:             public bool CaptureSnapshot { get; set; } = true;
+  30:             public List<KitItem> Items { get; } = new List<KitItem>();
+  31:         }
+  32: 
+  33:         private sealed class KitItem
+  34:         {
+  35:             public int PrefabGuid { get; set; }
+  36:             public string PrefabName { get; set; } = string.Empty;
+  37:             public int Amount { get; set; } = 1;
+  38:         }
+  39: 
+  40:         private sealed class KitConfigRoot
+  41:         {
+  42:             public Dictionary<string, KitDefinitionJson> Kits { get; set; } = new Dictionary<string, KitDefinitionJson>(StringComparer.OrdinalIgnoreCase);
+  43:         }
+  44: 
+  45:         private sealed class KitDefinitionJson
+  46:         {
+  47:             public bool RestoreOnExit { get; set; } = true;
+  48:             public bool BroadcastOnEquip { get; set; }
+  49:             public bool CaptureSnapshot { get; set; } = true;
+  50:             public List<KitItemJson> Items { get; set; } = new List<KitItemJson>();
+  51:         }
+  52: 
+  53:         private sealed class KitItemJson
+  54:         {
+  55:             public int PrefabGuid { get; set; }
+  56:             public string PrefabName { get; set; } = string.Empty;
+  57:             public int Amount { get; set; } = 1;
+  58:         }
+  59: 
+  60:         private sealed class UsageState
+  61:         {
+  62:             public Dictionary<string, int> KitUsageCounts { get; set; } = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+  63:         }
+  64: 
+  65:         private static readonly ManualLogSource _log = Plugin.Logger;
+  66:         private static readonly Dictionary<string, KitDefinition> _kits = new Dictionary<string, KitDefinition>(StringComparer.OrdinalIgnoreCase);
+  67:         private static readonly Dictionary<ulong, string> _activeKitByPlayer = new Dictionary<ulong, string>();
+  68:         private static readonly Dictionary<ulong, bool> _restoreOnExitByPlayer = new Dictionary<ulong, bool>();
+  69:         private static readonly Dictionary<ulong, bool> _snapshotCapturedByPlayer = new Dictionary<ulong, bool>();
+  70:         private static readonly Dictionary<string, DateTime> _kitUsageHistory = new Dictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
+  71:         private static readonly Dictionary<string, int> _kitUsageCounts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+  72: 
+  73:         private static readonly string UsageStatePath = Path.Combine(Paths.ConfigPath, "Bluelock", "state", "kit_usage.json");
+  74: 
+  75:         /// <summary>
+  76:         /// Initialize kit definitions.
+  77:         /// </summary>
+  78:         public static void Initialize()
+  79:         {
+  80:             LoadKitDefinitions();
+  81:             LoadUsageState();
+  82:             _log.LogInfo($"[KitService] Initialized. Kits loaded: {_kits.Count}");
+  83:         }
+  84: 
+  85:         /// <summary>
+  86:         /// Reload kit definitions from disk.
+  87:         /// </summary>
+  88:         public static void Reload()
+  89:         {
+  90:             LoadKitDefinitions();
+  91:             _log.LogInfo($"[KitService] Reloaded kit definitions. Kits loaded: {_kits.Count}");
+  92:         }
+  93: 
+  94:         /// <summary>
+  95:         /// Apply zone kit when entering a zone.
+  96:         /// </summary>
+  97:         public static void ApplyKitOnEnter(string zoneId, Entity player, EntityManager em)
+  98:         {
+  99:             try
+ 100:             {
+ 101:                 if (!Plugin.KitAutoEquipEnabledValue)
+ 102:                 {
+ 103:                     return;
+ 104:                 }
+ 105: 
+ 106:                 if (string.IsNullOrWhiteSpace(zoneId))
+ 107:                 {
+ 108:                     return;
+ 109:                 }
+ 110: 
+ 111:                 if (!TryResolveUser(em, player, out var userEntity, out var user, out var platformId))
+ 112:                 {
+ 113:                     return;
+ 114:                 }
+ 115: 
+ 116:                 var configuredKit = ZoneConfigService.GetKitIdForZone(zoneId);
+ 117:                 var fallbackKit = Plugin.KitDefaultNameValue;
+ 118:                 var kitId = string.IsNullOrWhiteSpace(configuredKit) ? fallbackKit : configuredKit;
+ 119: 
+ 120:                 if (string.IsNullOrWhiteSpace(kitId))
+ 121:                 {
+ 122:                     _log.LogDebug($"[KitService] No kit resolved for zone '{zoneId}'.");
+ 123:                     return;
+ 124:                 }
+ 125: 
+ 126:                 if (!_kits.TryGetValue(kitId, out var kit))
+ 127:                 {
+ 128:                     _log.LogWarning($"[KitService] Resolved kit '{kitId}' for zone '{zoneId}' but definition was not found.");
+ 129:                     return;
+ 130:                 }
+ 131: 
+ 132:                 _activeKitByPlayer[platformId] = kit.Id;
+ 133:                 _restoreOnExitByPlayer[platformId] = kit.RestoreOnExit;
+ 134:                 RecordKitUsage(platformId, kit.Id);
+ 135: 
+ 136:                 if (kit.CaptureSnapshot && Plugin.KitRestoreOnExitValue)
+ 137:                 {
+ 138:                     if (!_snapshotCapturedByPlayer.ContainsKey(platformId))
+ 139:                     {
+ 140:                         if (PlayerSnapshotService.SaveSnapshot(player, out var snapshotError))
+ 141:                         {
+ 142:                             _snapshotCapturedByPlayer[platformId] = true;
+ 143:                         }
+ 144:                         else
+ 145:                         {
+ 146:                             _log.LogWarning($"[KitService] Snapshot save failed for player={platformId}: {snapshotError}");
+ 147:                         }
+ 148:                     }
+ 149:                 }
+ 150: 
+ 151:                 var spawnedCount = 0;
+ 152:                 foreach (var item in kit.Items)
+ 153:                 {
+ 154:                     if (TrySpawnItemForPlayer(item, player, em))
+ 155:                     {
+ 156:                         spawnedCount++;
+ 157:                     }
+ 158:                 }
+ 159: 
+ 160:                 _log.LogInfo($"[KitService] Enter zone '{zoneId}': player={platformId}, kit='{kit.Id}', itemsApplied={spawnedCount}/{kit.Items.Count}");
+ 161: 
+ 162:                 if (kit.BroadcastOnEquip || Plugin.KitBroadcastEquipsValue)
+ 163:                 {
+ 164:                     var msg = new FixedString512Bytes($"Kit '{kit.Id}' applied for zone '{zoneId}'.");
+ 165:                     ServerChatUtils.SendSystemMessageToClient(em, user, ref msg);
+ 166:                 }
+ 167:             }
+ 168:             catch (Exception ex)
+ 169:             {
+ 170:                 _log.LogError($"[KitService] ApplyKitOnEnter failed: {ex.Message}");
+ 171:             }
+ 172:         }
+ 173: 
+ 174:         /// <summary>
+ 175:         /// Restore flow when leaving zone.
+ 176:         /// </summary>
+ 177:         public static void RestoreKitOnExit(string zoneId, Entity player, EntityManager em)
+ 178:         {
+ 179:             try
+ 180:             {
+ 181:                 if (!Plugin.KitRestoreOnExitValue)
+ 182:                 {
+ 183:                     return;
+ 184:                 }
+ 185: 
+ 186:                 if (!TryResolveUser(em, player, out _, out var user, out var platformId))
+ 187:                 {
+ 188:                     return;
+ 189:                 }
+ 190: 
+ 191:                 if (!_activeKitByPlayer.TryGetValue(platformId, out var kitId))
+ 192:                 {
+ 193:                     return;
+ 194:                 }
+ 195: 
+ 196:                 var shouldRestore = _restoreOnExitByPlayer.TryGetValue(platformId, out var perKitRestore)
+ 197:                     ? perKitRestore
+ 198:                     : true;
+ 199: 
+ 200:                 if (shouldRestore)
+ 201:                 {
+ 202:                     if (_snapshotCapturedByPlayer.TryGetValue(platformId, out var captured) && captured)
+ 203:                     {
+ 204:                         if (!PlayerSnapshotService.RestoreSnapshot(player, out var snapshotError))
+ 205:                         {
+ 206:                             _log.LogWarning($"[KitService] Snapshot restore failed for player={platformId}: {snapshotError}");
+ 207:                         }
+ 208:                     }
+ 209: 
+ 210:                     _log.LogInfo($"[KitService] Exit zone '{zoneId}': player={platformId}, restore flow completed for kit '{kitId}'.");
+ 211: 
+ 212:                     if (Plugin.KitBroadcastEquipsValue)
+ 213:                     {
+ 214:                         var msg = new FixedString512Bytes($"Restored pre-zone loadout after exiting '{zoneId}'.");
+ 215:                         ServerChatUtils.SendSystemMessageToClient(em, user, ref msg);
+ 216:                     }
+ 217:                 }
+ 218: 
+ 219:                 _activeKitByPlayer.Remove(platformId);
+ 220:                 _restoreOnExitByPlayer.Remove(platformId);
+ 221:                 _snapshotCapturedByPlayer.Remove(platformId);
+ 222:             }
+ 223:             catch (Exception ex)
+ 224:             {
+ 225:                 _log.LogError($"[KitService] RestoreKitOnExit failed: {ex.Message}");
+ 226:             }
+ 227:         }
+ 228: 
+ 229:         /// <summary>
+ 230:         /// Register user into kit tracking state.
+ 231:         /// </summary>
+ 232:         public static void EnsurePlayerRegistered(Entity userEntity)
+ 233:         {
+ 234:             try
+ 235:             {
+ 236:                 var em = UnifiedCore.EntityManager;
+ 237:                 if (!em.Exists(userEntity))
+ 238:                 {
+ 239:                     return;
+ 240:                 }
+ 241: 
+ 242:                 if (!em.HasComponent<User>(userEntity))
+ 243:                 {
+ 244:                     return;
+ 245:                 }
+ 246: 
+ 247:                 var user = em.GetComponentData<User>(userEntity);
+ 248:                 var platformId = user.PlatformId;
+ 249:                 var key = $"registration_{platformId}";
+ 250:                 _kitUsageHistory[key] = DateTime.UtcNow;
+ 251:                 _kitUsageCounts[key] = _kitUsageCounts.TryGetValue(key, out var count) ? count + 1 : 1;
+ 252:             }
+ 253:             catch (Exception ex)
+ 254:             {
+ 255:                 _log.LogError($"[KitService] EnsurePlayerRegistered failed: {ex.Message}");
+ 256:             }
+ 257:         }
+ 258: 
+ 259:         /// <summary>
+ 260:         /// Persist usage counters.
+ 261:         /// </summary>
+ 262:         public static void SaveUsageData()
+ 263:         {
+ 264:             try
+ 265:             {
+ 266:                 var dir = Path.GetDirectoryName(UsageStatePath);
+ 267:                 if (!string.IsNullOrWhiteSpace(dir))
+ 268:                 {
+ 269:                     Directory.CreateDirectory(dir);
+ 270:                 }
+ 271: 
+ 272:                 var state = new UsageState
+ 273:                 {
+ 274:                     KitUsageCounts = new Dictionary<string, int>(_kitUsageCounts, StringComparer.OrdinalIgnoreCase)
+ 275:                 };
+ 276: 
+ 277:                 var json = JsonSerializer.Serialize(state, new JsonSerializerOptions
+ 278:                 {
+ 279:                     WriteIndented = true
+ 280:                 });
+ 281:                 File.WriteAllText(UsageStatePath, json);
+ 282:                 _log.LogInfo($"[KitService] Saved usage data. Entries={_kitUsageCounts.Count}");
+ 283:             }
+ 284:             catch (Exception ex)
+ 285:             {
+ 286:                 _log.LogError($"[KitService] SaveUsageData failed: {ex.Message}");
+ 287:             }
+ 288:         }
+ 289: 
+ 290:         private static void LoadKitDefinitions()
+ 291:         {
+ 292:             _kits.Clear();
+ 293: 
+ 294:             var path = ResolveKitConfigPath();
+ 295:             try
+ 296:             {
+ 297:                 if (string.IsNullOrWhiteSpace(path))
+ 298:                 {
+ 299:                     _log.LogWarning("[KitService] Kit definition path is empty.");
+ 300:                     return;
+ 301:                 }
+ 302: 
+ 303:                 var dir = Path.GetDirectoryName(path);
+ 304:                 if (!string.IsNullOrWhiteSpace(dir))
+ 305:                 {
+ 306:                     Directory.CreateDirectory(dir);
+ 307:                 }
+ 308: 
+ 309:                 if (!File.Exists(path))
+ 310:                 {
+ 311:                     CreateDefaultKitConfig(path);
+ 312:                 }
+ 313: 
+ 314:                 var json = File.ReadAllText(path);
+ 315:                 var root = JsonSerializer.Deserialize<KitConfigRoot>(json, new JsonSerializerOptions
+ 316:                 {
+ 317:                     PropertyNameCaseInsensitive = true,
+ 318:                     ReadCommentHandling = JsonCommentHandling.Skip,
+ 319:                     AllowTrailingCommas = true
+ 320:                 }) ?? new KitConfigRoot();
+ 321: 
+ 322:                 foreach (var entry in root.Kits)
+ 323:                 {
+ 324:                     if (string.IsNullOrWhiteSpace(entry.Key))
+ 325:                     {
+ 326:                         continue;
+ 327:                     }
+ 328: 
+ 329:                     var kit = new KitDefinition
+ 330:                     {
+ 331:                         Id = entry.Key.Trim(),
+ 332:                         RestoreOnExit = entry.Value?.RestoreOnExit ?? true,
+ 333:                         BroadcastOnEquip = entry.Value?.BroadcastOnEquip ?? false,
+ 334:                         CaptureSnapshot = entry.Value?.CaptureSnapshot ?? true
+ 335:                     };
+ 336: 
+ 337:                     if (entry.Value?.Items != null)
+ 338:                     {
+ 339:                         foreach (var item in entry.Value.Items)
+ 340:                         {
+ 341:                             if (item == null)
+ 342:                             {
+ 343:                                 continue;
+ 344:                             }
+ 345: 
+ 346:                             kit.Items.Add(new KitItem
+ 347:                             {
+ 348:                                 PrefabGuid = item.PrefabGuid,
+ 349:                                 PrefabName = item.PrefabName ?? string.Empty,
+ 350:                                 Amount = Math.Max(1, item.Amount)
+ 351:                             });
+ 352:                         }
+ 353:                     }
+ 354: 
+ 355:                     _kits[kit.Id] = kit;
+ 356:                 }
+ 357: 
+ 358:                 _log.LogInfo($"[KitService] Loaded {_kits.Count} kit definitions from '{path}'.");
+ 359:             }
+ 360:             catch (Exception ex)
+ 361:             {
+ 362:                 _log.LogError($"[KitService] Failed to load kit definitions from '{path}': {ex.Message}");
+ 363:             }
+ 364:         }
+ 365: 
+ 366:         private static void CreateDefaultKitConfig(string path)
+ 367:         {
+ 368:             var defaultKit = string.IsNullOrWhiteSpace(Plugin.KitDefaultNameValue) ? "startkit" : Plugin.KitDefaultNameValue;
+ 369:             var root = new KitConfigRoot
+ 370:             {
+ 371:                 Kits = new Dictionary<string, KitDefinitionJson>(StringComparer.OrdinalIgnoreCase)
+ 372:                 {
+ 373:                     [defaultKit] = new KitDefinitionJson
+ 374:                     {
+ 375:                         RestoreOnExit = true,
+ 376:                         BroadcastOnEquip = false,
+ 377:                         CaptureSnapshot = true,
+ 378:                         Items = new List<KitItemJson>()
+ 379:                     }
+ 380:                 }
+ 381:             };
+ 382: 
+ 383:             var json = JsonSerializer.Serialize(root, new JsonSerializerOptions
+ 384:             {
+ 385:                 WriteIndented = true
+ 386:             });
+ 387:             File.WriteAllText(path, json);
+ 388:             _log.LogInfo($"[KitService] Created default kit config at '{path}'.");
+ 389:         }
+ 390: 
+ 391:         private static string ResolveKitConfigPath()
+ 392:         {
+ 393:             var configured = Plugin.KitsConfigPathValue;
+ 394:             if (string.IsNullOrWhiteSpace(configured))
+ 395:             {
+ 396:                 return Path.Combine(Paths.ConfigPath, "Bluelock", "config", "VAuto.Kits.json");
+ 397:             }
+ 398: 
+ 399:             if (Path.IsPathRooted(configured))
+ 400:             {
+ 401:                 return configured;
+ 402:             }
+ 403: 
+ 404:             return Path.Combine(Paths.ConfigPath, configured);
+ 405:         }
+ 406: 
+ 407:         private static void LoadUsageState()
+ 408:         {
+ 409:             try
+ 410:             {
+ 411:                 if (!File.Exists(UsageStatePath))
+ 412:                 {
+ 413:                     return;
+ 414:                 }
+ 415: 
+ 416:                 var json = File.ReadAllText(UsageStatePath);
+ 417:                 var state = JsonSerializer.Deserialize<UsageState>(json, new JsonSerializerOptions
+ 418:                 {
+ 419:                     PropertyNameCaseInsensitive = true
+ 420:                 });
+ 421: 
+ 422:                 if (state?.KitUsageCounts == null)
+ 423:                 {
+ 424:                     return;
+ 425:                 }
+ 426: 
+ 427:                 _kitUsageCounts.Clear();
+ 428:                 foreach (var kv in state.KitUsageCounts)
+ 429:                 {
+ 430:                     _kitUsageCounts[kv.Key] = kv.Value;
+ 431:                 }
+ 432:             }
+ 433:             catch (Exception ex)
+ 434:             {
+ 435:                 _log.LogWarning($"[KitService] Failed to load usage state: {ex.Message}");
+ 436:             }
+ 437:         }
+ 438: 
+ 439:         private static bool TryResolveUser(EntityManager em, Entity playerEntity, out Entity userEntity, out User user, out ulong platformId)
+ 440:         {
+ 441:             userEntity = Entity.Null;
+ 442:             user = default;
+ 443:             platformId = 0;
+ 444: 
+ 445:             if (!em.Exists(playerEntity))
+ 446:             {
+ 447:                 return false;
+ 448:             }
+ 449: 
+ 450:             if (!em.HasComponent<PlayerCharacter>(playerEntity))
+ 451:             {
+ 452:                 return false;
+ 453:             }
+ 454: 
+ 455:             var playerCharacter = em.GetComponentData<PlayerCharacter>(playerEntity);
+ 456:             userEntity = playerCharacter.UserEntity;
+ 457:             if (userEntity == Entity.Null || !em.Exists(userEntity) || !em.HasComponent<User>(userEntity))
+ 458:             {
+ 459:                 return false;
+ 460:             }
+ 461: 
+ 462:             user = em.GetComponentData<User>(userEntity);
+ 463:             platformId = user.PlatformId;
+ 464:             return platformId != 0;
+ 465:         }
+ 466: 
+ 467:         private static bool TrySpawnItemForPlayer(KitItem item, Entity playerEntity, EntityManager em)
+ 468:         {
+ 469:             if (item == null || item.PrefabGuid == 0 || item.Amount <= 0)
+ 470:             {
+ 471:                 return false;
+ 472:             }
+ 473: 
+ 474:             var itemGuid = new PrefabGUID(item.PrefabGuid);
+ 475:             var characterName = ResolveCharacterName(em, playerEntity);
+ 476: 
+ 477:             try
+ 478:             {
+ 479:                 GiveItemCommandUtility.RunGiveItemCommand(itemGuid, item.Amount, false, characterName);
+ 480:                 return true;
+ 481:             }
+ 482:             catch (Exception ex)
+ 483:             {
+ 484:                 // Fallback: run without target name to preserve compatibility with command resolver changes.
+ 485:                 if (!string.IsNullOrWhiteSpace(characterName))
+ 486:                 {
+ 487:                     try
+ 488:                     {
+ 489:                         GiveItemCommandUtility.RunGiveItemCommand(itemGuid, item.Amount, false, null);
+ 490:                         return true;
+ 491:                     }
+ 492:                     catch (Exception fallbackEx)
+ 493:                     {
+ 494:                         _log.LogWarning($"[KitService] Give item failed for '{characterName}' ({item.PrefabGuid} x{item.Amount}): {fallbackEx.Message}");
+ 495:                         return false;
+ 496:                     }
+ 497:                 }
+ 498: 
+ 499:                 _log.LogWarning($"[KitService] Give item failed ({item.PrefabGuid} x{item.Amount}): {ex.Message}");
+ 500:                 return false;
+ 501:             }
+ 502:         }
+ 503: 
+ 504:         private static string ResolveCharacterName(EntityManager em, Entity playerEntity)
+ 505:         {
+ 506:             if (!em.Exists(playerEntity) || !em.HasComponent<PlayerCharacter>(playerEntity))
+ 507:             {
+ 508:                 return string.Empty;
+ 509:             }
+ 510: 
+ 511:             var player = em.GetComponentData<PlayerCharacter>(playerEntity);
+ 512:             var name = player.Name.ToString();
+ 513:             return string.IsNullOrWhiteSpace(name) ? string.Empty : name;
+ 514:         }
+ 515: 
+ 516:         private static void RecordKitUsage(ulong platformId, string kitId)
+ 517:         {
+ 518:             var key = $"kit_{platformId}_{kitId}";
+ 519:             _kitUsageHistory[key] = DateTime.UtcNow;
+ 520:             _kitUsageCounts[key] = _kitUsageCounts.TryGetValue(key, out var count) ? count + 1 : 1;
+ 521:         }
+ 522:     }
+ 523: }

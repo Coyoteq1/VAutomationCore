@@ -1,0 +1,16 @@
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Release\net6.0\Configuration\killstreak_trap_config.toml
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Release\net6.0\VAutoTraps.deps.json
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Release\net6.0\VAutoTraps.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Release\net6.0\VAutoTraps.pdb
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Release\net6.0\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Release\net6.0\VAutomationCore.pdb
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.csproj.AssemblyReference.cache
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.GeneratedMSBuildEditorConfig.editorconfig
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.AssemblyInfoInputs.cache
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.AssemblyInfo.cs
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.csproj.CoreCompileInputs.cache
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.csproj.CopyComplete
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\refint\VAutoTraps.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\VAutoTraps.pdb
+D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Release\net6.0\ref\VAutoTraps.dll

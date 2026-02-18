@@ -1,0 +1,140 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>annotations</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" IncludeAssets="compile" />
+    <PackageReference Include="RisingV.Shared" Version="0.1.3" />
+    <PackageReference Include="VRising.VampireCommandFramework" Version="0.10.4" />
+    <PackageReference Include="VRising.VAMP" Version="1.3.3" />
+    <PackageReference Include="Lib.Harmony" Version="2.2.2" />
+    <PackageReference Include="Il2CppInterop.Runtime" Version="1.4.6-ci.426" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Unity.Entities">
+      <HintPath>$(VAutoServerInteropPath)Unity.Entities.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>$(VAutoServerInteropPath)Unity.Collections.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>$(VAutoServerInteropPath)Unity.Mathematics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Burst">
+      <HintPath>$(VAutoServerInteropPath)Unity.Burst.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Transforms">
+      <HintPath>$(VAutoServerInteropPath)Unity.Transforms.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Physics">
+      <HintPath>$(VAutoServerInteropPath)Unity.Physics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(VAutoServerInteropPath)UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ProjectM">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.Gameplay.Systems">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.Gameplay.Systems.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.Gameplay.Scripting">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.Gameplay.Scripting.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.Shared">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.Shared.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.GeneratedNetCode">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.GeneratedNetCode.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VRising.GameData" Condition="Exists('$(VAutoServerInteropPath)VRising.GameData.dll')">
+      <HintPath>$(VAutoServerInteropPath)VRising.GameData.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Stunlock.Core">
+      <HintPath>$(VAutoServerInteropPath)Stunlock.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Core\UnifiedCore.cs" />
+    <Compile Include="Core\Logging\CoreLogger.cs" />
+    <Compile Include="Core\Logging\CoreLoggerExtensions.cs" />
+    <Compile Include="Core\Arena\ArenaLifecycleManager.cs" />
+    <Compile Include="Core\Config\ConfigService.cs" />
+    <Compile Include="Core\Config\JsonConverters.cs" />
+    <Compile Include="Core\Config\TypedJsonConfigManager.cs" />
+    <Compile Include="Core\ECS\EntityQueryHelper.cs" />
+    <Compile Include="Core\ECS\EntityExtensions.cs" />
+    <Compile Include="Core\ECS\PrefabGUIDExtensions.cs" />
+    <Compile Include="Core\Commands\CommandBase.cs" />
+    <Compile Include="Core\Commands\CommandException.cs" />
+    <Compile Include="Core\Commands\ChatColor.cs" />
+    <Compile Include="Core\Services\ServiceInitializer.cs" />
+    <Compile Include="Core\Services\GameActionService.cs" />
+    <Compile Include="Core\Services\DebugEventBridge.cs" />
+    <Compile Include="Core\Data\*.cs" />
+    <Compile Include="..\Models\*.cs" />
+    <Compile Include="..\Helpers\*.cs" />
+    <Compile Remove="..\Helpers\ECSServiceManager.cs" />
+    <Compile Include="..\Extensions\*.cs" />
+    <Compile Include="Chat\ChatService.cs" />
+    <Compile Include="Models\GlowZoneEntry.cs" />
+    <Compile Include="Models\PlayerZoneState.cs" />
+    <Compile Include="Services\ZoneEventBridge.cs" />
+
+    <Compile Include="Plugin.cs" />
+    <Compile Include="PrefabGuidConverter.cs" />
+    <Compile Include="IService.cs" />
+    <Compile Include="Configuration\PluginManifest.cs" />
+    <Compile Include="Configuration\ZoneLifecycleConfig.cs" />
+    <Compile Include="Json\PrefabGuidJsonConverter.cs" />
+    <Compile Include="Json\VAutoJsonOptions.cs" />
+    <Compile Include="MyPluginInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs" />
+    <Compile Include="..\Networking\*.cs" />
+    <Compile Remove="..\Networking\WireService.cs" />
+    <Compile Remove="..\Extensions\*.cs" />
+    <Compile Remove="..\Helpers\*.cs" />
+    <Compile Remove="..\Networking\*.cs" />
+    <Compile Remove="..\Commands\**\*.cs" />
+  </ItemGroup>
+
+  <!-- Auto-deploy to BepInEx plugins folder -->
+  <PropertyGroup>
+    <BepInExPluginsPath>D:\DedicatedServerLauncher\VRisingServer\BepInEx\plugins</BepInExPluginsPath>
+    <DeployToServer Condition="'$(DeployToServer)' == ''">false</DeployToServer>
+  </PropertyGroup>
+
+  <Target Name="CopyToBepInEx" AfterTargets="Build" Condition="'$(DeployToServer)' == 'true'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)" SkipUnchangedFiles="true" />
+    <Message Text="Copied $(TargetPath) to $(BepInExPluginsPath)" Importance="high" />
+  </Target>
+
+
+</Project>
