@@ -24,6 +24,10 @@ namespace VAuto.Core.Services
     {
         private static readonly string[] ProgressionKeywords = { "Research", "VBlood", "Achievement", "Unlock", "Tech", "Recipe", "Progress" };
         private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true, WriteIndented = true };
+        private static readonly ISnapshotCaptureService SnapshotCaptureService = new SnapshotCaptureService();
+        private static readonly ISnapshotDiffService SnapshotDiffService = new SnapshotDiffService();
+        private static readonly ISnapshotPersistenceService SnapshotPersistenceService = new SnapshotPersistenceService();
+        private static readonly IProgressionRestoreService ProgressionRestoreService = new ProgressionRestoreService();
 
         private static bool _enabled = true;
         private static bool _persistSnapshots = true;
@@ -31,6 +35,7 @@ namespace VAuto.Core.Services
         private static bool _verboseLogs;
         private const string BaselineCsvFileName = "sandbox_progression_baseline.csv.gz";
         private const string DeltaCsvFileName = "sandbox_progression_delta.csv.gz";
+        private const string ProgressionJournalJsonlFileName = "sandbox_progression_journal.jsonl";
         private const string LegacyJsonFileName = "sandbox_progression_snapshots.json";
         private const string BlueLockAssemblyName = "BlueLock";
 
@@ -106,10 +111,10 @@ namespace VAuto.Core.Services
 
             var playerKey = SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
             var capturedUtc = DateTime.UtcNow;
-            var snapshotId = BuildSnapshotId(platformId, characterName, capturedUtc);
-            var preSnapshot = CaptureProgressionSnapshot(character);
-            var baselineRows = BuildBaselineRows(preSnapshot, playerKey, characterName, platformId, zoneId, snapshotId, capturedUtc);
-            var preZoneEntities = CaptureZoneEntityMap(zoneId);
+            var snapshotId = SnapshotCaptureService.BuildSnapshotId(platformId, characterName, capturedUtc);
+            var preSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
+            var baselineRows = SnapshotCaptureService.BuildBaselineRows(preSnapshot, playerKey, characterName, platformId, zoneId, snapshotId, capturedUtc);
+            var preZoneEntities = SnapshotCaptureService.CaptureZoneEntityMap(zoneId);
 
             var pending = new SandboxPendingContext
             {
@@ -152,9 +157,9 @@ namespace VAuto.Core.Services
             if (!SandboxSnapshotStore.TryTakePendingContext(characterName, platformId, out var playerKey, out var pending) || pending == null)
             {
                 var fallbackCapturedUtc = DateTime.UtcNow;
-                var fallbackSnapshotId = BuildSnapshotId(platformId, characterName, fallbackCapturedUtc);
+                var fallbackSnapshotId = SnapshotCaptureService.BuildSnapshotId(platformId, characterName, fallbackCapturedUtc);
                 playerKey = SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
-                var fallbackBaselineSnapshot = CaptureProgressionSnapshot(character);
+                var fallbackBaselineSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
                 pending = new SandboxPendingContext
                 {
                     PlayerKey = playerKey,
@@ -163,7 +168,7 @@ namespace VAuto.Core.Services
                     ZoneId = string.Empty,
                     SnapshotId = fallbackSnapshotId,
                     CapturedUtc = fallbackCapturedUtc,
-                    ComponentRows = BuildBaselineRows(fallbackBaselineSnapshot, playerKey, characterName, platformId, string.Empty, fallbackSnapshotId, fallbackCapturedUtc),
+                    ComponentRows = SnapshotCaptureService.BuildBaselineRows(fallbackBaselineSnapshot, playerKey, characterName, platformId, string.Empty, fallbackSnapshotId, fallbackCapturedUtc),
                     PreEnterZoneEntities = Array.Empty<ZoneEntityEntry>()
                 };
             }
@@ -171,13 +176,13 @@ namespace VAuto.Core.Services
             ApplyFullUnlock(character);
 
             var finalizedUtc = DateTime.UtcNow;
-            var postSnapshot = CaptureProgressionSnapshot(character);
-            var postRows = BuildBaselineRows(postSnapshot, playerKey, characterName, platformId, pending.ZoneId, pending.SnapshotId, finalizedUtc);
+            var postSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
+            var postRows = SnapshotCaptureService.BuildBaselineRows(postSnapshot, playerKey, characterName, platformId, pending.ZoneId, pending.SnapshotId, finalizedUtc);
 
             var deltaRows = new List<DeltaRow>();
-            deltaRows.AddRange(SandboxDeltaComputer.ComputeComponentDelta(pending.ComponentRows, postRows));
-            deltaRows.AddRange(SandboxDeltaComputer.ExtractOpenedTech(pending.ComponentRows, postRows));
-            deltaRows.AddRange(SandboxDeltaComputer.ComputeEntityDelta(pending.PreEnterZoneEntities, CaptureZoneEntityMap(pending.ZoneId)));
+            deltaRows.AddRange(SnapshotDiffService.ComputeComponentDelta(pending.ComponentRows, postRows));
+            deltaRows.AddRange(SnapshotDiffService.ExtractOpenedTech(pending.ComponentRows, postRows));
+            deltaRows.AddRange(SnapshotDiffService.ComputeEntityDelta(pending.PreEnterZoneEntities, SnapshotCaptureService.CaptureZoneEntityMap(pending.ZoneId)));
             StampDeltaRows(deltaRows, playerKey, characterName, platformId, pending.ZoneId, pending.SnapshotId, finalizedUtc);
 
             var baselineSnapshot = new SandboxBaselineSnapshot
@@ -204,6 +209,10 @@ namespace VAuto.Core.Services
 
             SandboxSnapshotStore.PutActiveSnapshots(playerKey, baselineSnapshot, deltaSnapshot);
             SandboxSnapshotStore.MarkDirty();
+
+            // Scope 1 journal: append deterministic progression mutations in JSONL format.
+            // Keep CSV snapshots unchanged for fallback compatibility.
+            TryAppendProgressionJournal(playerKey, pending, postRows, finalizedUtc);
 
             lock (_stateLock)
             {
@@ -244,15 +253,15 @@ namespace VAuto.Core.Services
                 return;
             }
 
-            TryApplyDeltaEntityCleanup(delta, baseline.ZoneId);
+            ProgressionRestoreService.TryApplyDeltaEntityCleanup(delta, baseline.ZoneId);
             var restoreSnapshot = BuildSnapshotFromBaselineRows(baseline.Rows, baseline.PlatformId, baseline.CapturedUtc);
 
-            if (!RestoreProgressionSnapshot(character, restoreSnapshot))
+            if (!ProgressionRestoreService.RestoreProgressionSnapshot(character, restoreSnapshot))
             {
                 LogWarning($"Restore failed for playerKey='{playerKey}', platformId={platformId}.");
             }
 
-            ValidateDeltaAfterRestore(delta, baseline.ZoneId);
+            ProgressionRestoreService.ValidateDeltaAfterRestore(delta, baseline.ZoneId);
             SandboxSnapshotStore.RemoveActiveSnapshots(playerKey);
             SandboxSnapshotStore.MarkDirty();
 
@@ -398,7 +407,7 @@ namespace VAuto.Core.Services
             return false;
         }
 
-        private static SandboxProgressionSnapshot CaptureProgressionSnapshot(Entity character)
+        internal static SandboxProgressionSnapshot CaptureProgressionSnapshotCore(Entity character)
         {
             var snapshot = new SandboxProgressionSnapshot
             {
@@ -484,7 +493,7 @@ namespace VAuto.Core.Services
             return snapshot;
         }
 
-        private static bool RestoreProgressionSnapshot(Entity character, SandboxProgressionSnapshot snapshot)
+        internal static bool RestoreProgressionSnapshotCore(Entity character, SandboxProgressionSnapshot snapshot)
         {
             if (!TryGetUserEntity(character, out var userEntity))
             {
@@ -586,7 +595,7 @@ namespace VAuto.Core.Services
             return ok;
         }
 
-        private static string BuildSnapshotId(ulong platformId, string characterName, DateTime capturedUtc)
+        internal static string BuildSnapshotIdCore(ulong platformId, string characterName, DateTime capturedUtc)
         {
             var safeName = (characterName ?? string.Empty).Trim();
             if (safeName.Length == 0)
@@ -598,7 +607,7 @@ namespace VAuto.Core.Services
             return $"{capturedUtc:yyyyMMddHHmmssfff}_{safeName}_{platformId.ToString(CultureInfo.InvariantCulture)}";
         }
 
-        private static BaselineRow[] BuildBaselineRows(
+        internal static BaselineRow[] BuildBaselineRowsCore(
             SandboxProgressionSnapshot snapshot,
             string playerKey,
             string characterName,
@@ -758,7 +767,7 @@ namespace VAuto.Core.Services
             }
         }
 
-        private static ZoneEntityEntry[] CaptureZoneEntityMap(string zoneId)
+        internal static ZoneEntityEntry[] CaptureZoneEntityMapCore(string zoneId)
         {
             if (string.IsNullOrWhiteSpace(zoneId))
             {
@@ -938,7 +947,7 @@ namespace VAuto.Core.Services
             return $"Prefab_{prefabGuid.GuidHash.ToString(CultureInfo.InvariantCulture)}";
         }
 
-        private static void TryApplyDeltaEntityCleanup(SandboxDeltaSnapshot? deltaSnapshot, string zoneId)
+        internal static void TryApplyDeltaEntityCleanupCore(SandboxDeltaSnapshot? deltaSnapshot, string zoneId)
         {
             if (deltaSnapshot?.Rows == null || deltaSnapshot.Rows.Length == 0)
             {
@@ -946,10 +955,6 @@ namespace VAuto.Core.Services
             }
 
             var contains = ResolveZoneContainsPredicate(zoneId);
-            if (contains == null)
-            {
-                return;
-            }
 
             var em = UnifiedCore.EntityManager;
             if (em == default)
@@ -957,7 +962,10 @@ namespace VAuto.Core.Services
                 return;
             }
 
-            var removed = 0;
+            var removedStrict = 0;
+            var removedForce = 0;
+
+            // Pass 1 (strict): original behavior with zone/prefab guards.
             foreach (var row in deltaSnapshot.Rows)
             {
                 if (row == null || !string.Equals(row.RowType, "entity_created", StringComparison.OrdinalIgnoreCase))
@@ -971,7 +979,7 @@ namespace VAuto.Core.Services
                     continue;
                 }
 
-                if (!TryGetBestPosition(em, entity, out var position) || !contains(position.x, position.z))
+                if (contains == null || !TryGetBestPosition(em, entity, out var position) || !contains(position.x, position.z))
                 {
                     continue;
                 }
@@ -988,7 +996,7 @@ namespace VAuto.Core.Services
                 try
                 {
                     em.DestroyEntity(entity);
-                    removed++;
+                    removedStrict++;
                 }
                 catch (Exception ex)
                 {
@@ -996,13 +1004,49 @@ namespace VAuto.Core.Services
                 }
             }
 
+            // Pass 2 (force fallback): if entity still exists, destroy by captured entity id
+            // even when zone/prefab checks are inconclusive (common after transforms/versions drift).
+            foreach (var row in deltaSnapshot.Rows)
+            {
+                if (row == null || !string.Equals(row.RowType, "entity_created", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var entity = new Entity { Index = row.EntityIndex, Version = row.EntityVersion };
+                if (!em.Exists(entity))
+                {
+                    continue;
+                }
+
+                if (row.PrefabGuid != 0 && em.HasComponent<PrefabGUID>(entity))
+                {
+                    var currentPrefab = em.GetComponentData<PrefabGUID>(entity).GuidHash;
+                    if (currentPrefab != (int)row.PrefabGuid)
+                    {
+                        continue;
+                    }
+                }
+
+                try
+                {
+                    em.DestroyEntity(entity);
+                    removedForce++;
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Delta force-cleanup failed for entity {entity.Index}:{entity.Version}: {ex.Message}");
+                }
+            }
+
+            var removed = removedStrict + removedForce;
             if (removed > 0)
             {
-                LogDebug($"Delta cleanup removed {removed} created entities for zone '{zoneId}'.");
+                LogDebug($"Delta cleanup removed {removed} created entities for zone '{zoneId}' (strict={removedStrict}, force={removedForce}).");
             }
         }
 
-        private static void ValidateDeltaAfterRestore(SandboxDeltaSnapshot? deltaSnapshot, string zoneId)
+        internal static void ValidateDeltaAfterRestoreCore(SandboxDeltaSnapshot? deltaSnapshot, string zoneId)
         {
             if (deltaSnapshot?.Rows == null || deltaSnapshot.Rows.Length == 0)
             {
@@ -1357,8 +1401,8 @@ namespace VAuto.Core.Services
                 {
                     if (File.Exists(baselinePath) || File.Exists(deltaPath))
                     {
-                        var baselineRows = SandboxCsvWriter.ReadBaseline(baselinePath);
-                        var deltaRows = SandboxCsvWriter.ReadDelta(deltaPath);
+                        var baselineRows = SnapshotPersistenceService.ReadBaseline(baselinePath);
+                        var deltaRows = SnapshotPersistenceService.ReadDelta(deltaPath);
                         var baselines = BuildBaselineSnapshotsFromRows(baselineRows);
                         var deltas = BuildDeltaSnapshotsFromRows(deltaRows);
                         SandboxSnapshotStore.ImportActiveSnapshots(baselines, deltas, markDirty: false);
@@ -1428,7 +1472,7 @@ namespace VAuto.Core.Services
                     }
                     else
                     {
-                        SandboxCsvWriter.WriteBaseline(baselinePath, baselineRows);
+                        SnapshotPersistenceService.WriteBaseline(baselinePath, baselineRows);
                     }
 
                     if (deltaRows.Length == 0)
@@ -1437,7 +1481,7 @@ namespace VAuto.Core.Services
                     }
                     else
                     {
-                        SandboxCsvWriter.WriteDelta(deltaPath, deltaRows);
+                        SnapshotPersistenceService.WriteDelta(deltaPath, deltaRows);
                     }
 
                     SandboxSnapshotStore.MarkClean();
@@ -1446,6 +1490,87 @@ namespace VAuto.Core.Services
                 {
                     LogWarning($"Snapshot persist failed: {ex.Message}");
                 }
+            }
+        }
+
+        private static void TryAppendProgressionJournal(string playerKey, SandboxPendingContext pending, BaselineRow[] postRows, DateTime capturedUtc)
+        {
+            if (!_persistSnapshots)
+            {
+                return;
+            }
+
+            var snapshotDirectory = ResolveSnapshotDirectory();
+            if (string.IsNullOrWhiteSpace(snapshotDirectory))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(snapshotDirectory);
+                var journalPath = Path.Combine(snapshotDirectory, ProgressionJournalJsonlFileName);
+
+                var preRows = pending?.ComponentRows ?? Array.Empty<BaselineRow>();
+                postRows ??= Array.Empty<BaselineRow>();
+
+                var preByType = preRows
+                    .Where(r => r != null && string.Equals(r.RowType, "component", StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(r => r.AssemblyQualifiedType ?? string.Empty, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+
+                var postByType = postRows
+                    .Where(r => r != null && string.Equals(r.RowType, "component", StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(r => r.AssemblyQualifiedType ?? string.Empty, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+
+                var keys = new HashSet<string>(preByType.Keys, StringComparer.Ordinal);
+                keys.UnionWith(postByType.Keys);
+
+                using var stream = new FileStream(journalPath, FileMode.Append, FileAccess.Write, FileShare.Read);
+                using var writer = new StreamWriter(stream, Encoding.UTF8);
+
+                foreach (var typeKey in keys)
+                {
+                    preByType.TryGetValue(typeKey, out var beforeRow);
+                    postByType.TryGetValue(typeKey, out var afterRow);
+
+                    var beforePayload = DecodePayload(beforeRow?.PayloadBase64 ?? string.Empty);
+                    var afterPayload = DecodePayload(afterRow?.PayloadBase64 ?? string.Empty);
+
+                    if (string.Equals(beforePayload, afterPayload, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var op = beforeRow == null
+                        ? "add"
+                        : afterRow == null
+                            ? "remove"
+                            : "modify";
+
+                    var evt = new ProgressionJournalEvent
+                    {
+                        Version = 1,
+                        SnapshotId = pending?.SnapshotId ?? string.Empty,
+                        PlayerKey = playerKey ?? string.Empty,
+                        CharacterName = pending?.CharacterName ?? string.Empty,
+                        PlatformId = pending?.PlatformId ?? 0,
+                        ZoneId = pending?.ZoneId ?? string.Empty,
+                        CapturedUtc = capturedUtc,
+                        Operation = op,
+                        ComponentType = ResolveComponentTypeName(typeKey),
+                        AssemblyQualifiedType = typeKey,
+                        BeforeJson = beforePayload,
+                        AfterJson = afterPayload
+                    };
+
+                    writer.WriteLine(JsonSerializer.Serialize(evt, JsonOpts));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"Progression journal append failed: {ex.Message}");
             }
         }
 
@@ -1560,8 +1685,8 @@ namespace VAuto.Core.Services
                 var capturedUtc = pair.Value.CapturedUtc == default ? DateTime.UtcNow : pair.Value.CapturedUtc;
                 var characterName = NormalizeCharacterName(string.Empty, platformId);
                 var playerKey = SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
-                var snapshotId = BuildSnapshotId(platformId, characterName, capturedUtc);
-                var rows = BuildBaselineRows(pair.Value, playerKey, characterName, platformId, string.Empty, snapshotId, capturedUtc);
+                var snapshotId = BuildSnapshotIdCore(platformId, characterName, capturedUtc);
+                var rows = BuildBaselineRowsCore(pair.Value, playerKey, characterName, platformId, string.Empty, snapshotId, capturedUtc);
                 snapshots.Add(new SandboxBaselineSnapshot
                 {
                     PlayerKey = playerKey,
@@ -1643,5 +1768,21 @@ namespace VAuto.Core.Services
         public bool Existed { get; set; }
         public string AssemblyQualifiedType { get; set; } = string.Empty;
         public string JsonPayload { get; set; } = string.Empty;
+    }
+
+    internal sealed class ProgressionJournalEvent
+    {
+        public int Version { get; set; } = 1;
+        public string SnapshotId { get; set; } = string.Empty;
+        public string PlayerKey { get; set; } = string.Empty;
+        public string CharacterName { get; set; } = string.Empty;
+        public ulong PlatformId { get; set; }
+        public string ZoneId { get; set; } = string.Empty;
+        public DateTime CapturedUtc { get; set; }
+        public string Operation { get; set; } = string.Empty;
+        public string ComponentType { get; set; } = string.Empty;
+        public string AssemblyQualifiedType { get; set; } = string.Empty;
+        public string BeforeJson { get; set; } = string.Empty;
+        public string AfterJson { get; set; } = string.Empty;
     }
 }
