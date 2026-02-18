@@ -1,15 +1,21 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using ProjectM;
 using ProjectM.Gameplay.Systems;
 using ProjectM.Network;
+using Stunlock.Core;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 using VAutomationCore.Core;
 
 namespace VAuto.Core.Services
@@ -23,6 +29,8 @@ namespace VAuto.Core.Services
         private static bool _persistSnapshots = true;
         private static string _snapshotPath = string.Empty;
         private static bool _verboseLogs;
+        private const string BaselineCsvFileName = "sandbox_progression_baseline.csv.gz";
+        private const string DeltaCsvFileName = "sandbox_progression_delta.csv.gz";
 
         private static readonly HashSet<ulong> _unlockAppliedThisSession = new();
         private static readonly Dictionary<ulong, SandboxProgressionSnapshot> _activeSnapshots = new();
@@ -30,6 +38,7 @@ namespace VAuto.Core.Services
         private static readonly object _snapshotFileLock = new();
         private static readonly object _stateLock = new();
         private static bool _snapshotsLoaded;
+        private static bool _snapshotsDirty;
 
         private static readonly MethodInfo? GetComponentDataGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .FirstOrDefault(m => m.Name == "GetComponentData" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
@@ -59,6 +68,7 @@ namespace VAuto.Core.Services
         public static void OnPlayerEnterZone(Entity character) => OnPlayerEnterZone(character, true);
         public static void OnPlayerIsInZone(Entity character) => OnPlayerIsInZone(character, true);
         public static void OnPlayerExitZone(Entity character) => OnPlayerExitZone(character, true);
+        public static void FlushSnapshotsToDisk() => PersistSnapshotsToDisk();
 
         public static void OnPlayerEnterZone(Entity character, bool enableUnlock)
         {
@@ -86,7 +96,7 @@ namespace VAuto.Core.Services
                     var snapshot = CaptureProgressionSnapshot(character);
                     _activeSnapshots[platformId] = snapshot;
                     _persistedSnapshots[platformId] = snapshot;
-                    PersistSnapshotsToDisk();
+                    _snapshotsDirty = true;
                 }
             }
 
@@ -144,9 +154,10 @@ namespace VAuto.Core.Services
                 _activeSnapshots.Remove(platformId);
                 _persistedSnapshots.Remove(platformId);
                 _unlockAppliedThisSession.Remove(platformId);
+                _snapshotsDirty = true;
             }
 
-            PersistSnapshotsToDisk();
+            FlushSnapshotsToDisk();
         }
 
         private static bool TryGetPlatformId(Entity character, out ulong platformId)
@@ -779,6 +790,7 @@ namespace VAuto.Core.Services
                 {
                     _activeSnapshots.Clear();
                     _persistedSnapshots.Clear();
+                    _snapshotsDirty = false;
                 }
 
                 if (!_persistSnapshots || string.IsNullOrWhiteSpace(_snapshotPath))
@@ -811,6 +823,8 @@ namespace VAuto.Core.Services
                                 _persistedSnapshots[platformId] = pair.Value;
                                 _activeSnapshots[platformId] = pair.Value;
                             }
+
+                            _snapshotsDirty = false;
                         }
                     }
                 }
@@ -831,8 +845,15 @@ namespace VAuto.Core.Services
             }
 
             Dictionary<ulong, SandboxProgressionSnapshot> snapshotCopy;
+            bool hasChanges;
             lock (_stateLock)
             {
+                hasChanges = _snapshotsDirty;
+                if (!hasChanges)
+                {
+                    return;
+                }
+
                 snapshotCopy = new Dictionary<ulong, SandboxProgressionSnapshot>(_activeSnapshots);
             }
 
@@ -873,6 +894,8 @@ namespace VAuto.Core.Services
                         {
                             _persistedSnapshots[pair.Key] = pair.Value;
                         }
+
+                        _snapshotsDirty = false;
                     }
                 }
                 catch (Exception ex)
