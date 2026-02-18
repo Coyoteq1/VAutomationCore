@@ -761,36 +761,46 @@ namespace VAuto.Core.Services
                 }
 
                 var query = em.CreateEntityQuery(ComponentType.ReadOnly<PrefabGUID>());
-                using var entities = query.ToEntityArray(Allocator.Temp);
-                var results = new List<ZoneEntityEntry>(Math.Min(entities.Length, 2048));
-
-                for (var i = 0; i < entities.Length; i++)
+                var entities = query.ToEntityArray(Allocator.Temp);
+                try
                 {
-                    var entity = entities[i];
-                    if (!TryGetBestPosition(em, entity, out var pos))
+                    var results = new List<ZoneEntityEntry>(Math.Min(entities.Length, 2048));
+
+                    for (var i = 0; i < entities.Length; i++)
                     {
-                        continue;
+                        var entity = entities[i];
+                        if (!TryGetBestPosition(em, entity, out var pos))
+                        {
+                            continue;
+                        }
+
+                        if (!contains(pos.x, pos.z))
+                        {
+                            continue;
+                        }
+
+                        var prefab = em.GetComponentData<PrefabGUID>(entity);
+                        results.Add(new ZoneEntityEntry
+                        {
+                            EntityIndex = entity.Index,
+                            EntityVersion = entity.Version,
+                            PrefabGuidHash = prefab.GuidHash,
+                            PrefabName = ResolvePrefabName(prefab),
+                            PosX = pos.x,
+                            PosY = pos.y,
+                            PosZ = pos.z
+                        });
                     }
 
-                    if (!contains(pos.x, pos.z))
-                    {
-                        continue;
-                    }
-
-                    var prefab = em.GetComponentData<PrefabGUID>(entity);
-                    results.Add(new ZoneEntityEntry
-                    {
-                        EntityIndex = entity.Index,
-                        EntityVersion = entity.Version,
-                        PrefabGuidHash = prefab.GuidHash,
-                        PrefabName = ResolvePrefabName(prefab),
-                        PosX = pos.x,
-                        PosY = pos.y,
-                        PosZ = pos.z
-                    });
+                    return results.ToArray();
                 }
-
-                return results.ToArray();
+                finally
+                {
+                    if (entities.IsCreated)
+                    {
+                        entities.Dispose();
+                    }
+                }
             }
             catch (Exception ex)
             {

@@ -2,6 +2,305 @@
   "version": 3,
   "targets": {
     "net6.0": {
+      "AsmResolver/6.0.0-beta.1": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/AsmResolver.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "AsmResolver.DotNet/6.0.0-beta.1": {
+        "type": "package",
+        "dependencies": {
+          "AsmResolver.PE": "6.0.0-beta.1"
+        },
+        "compile": {
+          "lib/net6.0/AsmResolver.DotNet.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "AsmResolver.PE/6.0.0-beta.1": {
+        "type": "package",
+        "dependencies": {
+          "AsmResolver.PE.File": "6.0.0-beta.1"
+        },
+        "compile": {
+          "lib/net6.0/AsmResolver.PE.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "AsmResolver.PE.File/6.0.0-beta.1": {
+        "type": "package",
+        "dependencies": {
+          "AsmResolver": "6.0.0-beta.1"
+        },
+        "compile": {
+          "lib/net6.0/AsmResolver.PE.File.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "AssetRipper.CIL/1.1.0": {
+        "type": "package",
+        "dependencies": {
+          "AsmResolver.DotNet": "6.0.0-beta.1"
+        },
+        "compile": {
+          "lib/net6.0/AssetRipper.CIL.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "AssetRipper.Gee.External.Capstone/2.3.2": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Gee.External.Capstone.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/osx-x64/native/_._": {
+            "assetType": "native",
+            "rid": "osx-x64"
+          }
+        }
+      },
+      "AssetRipper.Primitives/3.1.3": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/AssetRipper.Primitives.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "BepInEx.Core/6.0.0-be.733": {
+        "type": "package",
+        "dependencies": {
+          "HarmonyX": "2.10.2",
+          "MonoMod.Utils": "22.7.31.1",
+          "SemanticVersioning": "2.0.2"
+        },
+        "compile": {
+          "lib/netstandard2.0/BepInEx.Core.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "BepInEx.PluginInfoProps/2.1.0": {
+        "type": "package",
+        "build": {
+          "build/_._": {}
+        }
+      },
+      "BepInEx.Unity.Common/6.0.0-be.733": {
+        "type": "package",
+        "dependencies": {
+          "AssetRipper.Primitives": "3.1.3",
+          "MonoMod.Utils": "22.7.31.1"
+        },
+        "compile": {
+          "lib/netstandard2.0/BepInEx.Unity.Common.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "BepInEx.Unity.IL2CPP/6.0.0-be.733": {
+        "type": "package",
+        "dependencies": {
+          "BepInEx.Core": "6.0.0-be.733",
+          "BepInEx.Unity.Common": "6.0.0-be.733",
+          "HarmonyX": "2.10.2",
+          "Iced": "1.21.0",
+          "Il2CppInterop.Generator": "1.4.6-ci.426",
+          "Il2CppInterop.HarmonySupport": "1.4.6-ci.426",
+          "Il2CppInterop.Runtime": "1.4.6-ci.426",
+          "MonoMod.RuntimeDetour": "22.7.31.1",
+          "Samboy063.Cpp2IL.Core": "2022.1.0-pre-release.18"
+        },
+        "compile": {
+          "lib/net6.0/BepInEx.Unity.IL2CPP.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Disarm/2022.1.0-master.34": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Disarm.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/_._": {}
+        }
+      },
+      "HarmonyX/2.10.2": {
+        "type": "package",
+        "dependencies": {
+          "MonoMod.RuntimeDetour": "22.3.23.4",
+          "System.Reflection.Emit": "4.7.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/0Harmony.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Iced/1.21.0": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.1/Iced.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/Iced.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Il2CppInterop.Common/1.4.6-ci.426": {
+        "type": "package",
+        "dependencies": {
+          "Iced": "1.17.0",
+          "Microsoft.Extensions.Logging.Abstractions": "6.0.1",
+          "System.Net.Http": "4.3.4"
+        },
+        "compile": {
+          "lib/netstandard2.0/Il2CppInterop.Common.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Il2CppInterop.Common.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Il2CppInterop.Generator/1.4.6-ci.426": {
+        "type": "package",
+        "dependencies": {
+          "Il2CppInterop.Common": "1.4.6-ci.426",
+          "Mono.Cecil": "0.11.3"
+        },
+        "compile": {
+          "lib/netstandard2.1/Il2CppInterop.Generator.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.1/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Il2CppInterop.HarmonySupport/1.4.6-ci.426": {
+        "type": "package",
+        "dependencies": {
+          "HarmonyX": "2.10.0",
+          "Il2CppInterop.Runtime": "1.4.6-ci.426"
+        },
+        "compile": {
+          "lib/net6.0/Il2CppInterop.HarmonySupport.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Il2CppInterop.Runtime/1.4.6-ci.426": {
+        "type": "package",
+        "dependencies": {
+          "Iced": "1.17.0",
+          "Il2CppInterop.Common": "1.4.6-ci.426"
+        },
+        "compile": {
+          "lib/net6.0/Il2CppInterop.Runtime.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/Il2CppInterop.Runtime.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Lib.Harmony/2.2.2": {
+        "type": "package",
+        "dependencies": {
+          "MonoMod.Common": "22.6.3.1",
+          "System.Text.Json": "5.0.2"
+        },
+        "compile": {
+          "lib/net6.0/0Harmony.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/0Harmony.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Microsoft.CodeCoverage/17.7.2": {
         "type": "package",
         "compile": {
@@ -15,7 +314,7 @@
           "build/netstandard2.0/Microsoft.CodeCoverage.targets": {}
         }
       },
-      "Microsoft.Extensions.Logging.Abstractions/6.0.0": {
+      "Microsoft.Extensions.Logging.Abstractions/6.0.1": {
         "type": "package",
         "compile": {
           "lib/net6.0/Microsoft.Extensions.Logging.Abstractions.dll": {
@@ -52,7 +351,7 @@
           "buildMultiTargeting/Microsoft.NET.Test.Sdk.props": {}
         }
       },
-      "Microsoft.NETCore.Platforms/1.1.0": {
+      "Microsoft.NETCore.Platforms/1.1.1": {
         "type": "package",
         "compile": {
           "lib/netstandard1.0/_._": {}
@@ -333,6 +632,104 @@
           }
         }
       },
+      "Mono.Cecil/0.11.4": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/Mono.Cecil.Mdb.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Pdb.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Rocks.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.dll": {
+            "related": ".Mdb.pdb;.pdb;.Pdb.pdb;.Rocks.pdb"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Mono.Cecil.Mdb.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Pdb.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.Rocks.dll": {
+            "related": ".pdb"
+          },
+          "lib/netstandard2.0/Mono.Cecil.dll": {
+            "related": ".Mdb.pdb;.pdb;.Pdb.pdb;.Rocks.pdb"
+          }
+        }
+      },
+      "MonoMod.Common/22.6.3.1": {
+        "type": "package",
+        "dependencies": {
+          "Mono.Cecil": "0.11.4",
+          "System.Collections.NonGeneric": "4.3.0",
+          "System.ComponentModel.TypeConverter": "4.3.0",
+          "System.IO.FileSystem.Primitives": "4.3.0",
+          "System.Reflection.Emit.ILGeneration": "4.7.0",
+          "System.Reflection.Emit.Lightweight": "4.7.0",
+          "System.Reflection.TypeExtensions": "4.7.0"
+        },
+        "compile": {
+          "lib/net5.0/MonoMod.Common.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net5.0/MonoMod.Common.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "MonoMod.RuntimeDetour/22.7.31.1": {
+        "type": "package",
+        "dependencies": {
+          "Mono.Cecil": "0.11.4",
+          "MonoMod.Utils": "22.7.31.1",
+          "System.Collections.NonGeneric": "4.3.0",
+          "System.ComponentModel.TypeConverter": "4.3.0",
+          "System.IO.FileSystem.Primitives": "4.3.0",
+          "System.Reflection.Emit.ILGeneration": "4.7.0",
+          "System.Reflection.Emit.Lightweight": "4.7.0",
+          "System.Reflection.TypeExtensions": "4.7.0"
+        },
+        "compile": {
+          "lib/net5.0/MonoMod.RuntimeDetour.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net5.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
+      "MonoMod.Utils/22.7.31.1": {
+        "type": "package",
+        "dependencies": {
+          "Mono.Cecil": "0.11.4",
+          "System.Collections.NonGeneric": "4.3.0",
+          "System.ComponentModel.TypeConverter": "4.3.0",
+          "System.IO.FileSystem.Primitives": "4.3.0",
+          "System.Reflection.Emit.ILGeneration": "4.7.0",
+          "System.Reflection.Emit.Lightweight": "4.7.0",
+          "System.Reflection.TypeExtensions": "4.7.0"
+        },
+        "compile": {
+          "lib/net5.0/MonoMod.Utils.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net5.0/_._": {
+            "related": ".xml"
+          }
+        }
+      },
       "NETStandard.Library/1.6.1": {
         "type": "package",
         "dependencies": {
@@ -404,7 +801,24 @@
           "lib/netstandard2.0/NuGet.Frameworks.dll": {}
         }
       },
-      "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "RisingV.Shared/0.1.3": {
+        "type": "package",
+        "dependencies": {
+          "BepInEx.PluginInfoProps": "2.1.0",
+          "VRising.Unhollowed.Client": "1.1.9.9219901"
+        },
+        "compile": {
+          "lib/net6.0/RisingV.Shared.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/RisingV.Shared.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/debian.8-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -413,7 +827,7 @@
           }
         }
       },
-      "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/fedora.23-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -422,7 +836,7 @@
           }
         }
       },
-      "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/fedora.24-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -482,19 +896,19 @@
           "lib/netstandard1.0/_._": {}
         }
       },
-      "runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "dependencies": {
-          "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0",
-          "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0"
+          "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2",
+          "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2"
         },
         "compile": {
           "lib/netstandard1.0/_._": {}
@@ -503,7 +917,7 @@
           "lib/netstandard1.0/_._": {}
         }
       },
-      "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/opensuse.13.2-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -512,7 +926,7 @@
           }
         }
       },
-      "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/opensuse.42.1-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -530,7 +944,7 @@
           }
         }
       },
-      "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/osx.10.10-x64/native/System.Security.Cryptography.Native.OpenSsl.dylib": {
@@ -539,7 +953,7 @@
           }
         }
       },
-      "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/rhel.7-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -548,7 +962,7 @@
           }
         }
       },
-      "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/ubuntu.14.04-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -557,7 +971,7 @@
           }
         }
       },
-      "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/ubuntu.16.04-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
@@ -566,13 +980,71 @@
           }
         }
       },
-      "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
+      "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
         "type": "package",
         "runtimeTargets": {
           "runtimes/ubuntu.16.10-x64/native/System.Security.Cryptography.Native.OpenSsl.so": {
             "assetType": "native",
             "rid": "ubuntu.16.10-x64"
           }
+        }
+      },
+      "Samboy063.Cpp2IL.Core/2022.1.0-pre-release.18": {
+        "type": "package",
+        "dependencies": {
+          "AsmResolver.DotNet": "6.0.0-beta.1",
+          "AssetRipper.CIL": "1.1.0",
+          "AssetRipper.Gee.External.Capstone": "2.3.2",
+          "Disarm": "2022.1.0-master.34",
+          "Iced": "1.21.0",
+          "Samboy063.LibCpp2IL": "2022.1.0-pre-release.18",
+          "StableNameDotNet": "0.1.0-pre-release.15"
+        },
+        "compile": {
+          "lib/net6.0/Cpp2IL.Core.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/_._": {}
+        }
+      },
+      "Samboy063.LibCpp2IL/2022.1.0-pre-release.18": {
+        "type": "package",
+        "dependencies": {
+          "AssetRipper.Primitives": "3.1.2",
+          "Samboy063.WasmDisassembler": "2022.1.0-pre-release.15"
+        },
+        "compile": {
+          "lib/net6.0/LibCpp2IL.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/_._": {}
+        }
+      },
+      "Samboy063.WasmDisassembler/2022.1.0-pre-release.15": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/WasmDisassembler.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/_._": {}
+        }
+      },
+      "SemanticVersioning/2.0.2": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/SemanticVersioning.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/_._": {}
+        }
+      },
+      "StableNameDotNet/0.1.0-pre-release.15": {
+        "type": "package",
+        "compile": {
+          "lib/netstandard2.0/StableNameDotNet.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/_._": {}
         }
       },
       "System.AppContext/4.3.0": {
@@ -639,6 +1111,103 @@
         },
         "runtime": {
           "lib/netstandard1.3/System.Collections.Concurrent.dll": {}
+        }
+      },
+      "System.Collections.NonGeneric/4.3.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Diagnostics.Debug": "4.3.0",
+          "System.Globalization": "4.3.0",
+          "System.Resources.ResourceManager": "4.3.0",
+          "System.Runtime": "4.3.0",
+          "System.Runtime.Extensions": "4.3.0",
+          "System.Threading": "4.3.0"
+        },
+        "compile": {
+          "ref/netstandard1.3/System.Collections.NonGeneric.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard1.3/System.Collections.NonGeneric.dll": {}
+        }
+      },
+      "System.Collections.Specialized/4.3.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections.NonGeneric": "4.3.0",
+          "System.Globalization": "4.3.0",
+          "System.Globalization.Extensions": "4.3.0",
+          "System.Resources.ResourceManager": "4.3.0",
+          "System.Runtime": "4.3.0",
+          "System.Runtime.Extensions": "4.3.0",
+          "System.Threading": "4.3.0"
+        },
+        "compile": {
+          "ref/netstandard1.3/_._": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard1.3/System.Collections.Specialized.dll": {}
+        }
+      },
+      "System.ComponentModel/4.3.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Runtime": "4.3.0"
+        },
+        "compile": {
+          "ref/netstandard1.0/System.ComponentModel.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard1.3/System.ComponentModel.dll": {}
+        }
+      },
+      "System.ComponentModel.Primitives/4.3.0": {
+        "type": "package",
+        "dependencies": {
+          "System.ComponentModel": "4.3.0",
+          "System.Resources.ResourceManager": "4.3.0",
+          "System.Runtime": "4.3.0"
+        },
+        "compile": {
+          "ref/netstandard1.0/System.ComponentModel.Primitives.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard1.0/System.ComponentModel.Primitives.dll": {}
+        }
+      },
+      "System.ComponentModel.TypeConverter/4.3.0": {
+        "type": "package",
+        "dependencies": {
+          "System.Collections": "4.3.0",
+          "System.Collections.NonGeneric": "4.3.0",
+          "System.Collections.Specialized": "4.3.0",
+          "System.ComponentModel": "4.3.0",
+          "System.ComponentModel.Primitives": "4.3.0",
+          "System.Globalization": "4.3.0",
+          "System.Linq": "4.3.0",
+          "System.Reflection": "4.3.0",
+          "System.Reflection.Extensions": "4.3.0",
+          "System.Reflection.Primitives": "4.3.0",
+          "System.Reflection.TypeExtensions": "4.3.0",
+          "System.Resources.ResourceManager": "4.3.0",
+          "System.Runtime": "4.3.0",
+          "System.Runtime.Extensions": "4.3.0",
+          "System.Threading": "4.3.0"
+        },
+        "compile": {
+          "ref/netstandard1.5/System.ComponentModel.TypeConverter.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard1.5/System.ComponentModel.TypeConverter.dll": {}
         }
       },
       "System.Console/4.3.0": {
@@ -920,10 +1489,10 @@
           "lib/netstandard1.6/System.Linq.Expressions.dll": {}
         }
       },
-      "System.Net.Http/4.3.0": {
+      "System.Net.Http/4.3.4": {
         "type": "package",
         "dependencies": {
-          "Microsoft.NETCore.Platforms": "1.1.0",
+          "Microsoft.NETCore.Platforms": "1.1.1",
           "System.Collections": "4.3.0",
           "System.Diagnostics.Debug": "4.3.0",
           "System.Diagnostics.DiagnosticSource": "4.3.0",
@@ -948,12 +1517,10 @@
           "System.Threading.Tasks": "4.3.0",
           "runtime.native.System": "4.3.0",
           "runtime.native.System.Net.Http": "4.3.0",
-          "runtime.native.System.Security.Cryptography.OpenSsl": "4.3.0"
+          "runtime.native.System.Security.Cryptography.OpenSsl": "4.3.2"
         },
         "compile": {
-          "ref/netstandard1.3/System.Net.Http.dll": {
-            "related": ".xml"
-          }
+          "ref/netstandard1.3/System.Net.Http.dll": {}
         },
         "runtimeTargets": {
           "runtimes/unix/lib/netstandard1.6/System.Net.Http.dll": {
@@ -1029,55 +1596,31 @@
           }
         }
       },
-      "System.Reflection.Emit/4.3.0": {
+      "System.Reflection.Emit/4.7.0": {
         "type": "package",
-        "dependencies": {
-          "System.IO": "4.3.0",
-          "System.Reflection": "4.3.0",
-          "System.Reflection.Emit.ILGeneration": "4.3.0",
-          "System.Reflection.Primitives": "4.3.0",
-          "System.Runtime": "4.3.0"
-        },
         "compile": {
-          "ref/netstandard1.1/_._": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp2.0/_._": {}
         },
         "runtime": {
-          "lib/netstandard1.3/System.Reflection.Emit.dll": {}
+          "lib/netcoreapp2.0/_._": {}
         }
       },
-      "System.Reflection.Emit.ILGeneration/4.3.0": {
+      "System.Reflection.Emit.ILGeneration/4.7.0": {
         "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.3.0",
-          "System.Reflection.Primitives": "4.3.0",
-          "System.Runtime": "4.3.0"
-        },
         "compile": {
-          "ref/netstandard1.0/_._": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp2.0/_._": {}
         },
         "runtime": {
-          "lib/netstandard1.3/System.Reflection.Emit.ILGeneration.dll": {}
+          "lib/netcoreapp2.0/_._": {}
         }
       },
-      "System.Reflection.Emit.Lightweight/4.3.0": {
+      "System.Reflection.Emit.Lightweight/4.7.0": {
         "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.3.0",
-          "System.Reflection.Emit.ILGeneration": "4.3.0",
-          "System.Reflection.Primitives": "4.3.0",
-          "System.Runtime": "4.3.0"
-        },
         "compile": {
-          "ref/netstandard1.0/_._": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp2.0/_._": {}
         },
         "runtime": {
-          "lib/netstandard1.3/System.Reflection.Emit.Lightweight.dll": {}
+          "lib/netcoreapp2.0/_._": {}
         }
       },
       "System.Reflection.Extensions/4.3.0": {
@@ -1120,19 +1663,13 @@
           }
         }
       },
-      "System.Reflection.TypeExtensions/4.3.0": {
+      "System.Reflection.TypeExtensions/4.7.0": {
         "type": "package",
-        "dependencies": {
-          "System.Reflection": "4.3.0",
-          "System.Runtime": "4.3.0"
-        },
         "compile": {
-          "ref/netstandard1.5/_._": {
-            "related": ".xml"
-          }
+          "ref/netcoreapp2.0/_._": {}
         },
         "runtime": {
-          "lib/netstandard1.5/System.Reflection.TypeExtensions.dll": {}
+          "lib/netcoreapp2.0/_._": {}
         }
       },
       "System.Resources.ResourceManager/4.3.0": {
@@ -1495,6 +2032,19 @@
           }
         }
       },
+      "System.Text.Json/5.0.2": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp3.0/System.Text.Json.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netcoreapp3.0/System.Text.Json.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.Text.RegularExpressions/4.3.0": {
         "type": "package",
         "dependencies": {
@@ -1619,6 +2169,730 @@
           "lib/netstandard1.3/System.Xml.XDocument.dll": {}
         }
       },
+      "VRising.Unhollowed.Client/1.1.9.9219901": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Backtrace.Unity.dll": {},
+          "lib/net6.0/Il2CppInterop.Common.dll": {},
+          "lib/net6.0/Il2CppInterop.Generator.dll": {},
+          "lib/net6.0/Il2CppInterop.HarmonySupport.dll": {},
+          "lib/net6.0/Il2CppInterop.Runtime.dll": {},
+          "lib/net6.0/Il2CppMono.Security.dll": {},
+          "lib/net6.0/Il2CppSystem.Configuration.dll": {},
+          "lib/net6.0/Il2CppSystem.Core.dll": {},
+          "lib/net6.0/Il2CppSystem.Data.dll": {},
+          "lib/net6.0/Il2CppSystem.Drawing.dll": {},
+          "lib/net6.0/Il2CppSystem.Net.Http.dll": {},
+          "lib/net6.0/Il2CppSystem.Numerics.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.CompilerServices.Unsafe.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.Serialization.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.Linq.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.dll": {},
+          "lib/net6.0/Il2CppSystem.dll": {},
+          "lib/net6.0/Il2Cppmscorlib.dll": {},
+          "lib/net6.0/Lidgren.Network.dll": {},
+          "lib/net6.0/MagicaCloth.dll": {},
+          "lib/net6.0/Malee.ReorderableList.dll": {},
+          "lib/net6.0/Newtonsoft.Json.dll": {},
+          "lib/net6.0/ProjectM.Behaviours.dll": {},
+          "lib/net6.0/ProjectM.Camera.dll": {},
+          "lib/net6.0/ProjectM.CastleBuilding.Systems.dll": {},
+          "lib/net6.0/ProjectM.CastleDyeSystem.dll": {},
+          "lib/net6.0/ProjectM.CodeGeneration.dll": {},
+          "lib/net6.0/ProjectM.Conversion.dll": {},
+          "lib/net6.0/ProjectM.DualsensePC.dll": {},
+          "lib/net6.0/ProjectM.Editor.SampleHandler.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Scripting.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Systems.dll": {},
+          "lib/net6.0/ProjectM.GeneratedNetCode.dll": {},
+          "lib/net6.0/ProjectM.HUD.dll": {},
+          "lib/net6.0/ProjectM.Haptics.dll": {},
+          "lib/net6.0/ProjectM.Hybrid.Performance.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.GlowingVampire.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.Utilities.dll": {},
+          "lib/net6.0/ProjectM.Misc.Systems.dll": {},
+          "lib/net6.0/ProjectM.Pathfinding.dll": {},
+          "lib/net6.0/ProjectM.PerformanceTests.Editor.dll": {},
+          "lib/net6.0/ProjectM.Presentation.Systems.dll": {},
+          "lib/net6.0/ProjectM.Roofs.dll": {},
+          "lib/net6.0/ProjectM.ScriptableSystems.dll": {},
+          "lib/net6.0/ProjectM.Shared.ColorData.dll": {},
+          "lib/net6.0/ProjectM.Shared.Systems.dll": {},
+          "lib/net6.0/ProjectM.Shared.dll": {},
+          "lib/net6.0/ProjectM.Steam.dll": {},
+          "lib/net6.0/ProjectM.Terrain.dll": {},
+          "lib/net6.0/ProjectM.VFXRendererUtility.dll": {},
+          "lib/net6.0/ProjectM.Wind.Shared.dll": {},
+          "lib/net6.0/ProjectM.dll": {},
+          "lib/net6.0/RCONServerLib.dll": {},
+          "lib/net6.0/RTLTMPro.dll": {},
+          "lib/net6.0/RootMotion.dll": {},
+          "lib/net6.0/Rukhanka.DebugDrawer.dll": {},
+          "lib/net6.0/Rukhanka.Hybrid.dll": {},
+          "lib/net6.0/Rukhanka.Runtime.dll": {},
+          "lib/net6.0/Rukhanka.Toolbox.dll": {},
+          "lib/net6.0/Sequencer.dll": {},
+          "lib/net6.0/Stunlock.Animation.StunCloth.Runtime.dll": {},
+          "lib/net6.0/Stunlock.Console.dll": {},
+          "lib/net6.0/Stunlock.ContentTests.dll": {},
+          "lib/net6.0/Stunlock.Core.Animation.dll": {},
+          "lib/net6.0/Stunlock.Core.dll": {},
+          "lib/net6.0/Stunlock.Fmod.dll": {},
+          "lib/net6.0/Stunlock.Localization.dll": {},
+          "lib/net6.0/Stunlock.Metrics.dll": {},
+          "lib/net6.0/Stunlock.Network.EosSdk.dll": {},
+          "lib/net6.0/Stunlock.Network.Lidgren.dll": {},
+          "lib/net6.0/Stunlock.Network.Steam.dll": {},
+          "lib/net6.0/Stunlock.Network.dll": {},
+          "lib/net6.0/Stunlock.Tools.dll": {},
+          "lib/net6.0/Unity.Burst.Unsafe.dll": {},
+          "lib/net6.0/Unity.Burst.dll": {},
+          "lib/net6.0/Unity.Collections.LowLevel.ILSupport.dll": {},
+          "lib/net6.0/Unity.Collections.dll": {},
+          "lib/net6.0/Unity.Deformations.dll": {},
+          "lib/net6.0/Unity.Entities.Graphics.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.HybridComponents.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.dll": {},
+          "lib/net6.0/Unity.Entities.dll": {},
+          "lib/net6.0/Unity.InputSystem.ForUI.dll": {},
+          "lib/net6.0/Unity.InputSystem.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.Hybrid.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.dll": {},
+          "lib/net6.0/Unity.Mathematics.dll": {},
+          "lib/net6.0/Unity.MemoryProfiler.dll": {},
+          "lib/net6.0/Unity.Physics.Hybrid.dll": {},
+          "lib/net6.0/Unity.Physics.dll": {},
+          "lib/net6.0/Unity.Profiling.Core.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.Core.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Config.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Runtime.dll": {},
+          "lib/net6.0/Unity.Scenes.dll": {},
+          "lib/net6.0/Unity.Serialization.dll": {},
+          "lib/net6.0/Unity.TextMeshPro.dll": {},
+          "lib/net6.0/Unity.Transforms.Hybrid.dll": {},
+          "lib/net6.0/Unity.Transforms.dll": {},
+          "lib/net6.0/Unity.VisualEffectGraph.Runtime.dll": {},
+          "lib/net6.0/UnityEngine.AIModule.dll": {},
+          "lib/net6.0/UnityEngine.AccessibilityModule.dll": {},
+          "lib/net6.0/UnityEngine.AndroidJNIModule.dll": {},
+          "lib/net6.0/UnityEngine.AnimationModule.dll": {},
+          "lib/net6.0/UnityEngine.AssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.AudioModule.dll": {},
+          "lib/net6.0/UnityEngine.ClothModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterInputModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterRendererModule.dll": {},
+          "lib/net6.0/UnityEngine.ContentLoadModule.dll": {},
+          "lib/net6.0/UnityEngine.CoreModule.dll": {},
+          "lib/net6.0/UnityEngine.CrashReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.DSPGraphModule.dll": {},
+          "lib/net6.0/UnityEngine.DirectorModule.dll": {},
+          "lib/net6.0/UnityEngine.GIModule.dll": {},
+          "lib/net6.0/UnityEngine.GameCenterModule.dll": {},
+          "lib/net6.0/UnityEngine.GridModule.dll": {},
+          "lib/net6.0/UnityEngine.HotReloadModule.dll": {},
+          "lib/net6.0/UnityEngine.IMGUIModule.dll": {},
+          "lib/net6.0/UnityEngine.ImageConversionModule.dll": {},
+          "lib/net6.0/UnityEngine.InputLegacyModule.dll": {},
+          "lib/net6.0/UnityEngine.InputModule.dll": {},
+          "lib/net6.0/UnityEngine.JSONSerializeModule.dll": {},
+          "lib/net6.0/UnityEngine.LocalizationModule.dll": {},
+          "lib/net6.0/UnityEngine.ParticleSystemModule.dll": {},
+          "lib/net6.0/UnityEngine.PerformanceReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.Physics2DModule.dll": {},
+          "lib/net6.0/UnityEngine.PhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.ProfilerModule.dll": {},
+          "lib/net6.0/UnityEngine.PropertiesModule.dll": {},
+          "lib/net6.0/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll": {},
+          "lib/net6.0/UnityEngine.ScreenCaptureModule.dll": {},
+          "lib/net6.0/UnityEngine.SharedInternalsModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteMaskModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteShapeModule.dll": {},
+          "lib/net6.0/UnityEngine.StreamingModule.dll": {},
+          "lib/net6.0/UnityEngine.SubstanceModule.dll": {},
+          "lib/net6.0/UnityEngine.SubsystemsModule.dll": {},
+          "lib/net6.0/UnityEngine.TLSModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainPhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreFontEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreTextEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextRenderingModule.dll": {},
+          "lib/net6.0/UnityEngine.TilemapModule.dll": {},
+          "lib/net6.0/UnityEngine.UI.dll": {},
+          "lib/net6.0/UnityEngine.UIElementsModule.dll": {},
+          "lib/net6.0/UnityEngine.UIModule.dll": {},
+          "lib/net6.0/UnityEngine.UmbraModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsCommonModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityConnectModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityCurlModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityTestProtocolModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAudioModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestTextureModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestWWWModule.dll": {},
+          "lib/net6.0/UnityEngine.VFXModule.dll": {},
+          "lib/net6.0/UnityEngine.VRModule.dll": {},
+          "lib/net6.0/UnityEngine.VehiclesModule.dll": {},
+          "lib/net6.0/UnityEngine.VideoModule.dll": {},
+          "lib/net6.0/UnityEngine.VirtualTexturingModule.dll": {},
+          "lib/net6.0/UnityEngine.WindModule.dll": {},
+          "lib/net6.0/UnityEngine.XRModule.dll": {},
+          "lib/net6.0/UnityEngine.dll": {},
+          "lib/net6.0/VivoxUnity.dll": {},
+          "lib/net6.0/__Generated.dll": {},
+          "lib/net6.0/com.rlabrecque.steamworks.net.dll": {},
+          "lib/net6.0/com.stunlock.network.eos.dll": {},
+          "lib/net6.0/com.stunlock.platform.dll": {},
+          "lib/net6.0/com.stunlock.platform.pc.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/Backtrace.Unity.dll": {},
+          "lib/net6.0/Il2CppInterop.Common.dll": {},
+          "lib/net6.0/Il2CppInterop.Generator.dll": {},
+          "lib/net6.0/Il2CppInterop.HarmonySupport.dll": {},
+          "lib/net6.0/Il2CppInterop.Runtime.dll": {},
+          "lib/net6.0/Il2CppMono.Security.dll": {},
+          "lib/net6.0/Il2CppSystem.Configuration.dll": {},
+          "lib/net6.0/Il2CppSystem.Core.dll": {},
+          "lib/net6.0/Il2CppSystem.Data.dll": {},
+          "lib/net6.0/Il2CppSystem.Drawing.dll": {},
+          "lib/net6.0/Il2CppSystem.Net.Http.dll": {},
+          "lib/net6.0/Il2CppSystem.Numerics.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.CompilerServices.Unsafe.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.Serialization.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.Linq.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.dll": {},
+          "lib/net6.0/Il2CppSystem.dll": {},
+          "lib/net6.0/Il2Cppmscorlib.dll": {},
+          "lib/net6.0/Lidgren.Network.dll": {},
+          "lib/net6.0/MagicaCloth.dll": {},
+          "lib/net6.0/Malee.ReorderableList.dll": {},
+          "lib/net6.0/Newtonsoft.Json.dll": {},
+          "lib/net6.0/ProjectM.Behaviours.dll": {},
+          "lib/net6.0/ProjectM.Camera.dll": {},
+          "lib/net6.0/ProjectM.CastleBuilding.Systems.dll": {},
+          "lib/net6.0/ProjectM.CastleDyeSystem.dll": {},
+          "lib/net6.0/ProjectM.CodeGeneration.dll": {},
+          "lib/net6.0/ProjectM.Conversion.dll": {},
+          "lib/net6.0/ProjectM.DualsensePC.dll": {},
+          "lib/net6.0/ProjectM.Editor.SampleHandler.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Scripting.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Systems.dll": {},
+          "lib/net6.0/ProjectM.GeneratedNetCode.dll": {},
+          "lib/net6.0/ProjectM.HUD.dll": {},
+          "lib/net6.0/ProjectM.Haptics.dll": {},
+          "lib/net6.0/ProjectM.Hybrid.Performance.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.GlowingVampire.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.Utilities.dll": {},
+          "lib/net6.0/ProjectM.Misc.Systems.dll": {},
+          "lib/net6.0/ProjectM.Pathfinding.dll": {},
+          "lib/net6.0/ProjectM.PerformanceTests.Editor.dll": {},
+          "lib/net6.0/ProjectM.Presentation.Systems.dll": {},
+          "lib/net6.0/ProjectM.Roofs.dll": {},
+          "lib/net6.0/ProjectM.ScriptableSystems.dll": {},
+          "lib/net6.0/ProjectM.Shared.ColorData.dll": {},
+          "lib/net6.0/ProjectM.Shared.Systems.dll": {},
+          "lib/net6.0/ProjectM.Shared.dll": {},
+          "lib/net6.0/ProjectM.Steam.dll": {},
+          "lib/net6.0/ProjectM.Terrain.dll": {},
+          "lib/net6.0/ProjectM.VFXRendererUtility.dll": {},
+          "lib/net6.0/ProjectM.Wind.Shared.dll": {},
+          "lib/net6.0/ProjectM.dll": {},
+          "lib/net6.0/RCONServerLib.dll": {},
+          "lib/net6.0/RTLTMPro.dll": {},
+          "lib/net6.0/RootMotion.dll": {},
+          "lib/net6.0/Rukhanka.DebugDrawer.dll": {},
+          "lib/net6.0/Rukhanka.Hybrid.dll": {},
+          "lib/net6.0/Rukhanka.Runtime.dll": {},
+          "lib/net6.0/Rukhanka.Toolbox.dll": {},
+          "lib/net6.0/Sequencer.dll": {},
+          "lib/net6.0/Stunlock.Animation.StunCloth.Runtime.dll": {},
+          "lib/net6.0/Stunlock.Console.dll": {},
+          "lib/net6.0/Stunlock.ContentTests.dll": {},
+          "lib/net6.0/Stunlock.Core.Animation.dll": {},
+          "lib/net6.0/Stunlock.Core.dll": {},
+          "lib/net6.0/Stunlock.Fmod.dll": {},
+          "lib/net6.0/Stunlock.Localization.dll": {},
+          "lib/net6.0/Stunlock.Metrics.dll": {},
+          "lib/net6.0/Stunlock.Network.EosSdk.dll": {},
+          "lib/net6.0/Stunlock.Network.Lidgren.dll": {},
+          "lib/net6.0/Stunlock.Network.Steam.dll": {},
+          "lib/net6.0/Stunlock.Network.dll": {},
+          "lib/net6.0/Stunlock.Tools.dll": {},
+          "lib/net6.0/Unity.Burst.Unsafe.dll": {},
+          "lib/net6.0/Unity.Burst.dll": {},
+          "lib/net6.0/Unity.Collections.LowLevel.ILSupport.dll": {},
+          "lib/net6.0/Unity.Collections.dll": {},
+          "lib/net6.0/Unity.Deformations.dll": {},
+          "lib/net6.0/Unity.Entities.Graphics.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.HybridComponents.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.dll": {},
+          "lib/net6.0/Unity.Entities.dll": {},
+          "lib/net6.0/Unity.InputSystem.ForUI.dll": {},
+          "lib/net6.0/Unity.InputSystem.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.Hybrid.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.dll": {},
+          "lib/net6.0/Unity.Mathematics.dll": {},
+          "lib/net6.0/Unity.MemoryProfiler.dll": {},
+          "lib/net6.0/Unity.Physics.Hybrid.dll": {},
+          "lib/net6.0/Unity.Physics.dll": {},
+          "lib/net6.0/Unity.Profiling.Core.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.Core.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Config.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Runtime.dll": {},
+          "lib/net6.0/Unity.Scenes.dll": {},
+          "lib/net6.0/Unity.Serialization.dll": {},
+          "lib/net6.0/Unity.TextMeshPro.dll": {},
+          "lib/net6.0/Unity.Transforms.Hybrid.dll": {},
+          "lib/net6.0/Unity.Transforms.dll": {},
+          "lib/net6.0/Unity.VisualEffectGraph.Runtime.dll": {},
+          "lib/net6.0/UnityEngine.AIModule.dll": {},
+          "lib/net6.0/UnityEngine.AccessibilityModule.dll": {},
+          "lib/net6.0/UnityEngine.AndroidJNIModule.dll": {},
+          "lib/net6.0/UnityEngine.AnimationModule.dll": {},
+          "lib/net6.0/UnityEngine.AssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.AudioModule.dll": {},
+          "lib/net6.0/UnityEngine.ClothModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterInputModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterRendererModule.dll": {},
+          "lib/net6.0/UnityEngine.ContentLoadModule.dll": {},
+          "lib/net6.0/UnityEngine.CoreModule.dll": {},
+          "lib/net6.0/UnityEngine.CrashReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.DSPGraphModule.dll": {},
+          "lib/net6.0/UnityEngine.DirectorModule.dll": {},
+          "lib/net6.0/UnityEngine.GIModule.dll": {},
+          "lib/net6.0/UnityEngine.GameCenterModule.dll": {},
+          "lib/net6.0/UnityEngine.GridModule.dll": {},
+          "lib/net6.0/UnityEngine.HotReloadModule.dll": {},
+          "lib/net6.0/UnityEngine.IMGUIModule.dll": {},
+          "lib/net6.0/UnityEngine.ImageConversionModule.dll": {},
+          "lib/net6.0/UnityEngine.InputLegacyModule.dll": {},
+          "lib/net6.0/UnityEngine.InputModule.dll": {},
+          "lib/net6.0/UnityEngine.JSONSerializeModule.dll": {},
+          "lib/net6.0/UnityEngine.LocalizationModule.dll": {},
+          "lib/net6.0/UnityEngine.ParticleSystemModule.dll": {},
+          "lib/net6.0/UnityEngine.PerformanceReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.Physics2DModule.dll": {},
+          "lib/net6.0/UnityEngine.PhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.ProfilerModule.dll": {},
+          "lib/net6.0/UnityEngine.PropertiesModule.dll": {},
+          "lib/net6.0/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll": {},
+          "lib/net6.0/UnityEngine.ScreenCaptureModule.dll": {},
+          "lib/net6.0/UnityEngine.SharedInternalsModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteMaskModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteShapeModule.dll": {},
+          "lib/net6.0/UnityEngine.StreamingModule.dll": {},
+          "lib/net6.0/UnityEngine.SubstanceModule.dll": {},
+          "lib/net6.0/UnityEngine.SubsystemsModule.dll": {},
+          "lib/net6.0/UnityEngine.TLSModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainPhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreFontEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreTextEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextRenderingModule.dll": {},
+          "lib/net6.0/UnityEngine.TilemapModule.dll": {},
+          "lib/net6.0/UnityEngine.UI.dll": {},
+          "lib/net6.0/UnityEngine.UIElementsModule.dll": {},
+          "lib/net6.0/UnityEngine.UIModule.dll": {},
+          "lib/net6.0/UnityEngine.UmbraModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsCommonModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityConnectModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityCurlModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityTestProtocolModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAudioModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestTextureModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestWWWModule.dll": {},
+          "lib/net6.0/UnityEngine.VFXModule.dll": {},
+          "lib/net6.0/UnityEngine.VRModule.dll": {},
+          "lib/net6.0/UnityEngine.VehiclesModule.dll": {},
+          "lib/net6.0/UnityEngine.VideoModule.dll": {},
+          "lib/net6.0/UnityEngine.VirtualTexturingModule.dll": {},
+          "lib/net6.0/UnityEngine.WindModule.dll": {},
+          "lib/net6.0/UnityEngine.XRModule.dll": {},
+          "lib/net6.0/UnityEngine.dll": {},
+          "lib/net6.0/VivoxUnity.dll": {},
+          "lib/net6.0/__Generated.dll": {},
+          "lib/net6.0/com.rlabrecque.steamworks.net.dll": {},
+          "lib/net6.0/com.stunlock.network.eos.dll": {},
+          "lib/net6.0/com.stunlock.platform.dll": {},
+          "lib/net6.0/com.stunlock.platform.pc.dll": {}
+        }
+      },
+      "VRising.UnhollowedX.Client/1.0.10": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/Backtrace.Unity.dll": {},
+          "lib/net6.0/Il2CppMono.Security.dll": {},
+          "lib/net6.0/Il2CppSystem.Configuration.dll": {},
+          "lib/net6.0/Il2CppSystem.Core.dll": {},
+          "lib/net6.0/Il2CppSystem.Data.dll": {},
+          "lib/net6.0/Il2CppSystem.Drawing.dll": {},
+          "lib/net6.0/Il2CppSystem.Net.Http.dll": {},
+          "lib/net6.0/Il2CppSystem.Numerics.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.CompilerServices.Unsafe.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.Serialization.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.Linq.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.dll": {},
+          "lib/net6.0/Il2CppSystem.dll": {},
+          "lib/net6.0/Il2Cppmscorlib.dll": {},
+          "lib/net6.0/Lidgren.Network.dll": {},
+          "lib/net6.0/MagicaCloth.dll": {},
+          "lib/net6.0/Malee.ReorderableList.dll": {},
+          "lib/net6.0/Newtonsoft.Json.dll": {},
+          "lib/net6.0/ProjectM.Behaviours.dll": {},
+          "lib/net6.0/ProjectM.Camera.dll": {},
+          "lib/net6.0/ProjectM.CastleBuilding.Systems.dll": {},
+          "lib/net6.0/ProjectM.CastleDyeSystem.dll": {},
+          "lib/net6.0/ProjectM.CodeGeneration.dll": {},
+          "lib/net6.0/ProjectM.Conversion.dll": {},
+          "lib/net6.0/ProjectM.DualsensePC.dll": {},
+          "lib/net6.0/ProjectM.Editor.SampleHandler.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Scripting.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Systems.dll": {},
+          "lib/net6.0/ProjectM.GeneratedNetCode.dll": {},
+          "lib/net6.0/ProjectM.HUD.dll": {},
+          "lib/net6.0/ProjectM.Haptics.dll": {},
+          "lib/net6.0/ProjectM.Hybrid.Performance.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.GlowingVampire.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.Utilities.dll": {},
+          "lib/net6.0/ProjectM.Misc.Systems.dll": {},
+          "lib/net6.0/ProjectM.Pathfinding.dll": {},
+          "lib/net6.0/ProjectM.PerformanceTests.Editor.dll": {},
+          "lib/net6.0/ProjectM.Presentation.Systems.dll": {},
+          "lib/net6.0/ProjectM.Roofs.dll": {},
+          "lib/net6.0/ProjectM.ScriptableSystems.dll": {},
+          "lib/net6.0/ProjectM.Shared.ColorData.dll": {},
+          "lib/net6.0/ProjectM.Shared.Systems.dll": {},
+          "lib/net6.0/ProjectM.Shared.dll": {},
+          "lib/net6.0/ProjectM.Steam.dll": {},
+          "lib/net6.0/ProjectM.Terrain.dll": {},
+          "lib/net6.0/ProjectM.VFXRendererUtility.dll": {},
+          "lib/net6.0/ProjectM.Wind.Shared.dll": {},
+          "lib/net6.0/ProjectM.dll": {},
+          "lib/net6.0/RCONServerLib.dll": {},
+          "lib/net6.0/RTLTMPro.dll": {},
+          "lib/net6.0/RootMotion.dll": {},
+          "lib/net6.0/Rukhanka.DebugDrawer.dll": {},
+          "lib/net6.0/Rukhanka.Hybrid.dll": {},
+          "lib/net6.0/Rukhanka.Runtime.dll": {},
+          "lib/net6.0/Rukhanka.Toolbox.dll": {},
+          "lib/net6.0/Sequencer.dll": {},
+          "lib/net6.0/Stunlock.Animation.StunCloth.Runtime.dll": {},
+          "lib/net6.0/Stunlock.Console.dll": {},
+          "lib/net6.0/Stunlock.ContentTests.dll": {},
+          "lib/net6.0/Stunlock.Core.Animation.dll": {},
+          "lib/net6.0/Stunlock.Core.dll": {},
+          "lib/net6.0/Stunlock.Fmod.dll": {},
+          "lib/net6.0/Stunlock.Localization.dll": {},
+          "lib/net6.0/Stunlock.Metrics.dll": {},
+          "lib/net6.0/Stunlock.Network.EosSdk.dll": {},
+          "lib/net6.0/Stunlock.Network.Lidgren.dll": {},
+          "lib/net6.0/Stunlock.Network.Steam.dll": {},
+          "lib/net6.0/Stunlock.Network.dll": {},
+          "lib/net6.0/Stunlock.Tools.dll": {},
+          "lib/net6.0/Unity.Burst.Unsafe.dll": {},
+          "lib/net6.0/Unity.Burst.dll": {},
+          "lib/net6.0/Unity.Collections.LowLevel.ILSupport.dll": {},
+          "lib/net6.0/Unity.Collections.dll": {},
+          "lib/net6.0/Unity.Deformations.dll": {},
+          "lib/net6.0/Unity.Entities.Graphics.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.HybridComponents.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.dll": {},
+          "lib/net6.0/Unity.Entities.dll": {},
+          "lib/net6.0/Unity.InputSystem.ForUI.dll": {},
+          "lib/net6.0/Unity.InputSystem.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.Hybrid.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.dll": {},
+          "lib/net6.0/Unity.Mathematics.dll": {},
+          "lib/net6.0/Unity.MemoryProfiler.dll": {},
+          "lib/net6.0/Unity.Physics.Hybrid.dll": {},
+          "lib/net6.0/Unity.Physics.dll": {},
+          "lib/net6.0/Unity.Profiling.Core.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.Core.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Config.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Runtime.dll": {},
+          "lib/net6.0/Unity.Scenes.dll": {},
+          "lib/net6.0/Unity.Serialization.dll": {},
+          "lib/net6.0/Unity.TextMeshPro.dll": {},
+          "lib/net6.0/Unity.Transforms.Hybrid.dll": {},
+          "lib/net6.0/Unity.Transforms.dll": {},
+          "lib/net6.0/Unity.VisualEffectGraph.Runtime.dll": {},
+          "lib/net6.0/UnityEngine.AIModule.dll": {},
+          "lib/net6.0/UnityEngine.AccessibilityModule.dll": {},
+          "lib/net6.0/UnityEngine.AndroidJNIModule.dll": {},
+          "lib/net6.0/UnityEngine.AnimationModule.dll": {},
+          "lib/net6.0/UnityEngine.AssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.AudioModule.dll": {},
+          "lib/net6.0/UnityEngine.ClothModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterInputModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterRendererModule.dll": {},
+          "lib/net6.0/UnityEngine.ContentLoadModule.dll": {},
+          "lib/net6.0/UnityEngine.CoreModule.dll": {},
+          "lib/net6.0/UnityEngine.CrashReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.DSPGraphModule.dll": {},
+          "lib/net6.0/UnityEngine.DirectorModule.dll": {},
+          "lib/net6.0/UnityEngine.GIModule.dll": {},
+          "lib/net6.0/UnityEngine.GameCenterModule.dll": {},
+          "lib/net6.0/UnityEngine.GridModule.dll": {},
+          "lib/net6.0/UnityEngine.HotReloadModule.dll": {},
+          "lib/net6.0/UnityEngine.IMGUIModule.dll": {},
+          "lib/net6.0/UnityEngine.ImageConversionModule.dll": {},
+          "lib/net6.0/UnityEngine.InputLegacyModule.dll": {},
+          "lib/net6.0/UnityEngine.InputModule.dll": {},
+          "lib/net6.0/UnityEngine.JSONSerializeModule.dll": {},
+          "lib/net6.0/UnityEngine.LocalizationModule.dll": {},
+          "lib/net6.0/UnityEngine.ParticleSystemModule.dll": {},
+          "lib/net6.0/UnityEngine.PerformanceReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.Physics2DModule.dll": {},
+          "lib/net6.0/UnityEngine.PhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.ProfilerModule.dll": {},
+          "lib/net6.0/UnityEngine.PropertiesModule.dll": {},
+          "lib/net6.0/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll": {},
+          "lib/net6.0/UnityEngine.ScreenCaptureModule.dll": {},
+          "lib/net6.0/UnityEngine.SharedInternalsModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteMaskModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteShapeModule.dll": {},
+          "lib/net6.0/UnityEngine.StreamingModule.dll": {},
+          "lib/net6.0/UnityEngine.SubstanceModule.dll": {},
+          "lib/net6.0/UnityEngine.SubsystemsModule.dll": {},
+          "lib/net6.0/UnityEngine.TLSModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainPhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreFontEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreTextEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextRenderingModule.dll": {},
+          "lib/net6.0/UnityEngine.TilemapModule.dll": {},
+          "lib/net6.0/UnityEngine.UI.dll": {},
+          "lib/net6.0/UnityEngine.UIElementsModule.dll": {},
+          "lib/net6.0/UnityEngine.UIModule.dll": {},
+          "lib/net6.0/UnityEngine.UmbraModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsCommonModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityConnectModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityCurlModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityTestProtocolModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAudioModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestTextureModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestWWWModule.dll": {},
+          "lib/net6.0/UnityEngine.VFXModule.dll": {},
+          "lib/net6.0/UnityEngine.VRModule.dll": {},
+          "lib/net6.0/UnityEngine.VehiclesModule.dll": {},
+          "lib/net6.0/UnityEngine.VideoModule.dll": {},
+          "lib/net6.0/UnityEngine.VirtualTexturingModule.dll": {},
+          "lib/net6.0/UnityEngine.WindModule.dll": {},
+          "lib/net6.0/UnityEngine.XRModule.dll": {},
+          "lib/net6.0/UnityEngine.dll": {},
+          "lib/net6.0/VivoxUnity.dll": {},
+          "lib/net6.0/__Generated.dll": {},
+          "lib/net6.0/com.rlabrecque.steamworks.net.dll": {},
+          "lib/net6.0/com.stunlock.network.eos.dll": {},
+          "lib/net6.0/com.stunlock.platform.dll": {},
+          "lib/net6.0/com.stunlock.platform.pc.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/Backtrace.Unity.dll": {},
+          "lib/net6.0/Il2CppMono.Security.dll": {},
+          "lib/net6.0/Il2CppSystem.Configuration.dll": {},
+          "lib/net6.0/Il2CppSystem.Core.dll": {},
+          "lib/net6.0/Il2CppSystem.Data.dll": {},
+          "lib/net6.0/Il2CppSystem.Drawing.dll": {},
+          "lib/net6.0/Il2CppSystem.Net.Http.dll": {},
+          "lib/net6.0/Il2CppSystem.Numerics.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.CompilerServices.Unsafe.dll": {},
+          "lib/net6.0/Il2CppSystem.Runtime.Serialization.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.Linq.dll": {},
+          "lib/net6.0/Il2CppSystem.Xml.dll": {},
+          "lib/net6.0/Il2CppSystem.dll": {},
+          "lib/net6.0/Il2Cppmscorlib.dll": {},
+          "lib/net6.0/Lidgren.Network.dll": {},
+          "lib/net6.0/MagicaCloth.dll": {},
+          "lib/net6.0/Malee.ReorderableList.dll": {},
+          "lib/net6.0/Newtonsoft.Json.dll": {},
+          "lib/net6.0/ProjectM.Behaviours.dll": {},
+          "lib/net6.0/ProjectM.Camera.dll": {},
+          "lib/net6.0/ProjectM.CastleBuilding.Systems.dll": {},
+          "lib/net6.0/ProjectM.CastleDyeSystem.dll": {},
+          "lib/net6.0/ProjectM.CodeGeneration.dll": {},
+          "lib/net6.0/ProjectM.Conversion.dll": {},
+          "lib/net6.0/ProjectM.DualsensePC.dll": {},
+          "lib/net6.0/ProjectM.Editor.SampleHandler.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Scripting.dll": {},
+          "lib/net6.0/ProjectM.Gameplay.Systems.dll": {},
+          "lib/net6.0/ProjectM.GeneratedNetCode.dll": {},
+          "lib/net6.0/ProjectM.HUD.dll": {},
+          "lib/net6.0/ProjectM.Haptics.dll": {},
+          "lib/net6.0/ProjectM.Hybrid.Performance.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.GlowingVampire.dll": {},
+          "lib/net6.0/ProjectM.LiveBuildPerformanceTests.Utilities.dll": {},
+          "lib/net6.0/ProjectM.Misc.Systems.dll": {},
+          "lib/net6.0/ProjectM.Pathfinding.dll": {},
+          "lib/net6.0/ProjectM.PerformanceTests.Editor.dll": {},
+          "lib/net6.0/ProjectM.Presentation.Systems.dll": {},
+          "lib/net6.0/ProjectM.Roofs.dll": {},
+          "lib/net6.0/ProjectM.ScriptableSystems.dll": {},
+          "lib/net6.0/ProjectM.Shared.ColorData.dll": {},
+          "lib/net6.0/ProjectM.Shared.Systems.dll": {},
+          "lib/net6.0/ProjectM.Shared.dll": {},
+          "lib/net6.0/ProjectM.Steam.dll": {},
+          "lib/net6.0/ProjectM.Terrain.dll": {},
+          "lib/net6.0/ProjectM.VFXRendererUtility.dll": {},
+          "lib/net6.0/ProjectM.Wind.Shared.dll": {},
+          "lib/net6.0/ProjectM.dll": {},
+          "lib/net6.0/RCONServerLib.dll": {},
+          "lib/net6.0/RTLTMPro.dll": {},
+          "lib/net6.0/RootMotion.dll": {},
+          "lib/net6.0/Rukhanka.DebugDrawer.dll": {},
+          "lib/net6.0/Rukhanka.Hybrid.dll": {},
+          "lib/net6.0/Rukhanka.Runtime.dll": {},
+          "lib/net6.0/Rukhanka.Toolbox.dll": {},
+          "lib/net6.0/Sequencer.dll": {},
+          "lib/net6.0/Stunlock.Animation.StunCloth.Runtime.dll": {},
+          "lib/net6.0/Stunlock.Console.dll": {},
+          "lib/net6.0/Stunlock.ContentTests.dll": {},
+          "lib/net6.0/Stunlock.Core.Animation.dll": {},
+          "lib/net6.0/Stunlock.Core.dll": {},
+          "lib/net6.0/Stunlock.Fmod.dll": {},
+          "lib/net6.0/Stunlock.Localization.dll": {},
+          "lib/net6.0/Stunlock.Metrics.dll": {},
+          "lib/net6.0/Stunlock.Network.EosSdk.dll": {},
+          "lib/net6.0/Stunlock.Network.Lidgren.dll": {},
+          "lib/net6.0/Stunlock.Network.Steam.dll": {},
+          "lib/net6.0/Stunlock.Network.dll": {},
+          "lib/net6.0/Stunlock.Tools.dll": {},
+          "lib/net6.0/Unity.Burst.Unsafe.dll": {},
+          "lib/net6.0/Unity.Burst.dll": {},
+          "lib/net6.0/Unity.Collections.LowLevel.ILSupport.dll": {},
+          "lib/net6.0/Unity.Collections.dll": {},
+          "lib/net6.0/Unity.Deformations.dll": {},
+          "lib/net6.0/Unity.Entities.Graphics.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.HybridComponents.dll": {},
+          "lib/net6.0/Unity.Entities.Hybrid.dll": {},
+          "lib/net6.0/Unity.Entities.dll": {},
+          "lib/net6.0/Unity.InputSystem.ForUI.dll": {},
+          "lib/net6.0/Unity.InputSystem.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.Hybrid.dll": {},
+          "lib/net6.0/Unity.Mathematics.Extensions.dll": {},
+          "lib/net6.0/Unity.Mathematics.dll": {},
+          "lib/net6.0/Unity.MemoryProfiler.dll": {},
+          "lib/net6.0/Unity.Physics.Hybrid.dll": {},
+          "lib/net6.0/Unity.Physics.dll": {},
+          "lib/net6.0/Unity.Profiling.Core.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.Core.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Config.Runtime.dll": {},
+          "lib/net6.0/Unity.RenderPipelines.HighDefinition.Runtime.dll": {},
+          "lib/net6.0/Unity.Scenes.dll": {},
+          "lib/net6.0/Unity.Serialization.dll": {},
+          "lib/net6.0/Unity.TextMeshPro.dll": {},
+          "lib/net6.0/Unity.Transforms.Hybrid.dll": {},
+          "lib/net6.0/Unity.Transforms.dll": {},
+          "lib/net6.0/Unity.VisualEffectGraph.Runtime.dll": {},
+          "lib/net6.0/UnityEngine.AIModule.dll": {},
+          "lib/net6.0/UnityEngine.AccessibilityModule.dll": {},
+          "lib/net6.0/UnityEngine.AndroidJNIModule.dll": {},
+          "lib/net6.0/UnityEngine.AnimationModule.dll": {},
+          "lib/net6.0/UnityEngine.AssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.AudioModule.dll": {},
+          "lib/net6.0/UnityEngine.ClothModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterInputModule.dll": {},
+          "lib/net6.0/UnityEngine.ClusterRendererModule.dll": {},
+          "lib/net6.0/UnityEngine.ContentLoadModule.dll": {},
+          "lib/net6.0/UnityEngine.CoreModule.dll": {},
+          "lib/net6.0/UnityEngine.CrashReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.DSPGraphModule.dll": {},
+          "lib/net6.0/UnityEngine.DirectorModule.dll": {},
+          "lib/net6.0/UnityEngine.GIModule.dll": {},
+          "lib/net6.0/UnityEngine.GameCenterModule.dll": {},
+          "lib/net6.0/UnityEngine.GridModule.dll": {},
+          "lib/net6.0/UnityEngine.HotReloadModule.dll": {},
+          "lib/net6.0/UnityEngine.IMGUIModule.dll": {},
+          "lib/net6.0/UnityEngine.ImageConversionModule.dll": {},
+          "lib/net6.0/UnityEngine.InputLegacyModule.dll": {},
+          "lib/net6.0/UnityEngine.InputModule.dll": {},
+          "lib/net6.0/UnityEngine.JSONSerializeModule.dll": {},
+          "lib/net6.0/UnityEngine.LocalizationModule.dll": {},
+          "lib/net6.0/UnityEngine.ParticleSystemModule.dll": {},
+          "lib/net6.0/UnityEngine.PerformanceReportingModule.dll": {},
+          "lib/net6.0/UnityEngine.Physics2DModule.dll": {},
+          "lib/net6.0/UnityEngine.PhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.ProfilerModule.dll": {},
+          "lib/net6.0/UnityEngine.PropertiesModule.dll": {},
+          "lib/net6.0/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll": {},
+          "lib/net6.0/UnityEngine.ScreenCaptureModule.dll": {},
+          "lib/net6.0/UnityEngine.SharedInternalsModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteMaskModule.dll": {},
+          "lib/net6.0/UnityEngine.SpriteShapeModule.dll": {},
+          "lib/net6.0/UnityEngine.StreamingModule.dll": {},
+          "lib/net6.0/UnityEngine.SubstanceModule.dll": {},
+          "lib/net6.0/UnityEngine.SubsystemsModule.dll": {},
+          "lib/net6.0/UnityEngine.TLSModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainModule.dll": {},
+          "lib/net6.0/UnityEngine.TerrainPhysicsModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreFontEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextCoreTextEngineModule.dll": {},
+          "lib/net6.0/UnityEngine.TextRenderingModule.dll": {},
+          "lib/net6.0/UnityEngine.TilemapModule.dll": {},
+          "lib/net6.0/UnityEngine.UI.dll": {},
+          "lib/net6.0/UnityEngine.UIElementsModule.dll": {},
+          "lib/net6.0/UnityEngine.UIModule.dll": {},
+          "lib/net6.0/UnityEngine.UmbraModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsCommonModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityAnalyticsModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityConnectModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityCurlModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityTestProtocolModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAssetBundleModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestAudioModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestTextureModule.dll": {},
+          "lib/net6.0/UnityEngine.UnityWebRequestWWWModule.dll": {},
+          "lib/net6.0/UnityEngine.VFXModule.dll": {},
+          "lib/net6.0/UnityEngine.VRModule.dll": {},
+          "lib/net6.0/UnityEngine.VehiclesModule.dll": {},
+          "lib/net6.0/UnityEngine.VideoModule.dll": {},
+          "lib/net6.0/UnityEngine.VirtualTexturingModule.dll": {},
+          "lib/net6.0/UnityEngine.WindModule.dll": {},
+          "lib/net6.0/UnityEngine.XRModule.dll": {},
+          "lib/net6.0/UnityEngine.dll": {},
+          "lib/net6.0/VivoxUnity.dll": {},
+          "lib/net6.0/__Generated.dll": {},
+          "lib/net6.0/com.rlabrecque.steamworks.net.dll": {},
+          "lib/net6.0/com.stunlock.network.eos.dll": {},
+          "lib/net6.0/com.stunlock.platform.dll": {},
+          "lib/net6.0/com.stunlock.platform.pc.dll": {}
+        }
+      },
+      "VRising.VAMP/1.3.3": {
+        "type": "package",
+        "dependencies": {
+          "BepInEx.PluginInfoProps": "2.1.0",
+          "VRising.UnhollowedX.Client": "1.0.10"
+        },
+        "compile": {
+          "lib/net6.0/VAMP.dll": {}
+        },
+        "runtime": {
+          "lib/net6.0/VAMP.dll": {}
+        }
+      },
+      "VRising.VampireCommandFramework/0.10.4": {
+        "type": "package",
+        "compile": {
+          "lib/net6.0/VampireCommandFramework.dll": {
+            "related": ".deps.json;.pdb"
+          }
+        },
+        "runtime": {
+          "lib/net6.0/VampireCommandFramework.dll": {
+            "related": ".deps.json;.pdb"
+          }
+        }
+      },
       "xunit/2.5.0": {
         "type": "package",
         "dependencies": {
@@ -1719,10 +2993,391 @@
         "build": {
           "build/net6.0/xunit.runner.visualstudio.props": {}
         }
+      },
+      "VAutomationCore/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v6.0",
+        "dependencies": {
+          "BepInEx.Unity.IL2CPP": "6.0.0-be.733",
+          "Il2CppInterop.Runtime": "1.4.6-ci.426",
+          "Lib.Harmony": "2.2.2",
+          "RisingV.Shared": "0.1.3",
+          "VRising.VAMP": "1.3.3",
+          "VRising.VampireCommandFramework": "0.10.4"
+        },
+        "compile": {
+          "bin/placeholder/VAutomationCore.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/VAutomationCore.dll": {}
+        }
       }
     }
   },
   "libraries": {
+    "AsmResolver/6.0.0-beta.1": {
+      "sha512": "M5btCR/rmrx32jZsoN6CLQ/VQk8lN8hvPb6lgojua7pjNoo7StAl92koMC8qz4vzZyH2CNqxLSDoswRvyyK/vA==",
+      "type": "package",
+      "path": "asmresolver/6.0.0-beta.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "asmresolver.6.0.0-beta.1.nupkg.sha512",
+        "asmresolver.nuspec",
+        "lib/net35/AsmResolver.dll",
+        "lib/net35/AsmResolver.xml",
+        "lib/net6.0/AsmResolver.dll",
+        "lib/net6.0/AsmResolver.xml",
+        "lib/net8.0/AsmResolver.dll",
+        "lib/net8.0/AsmResolver.xml",
+        "lib/netcoreapp3.1/AsmResolver.dll",
+        "lib/netcoreapp3.1/AsmResolver.xml",
+        "lib/netstandard2.0/AsmResolver.dll",
+        "lib/netstandard2.0/AsmResolver.xml",
+        "lib/netstandard2.1/AsmResolver.dll",
+        "lib/netstandard2.1/AsmResolver.xml"
+      ]
+    },
+    "AsmResolver.DotNet/6.0.0-beta.1": {
+      "sha512": "PTq8nNQvhgTxF1iARCknffCsu7Iq9B0kN7TVC8iMaU7uEYog3xvVqH/0+TreY8GW74/+MqhZt/yEFsvS4oAduQ==",
+      "type": "package",
+      "path": "asmresolver.dotnet/6.0.0-beta.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "asmresolver.dotnet.6.0.0-beta.1.nupkg.sha512",
+        "asmresolver.dotnet.nuspec",
+        "lib/net35/AsmResolver.DotNet.dll",
+        "lib/net35/AsmResolver.DotNet.xml",
+        "lib/net6.0/AsmResolver.DotNet.dll",
+        "lib/net6.0/AsmResolver.DotNet.xml",
+        "lib/net8.0/AsmResolver.DotNet.dll",
+        "lib/net8.0/AsmResolver.DotNet.xml",
+        "lib/netcoreapp3.1/AsmResolver.DotNet.dll",
+        "lib/netcoreapp3.1/AsmResolver.DotNet.xml",
+        "lib/netstandard2.0/AsmResolver.DotNet.dll",
+        "lib/netstandard2.0/AsmResolver.DotNet.xml",
+        "lib/netstandard2.1/AsmResolver.DotNet.dll",
+        "lib/netstandard2.1/AsmResolver.DotNet.xml"
+      ]
+    },
+    "AsmResolver.PE/6.0.0-beta.1": {
+      "sha512": "KadLvx/zzFCJyF+E4jG6jPE1d0iJquzL6+hm8GBivBAs6nwHC8s6g4c857QwQCzXMWza6Vz5Q+3hFiNuOfKaWQ==",
+      "type": "package",
+      "path": "asmresolver.pe/6.0.0-beta.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "asmresolver.pe.6.0.0-beta.1.nupkg.sha512",
+        "asmresolver.pe.nuspec",
+        "lib/net35/AsmResolver.PE.dll",
+        "lib/net35/AsmResolver.PE.xml",
+        "lib/net6.0/AsmResolver.PE.dll",
+        "lib/net6.0/AsmResolver.PE.xml",
+        "lib/net8.0/AsmResolver.PE.dll",
+        "lib/net8.0/AsmResolver.PE.xml",
+        "lib/netcoreapp3.1/AsmResolver.PE.dll",
+        "lib/netcoreapp3.1/AsmResolver.PE.xml",
+        "lib/netstandard2.0/AsmResolver.PE.dll",
+        "lib/netstandard2.0/AsmResolver.PE.xml",
+        "lib/netstandard2.1/AsmResolver.PE.dll",
+        "lib/netstandard2.1/AsmResolver.PE.xml"
+      ]
+    },
+    "AsmResolver.PE.File/6.0.0-beta.1": {
+      "sha512": "+lusB9UMHevI5aQsu73NQ1ctPMLFvyHAsEf8vjaJ/py+kX1DkU0JkbERtBRmaf58/hBZ7cyrE7gFnjoo7Bbg7A==",
+      "type": "package",
+      "path": "asmresolver.pe.file/6.0.0-beta.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "asmresolver.pe.file.6.0.0-beta.1.nupkg.sha512",
+        "asmresolver.pe.file.nuspec",
+        "lib/net35/AsmResolver.PE.File.dll",
+        "lib/net35/AsmResolver.PE.File.xml",
+        "lib/net6.0/AsmResolver.PE.File.dll",
+        "lib/net6.0/AsmResolver.PE.File.xml",
+        "lib/net8.0/AsmResolver.PE.File.dll",
+        "lib/net8.0/AsmResolver.PE.File.xml",
+        "lib/netcoreapp3.1/AsmResolver.PE.File.dll",
+        "lib/netcoreapp3.1/AsmResolver.PE.File.xml",
+        "lib/netstandard2.0/AsmResolver.PE.File.dll",
+        "lib/netstandard2.0/AsmResolver.PE.File.xml",
+        "lib/netstandard2.1/AsmResolver.PE.File.dll",
+        "lib/netstandard2.1/AsmResolver.PE.File.xml"
+      ]
+    },
+    "AssetRipper.CIL/1.1.0": {
+      "sha512": "nSz1cBjgVeKv+esfDtyQGC1mY9b4C4NFStytdoa9DMozDC8uth6930kAsuWZEivj9GqWSqENnaQUGnl23WpmnQ==",
+      "type": "package",
+      "path": "assetripper.cil/1.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "assetripper.cil.1.1.0.nupkg.sha512",
+        "assetripper.cil.nuspec",
+        "lib/net6.0/AssetRipper.CIL.dll",
+        "lib/net6.0/AssetRipper.CIL.xml",
+        "lib/net7.0/AssetRipper.CIL.dll",
+        "lib/net7.0/AssetRipper.CIL.xml",
+        "lib/net8.0/AssetRipper.CIL.dll",
+        "lib/net8.0/AssetRipper.CIL.xml",
+        "lib/netstandard2.0/AssetRipper.CIL.dll",
+        "lib/netstandard2.0/AssetRipper.CIL.xml"
+      ]
+    },
+    "AssetRipper.Gee.External.Capstone/2.3.2": {
+      "sha512": "wOr5PQPL/2ZfD7+ebt6cpRbUhSzSY5nlHGHjjzuQRiU5zkQlqQNwWDLX0M3smrm5IkaDvONkmDjFMKTlZJmyuQ==",
+      "type": "package",
+      "path": "assetripper.gee.external.capstone/2.3.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "assetripper.gee.external.capstone.2.3.2.nupkg.sha512",
+        "assetripper.gee.external.capstone.nuspec",
+        "lib/net5.0/Gee.External.Capstone.dll",
+        "lib/net5.0/Gee.External.Capstone.xml",
+        "lib/net6.0/Gee.External.Capstone.dll",
+        "lib/net6.0/Gee.External.Capstone.xml",
+        "lib/net7.0/Gee.External.Capstone.dll",
+        "lib/net7.0/Gee.External.Capstone.xml",
+        "lib/net8.0/Gee.External.Capstone.dll",
+        "lib/net8.0/Gee.External.Capstone.xml",
+        "lib/netstandard2.0/Gee.External.Capstone.dll",
+        "lib/netstandard2.0/Gee.External.Capstone.xml",
+        "lib/netstandard2.1/Gee.External.Capstone.dll",
+        "lib/netstandard2.1/Gee.External.Capstone.xml",
+        "runtimes/linux-arm/native/libcapstone.so",
+        "runtimes/linux-arm64/native/libcapstone.so",
+        "runtimes/linux-x64/native/libcapstone.so",
+        "runtimes/linux-x86/native/libcapstone.so",
+        "runtimes/osx-arm64/native/libcapstone.dylib",
+        "runtimes/osx-x64/native/libcapstone.dylib",
+        "runtimes/win-arm64/native/capstone.dll",
+        "runtimes/win-x64/native/capstone.dll",
+        "runtimes/win-x86/native/capstone.dll"
+      ]
+    },
+    "AssetRipper.Primitives/3.1.3": {
+      "sha512": "djZbN/+EXmI+Oia9Pm0LyjZVCPLf60TPSL5rGb7mBEYM5F4CN3nPFXvl2yA5LanPZoHS1Yq7PghGUmkP7Pv9RQ==",
+      "type": "package",
+      "path": "assetripper.primitives/3.1.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "assetripper.primitives.3.1.3.nupkg.sha512",
+        "assetripper.primitives.nuspec",
+        "lib/net35/AssetRipper.Primitives.dll",
+        "lib/net35/AssetRipper.Primitives.xml",
+        "lib/net40/AssetRipper.Primitives.dll",
+        "lib/net40/AssetRipper.Primitives.xml",
+        "lib/net461/AssetRipper.Primitives.dll",
+        "lib/net461/AssetRipper.Primitives.xml",
+        "lib/net5.0/AssetRipper.Primitives.dll",
+        "lib/net5.0/AssetRipper.Primitives.xml",
+        "lib/net6.0/AssetRipper.Primitives.dll",
+        "lib/net6.0/AssetRipper.Primitives.xml",
+        "lib/net7.0/AssetRipper.Primitives.dll",
+        "lib/net7.0/AssetRipper.Primitives.xml",
+        "lib/net8.0/AssetRipper.Primitives.dll",
+        "lib/net8.0/AssetRipper.Primitives.xml",
+        "lib/netstandard2.0/AssetRipper.Primitives.dll",
+        "lib/netstandard2.0/AssetRipper.Primitives.xml"
+      ]
+    },
+    "BepInEx.Core/6.0.0-be.733": {
+      "sha512": "uRzpyUdU3L8Y4ZW+ZnF73orq0E40MjGK6XcPzm24CrrWB5bUshwdrtFQfrwZB6jcZVNVV6PXE92hScEI+Jaoqw==",
+      "type": "package",
+      "path": "bepinex.core/6.0.0-be.733",
+      "files": [
+        ".nupkg.metadata",
+        "bepinex.core.6.0.0-be.733.nupkg.sha512",
+        "bepinex.core.nuspec",
+        "lib/net35/BepInEx.Core.dll",
+        "lib/net35/BepInEx.Core.xml",
+        "lib/netstandard2.0/BepInEx.Core.dll",
+        "lib/netstandard2.0/BepInEx.Core.xml",
+        "logo.png"
+      ]
+    },
+    "BepInEx.PluginInfoProps/2.1.0": {
+      "sha512": "VCG3QRiqNdW9ku2FEcNsbK+HKxrZmW0VxwMNyLNO7h0xGorU+C6vBHN8Qq4eAL5fU11Uks5x2uoYdqEoKD3P8A==",
+      "type": "package",
+      "path": "bepinex.plugininfoprops/2.1.0",
+      "files": [
+        ".nupkg.metadata",
+        "bepinex.plugininfoprops.2.1.0.nupkg.sha512",
+        "bepinex.plugininfoprops.nuspec",
+        "build/BepInEx.PluginInfoProps.props"
+      ]
+    },
+    "BepInEx.Unity.Common/6.0.0-be.733": {
+      "sha512": "KfdiHVSOPnIbDEF7zLPTSXDjKqIEq7SgffqFFKIxOBkCws7LdtSRQsamUcxdD0H8yopcgdlqobIp6t8e4M/k9Q==",
+      "type": "package",
+      "path": "bepinex.unity.common/6.0.0-be.733",
+      "files": [
+        ".nupkg.metadata",
+        "bepinex.unity.common.6.0.0-be.733.nupkg.sha512",
+        "bepinex.unity.common.nuspec",
+        "lib/net35/BepInEx.Unity.Common.dll",
+        "lib/net35/BepInEx.Unity.Common.xml",
+        "lib/netstandard2.0/BepInEx.Unity.Common.dll",
+        "lib/netstandard2.0/BepInEx.Unity.Common.xml",
+        "logo.png"
+      ]
+    },
+    "BepInEx.Unity.IL2CPP/6.0.0-be.733": {
+      "sha512": "lnoGaPHjIdGfEiKtf89knaTdLXe4IUqVLdoYqW8NYhhNqgxa3oNwScjTmuYQpa4Leew3937+slq2WIjvX/DUwQ==",
+      "type": "package",
+      "path": "bepinex.unity.il2cpp/6.0.0-be.733",
+      "files": [
+        ".nupkg.metadata",
+        "bepinex.unity.il2cpp.6.0.0-be.733.nupkg.sha512",
+        "bepinex.unity.il2cpp.nuspec",
+        "lib/net6.0/BepInEx.Unity.IL2CPP.dll",
+        "lib/net6.0/BepInEx.Unity.IL2CPP.xml",
+        "logo.png"
+      ]
+    },
+    "Disarm/2022.1.0-master.34": {
+      "sha512": "sxzTci5eSdl+sFoaGsMZIp7X/eB5ZzplM3CppvD1CWoiZ8rSa43XGLC19G5e8n6mjutNBfN9yL+RER5PCspHFg==",
+      "type": "package",
+      "path": "disarm/2022.1.0-master.34",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "disarm.2022.1.0-master.34.nupkg.sha512",
+        "disarm.nuspec",
+        "lib/net6.0/Disarm.dll",
+        "lib/netstandard2.0/Disarm.dll"
+      ]
+    },
+    "HarmonyX/2.10.2": {
+      "sha512": "/5WwkxXX8mPsRuigQt957rJGx1f0dDQxk+bvk4yYITKFjXas9Em+O71zEP8X0ym8OFQQ2XH/2SxS4NC7vEC+Xg==",
+      "type": "package",
+      "path": "harmonyx/2.10.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "harmonyx.2.10.2.nupkg.sha512",
+        "harmonyx.nuspec",
+        "lib/net35/0Harmony.dll",
+        "lib/net35/0Harmony.xml",
+        "lib/net45/0Harmony.dll",
+        "lib/net45/0Harmony.xml",
+        "lib/netstandard2.0/0Harmony.dll",
+        "lib/netstandard2.0/0Harmony.xml",
+        "logo_mini.png"
+      ]
+    },
+    "Iced/1.21.0": {
+      "sha512": "dv5+81Q1TBQvVMSOOOmRcjJmvWcX3BZPZsIq31+RLc5cNft0IHAyNlkdb7ZarOWG913PyBoFDsDXoCIlKmLclg==",
+      "type": "package",
+      "path": "iced/1.21.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE.txt",
+        "iced.1.21.0.nupkg.sha512",
+        "iced.nuspec",
+        "lib/net45/Iced.dll",
+        "lib/net45/Iced.xml",
+        "lib/netstandard2.0/Iced.dll",
+        "lib/netstandard2.0/Iced.xml",
+        "lib/netstandard2.1/Iced.dll",
+        "lib/netstandard2.1/Iced.xml",
+        "logo.png"
+      ]
+    },
+    "Il2CppInterop.Common/1.4.6-ci.426": {
+      "sha512": "pI0kU0qqJKMP6z9eFz4+WJtGIwklfPxW2yWEY9vKnrN9bbYMusK3v5uFWV8al7S/HPSATV5jNWH1hyTvP7kglA==",
+      "type": "package",
+      "path": "il2cppinterop.common/1.4.6-ci.426",
+      "files": [
+        ".nupkg.metadata",
+        "README.md",
+        "il2cppinterop.common.1.4.6-ci.426.nupkg.sha512",
+        "il2cppinterop.common.nuspec",
+        "lib/netstandard2.0/Il2CppInterop.Common.dll",
+        "lib/netstandard2.0/Il2CppInterop.Common.xml",
+        "logo_icon.png"
+      ]
+    },
+    "Il2CppInterop.Generator/1.4.6-ci.426": {
+      "sha512": "kecdx/vbNl0RtfzfYW592jU8PMyq1JbzpvoJSvqwO+tV6icp9SljXy6yG8bT/wt0gaPj9mFUNDTe2Wu6M6XGZQ==",
+      "type": "package",
+      "path": "il2cppinterop.generator/1.4.6-ci.426",
+      "files": [
+        ".nupkg.metadata",
+        "README.md",
+        "il2cppinterop.generator.1.4.6-ci.426.nupkg.sha512",
+        "il2cppinterop.generator.nuspec",
+        "lib/net472/Il2CppInterop.Generator.dll",
+        "lib/net472/Il2CppInterop.Generator.xml",
+        "lib/netstandard2.1/Il2CppInterop.Generator.dll",
+        "lib/netstandard2.1/Il2CppInterop.Generator.xml",
+        "logo_icon.png"
+      ]
+    },
+    "Il2CppInterop.HarmonySupport/1.4.6-ci.426": {
+      "sha512": "rd2T5o6SybIc12hmX3HktTF5n27hFb0w4mNSExq7h1YsmrNlt7x+Ac1MBnnB0JwPLIg7w8LjnKjoIX6Gf626ng==",
+      "type": "package",
+      "path": "il2cppinterop.harmonysupport/1.4.6-ci.426",
+      "files": [
+        ".nupkg.metadata",
+        "README.md",
+        "il2cppinterop.harmonysupport.1.4.6-ci.426.nupkg.sha512",
+        "il2cppinterop.harmonysupport.nuspec",
+        "lib/net6.0/Il2CppInterop.HarmonySupport.dll",
+        "lib/net6.0/Il2CppInterop.HarmonySupport.xml",
+        "logo_icon.png"
+      ]
+    },
+    "Il2CppInterop.Runtime/1.4.6-ci.426": {
+      "sha512": "0O0oI7gOqJixrsjvh1firhuGYK3Yr0uDLp6Q+t5CfcTMmeEX8Plk3pqAP9ZYyilBvh7uW0gv4Golqz08L1GXug==",
+      "type": "package",
+      "path": "il2cppinterop.runtime/1.4.6-ci.426",
+      "files": [
+        ".nupkg.metadata",
+        "README.md",
+        "il2cppinterop.runtime.1.4.6-ci.426.nupkg.sha512",
+        "il2cppinterop.runtime.nuspec",
+        "lib/net6.0/Il2CppInterop.Runtime.dll",
+        "lib/net6.0/Il2CppInterop.Runtime.xml",
+        "logo_icon.png"
+      ]
+    },
+    "Lib.Harmony/2.2.2": {
+      "sha512": "70KvWz+DiUELxafsYL/LHxA/jH3PDWeApLo/VwtnrpTvRWQ/eUdPfS/l5funmhZWOy41QXw6UjVv+6C57Nx77A==",
+      "type": "package",
+      "path": "lib.harmony/2.2.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "HarmonyLogo.png",
+        "LICENSE",
+        "lib.harmony.2.2.2.nupkg.sha512",
+        "lib.harmony.nuspec",
+        "lib/net35/0Harmony.dll",
+        "lib/net35/0Harmony.xml",
+        "lib/net45/0Harmony.dll",
+        "lib/net45/0Harmony.xml",
+        "lib/net472/0Harmony.dll",
+        "lib/net472/0Harmony.xml",
+        "lib/net48/0Harmony.dll",
+        "lib/net48/0Harmony.xml",
+        "lib/net5.0/0Harmony.dll",
+        "lib/net5.0/0Harmony.xml",
+        "lib/net6.0/0Harmony.dll",
+        "lib/net6.0/0Harmony.xml",
+        "lib/netcoreapp3.0/0Harmony.dll",
+        "lib/netcoreapp3.0/0Harmony.xml",
+        "lib/netcoreapp3.1/0Harmony.dll",
+        "lib/netcoreapp3.1/0Harmony.xml"
+      ]
+    },
     "Microsoft.CodeCoverage/17.7.2": {
       "sha512": "ntbkwIqwszkfCRjxVZOyEQiHauiYsY9NtYjw9ASsoxDSiG8YtV6AGcOAwrAk3TZv2UOq4MrpX+3MYEeMHSb03w==",
       "type": "package",
@@ -1789,10 +3444,10 @@
         "microsoft.codecoverage.nuspec"
       ]
     },
-    "Microsoft.Extensions.Logging.Abstractions/6.0.0": {
-      "sha512": "/HggWBbTwy8TgebGSX5DBZ24ndhzi93sHUBDvP1IxbZD7FDokYzdAr6+vbWGjw2XAfR2EJ1sfKUotpjHnFWPxA==",
+    "Microsoft.Extensions.Logging.Abstractions/6.0.1": {
+      "sha512": "dzB2Cgg+JmrouhjkcQGzSFjjvpwlq353i8oBQO2GWNjCXSzhbtBRUf28HSauWe7eib3wYOdb3tItdjRwAdwCSg==",
       "type": "package",
-      "path": "microsoft.extensions.logging.abstractions/6.0.0",
+      "path": "microsoft.extensions.logging.abstractions/6.0.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -1836,7 +3491,7 @@
         "lib/net6.0/Microsoft.Extensions.Logging.Abstractions.xml",
         "lib/netstandard2.0/Microsoft.Extensions.Logging.Abstractions.dll",
         "lib/netstandard2.0/Microsoft.Extensions.Logging.Abstractions.xml",
-        "microsoft.extensions.logging.abstractions.6.0.0.nupkg.sha512",
+        "microsoft.extensions.logging.abstractions.6.0.1.nupkg.sha512",
         "microsoft.extensions.logging.abstractions.nuspec",
         "useSharedDesignerContext.txt"
       ]
@@ -1864,17 +3519,17 @@
         "microsoft.net.test.sdk.nuspec"
       ]
     },
-    "Microsoft.NETCore.Platforms/1.1.0": {
-      "sha512": "kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A==",
+    "Microsoft.NETCore.Platforms/1.1.1": {
+      "sha512": "TMBuzAHpTenGbGgk0SMTwyEkyijY/Eae4ZGsFNYJvAr/LDn1ku3Etp3FPxChmDp5HHF3kzJuoaa08N0xjqAJfQ==",
       "type": "package",
-      "path": "microsoft.netcore.platforms/1.1.0",
+      "path": "microsoft.netcore.platforms/1.1.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
         "lib/netstandard1.0/_._",
-        "microsoft.netcore.platforms.1.1.0.nupkg.sha512",
+        "microsoft.netcore.platforms.1.1.1.nupkg.sha512",
         "microsoft.netcore.platforms.nuspec",
         "runtime.json"
       ]
@@ -2102,6 +3757,90 @@
         "ref/xamarinwatchos10/_._"
       ]
     },
+    "Mono.Cecil/0.11.4": {
+      "sha512": "IC1h5g0NeJGHIUgzM1P82ld57knhP0IcQfrYITDPXlNpMYGUrsG5TxuaWTjaeqDNQMBDNZkB8L0rBnwsY6JHuQ==",
+      "type": "package",
+      "path": "mono.cecil/0.11.4",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net40/Mono.Cecil.Mdb.dll",
+        "lib/net40/Mono.Cecil.Mdb.pdb",
+        "lib/net40/Mono.Cecil.Pdb.dll",
+        "lib/net40/Mono.Cecil.Pdb.pdb",
+        "lib/net40/Mono.Cecil.Rocks.dll",
+        "lib/net40/Mono.Cecil.Rocks.pdb",
+        "lib/net40/Mono.Cecil.dll",
+        "lib/net40/Mono.Cecil.pdb",
+        "lib/netstandard2.0/Mono.Cecil.Mdb.dll",
+        "lib/netstandard2.0/Mono.Cecil.Mdb.pdb",
+        "lib/netstandard2.0/Mono.Cecil.Pdb.dll",
+        "lib/netstandard2.0/Mono.Cecil.Pdb.pdb",
+        "lib/netstandard2.0/Mono.Cecil.Rocks.dll",
+        "lib/netstandard2.0/Mono.Cecil.Rocks.pdb",
+        "lib/netstandard2.0/Mono.Cecil.dll",
+        "lib/netstandard2.0/Mono.Cecil.pdb",
+        "mono.cecil.0.11.4.nupkg.sha512",
+        "mono.cecil.nuspec"
+      ]
+    },
+    "MonoMod.Common/22.6.3.1": {
+      "sha512": "7CUFpelStpHwdWhIJrwyn56f1IXe3OLrNc9oytWIvBu6mAFT4ELqH1o9gVjmMIN6xf1KPl+OTYd0YRUP8wRZ9g==",
+      "type": "package",
+      "path": "monomod.common/22.6.3.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net35/MonoMod.Common.dll",
+        "lib/net35/MonoMod.Common.xml",
+        "lib/net452/MonoMod.Common.dll",
+        "lib/net452/MonoMod.Common.xml",
+        "lib/net5.0/MonoMod.Common.dll",
+        "lib/net5.0/MonoMod.Common.xml",
+        "lib/netstandard2.0/MonoMod.Common.dll",
+        "lib/netstandard2.0/MonoMod.Common.xml",
+        "monomod.common.22.6.3.1.nupkg.sha512",
+        "monomod.common.nuspec"
+      ]
+    },
+    "MonoMod.RuntimeDetour/22.7.31.1": {
+      "sha512": "nxVJTvQbWAujaogt5XX3eAy7d22t66Z88aWg9sirPLO9rR/6yNCHAyZpgxXrOsIobZVW0IEZPqNMOBhgke25/w==",
+      "type": "package",
+      "path": "monomod.runtimedetour/22.7.31.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net35/MonoMod.RuntimeDetour.dll",
+        "lib/net35/MonoMod.RuntimeDetour.xml",
+        "lib/net452/MonoMod.RuntimeDetour.dll",
+        "lib/net452/MonoMod.RuntimeDetour.xml",
+        "lib/net5.0/MonoMod.RuntimeDetour.dll",
+        "lib/net5.0/MonoMod.RuntimeDetour.xml",
+        "lib/netstandard2.0/MonoMod.RuntimeDetour.dll",
+        "lib/netstandard2.0/MonoMod.RuntimeDetour.xml",
+        "monomod.runtimedetour.22.7.31.1.nupkg.sha512",
+        "monomod.runtimedetour.nuspec"
+      ]
+    },
+    "MonoMod.Utils/22.7.31.1": {
+      "sha512": "nI0E1oadXS1iMbfwfCzYF08C1jRQR9cnnHv66a4BSPd4sGu2p6g4BmctCWsdAB6oGKkSJUhcfHfxcfTsDyB94Q==",
+      "type": "package",
+      "path": "monomod.utils/22.7.31.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net35/MonoMod.Utils.dll",
+        "lib/net35/MonoMod.Utils.xml",
+        "lib/net452/MonoMod.Utils.dll",
+        "lib/net452/MonoMod.Utils.xml",
+        "lib/net5.0/MonoMod.Utils.dll",
+        "lib/net5.0/MonoMod.Utils.xml",
+        "lib/netstandard2.0/MonoMod.Utils.dll",
+        "lib/netstandard2.0/MonoMod.Utils.xml",
+        "monomod.utils.22.7.31.1.nupkg.sha512",
+        "monomod.utils.nuspec"
+      ]
+    },
     "NETStandard.Library/1.6.1": {
       "sha512": "WcSp3+vP+yHNgS8EV5J7pZ9IRpeDuARBPN28by8zqff1wJQXm26PVU8L3/fYLBJVU7BtDyqNVWq2KlCVvSSR4A==",
       "type": "package",
@@ -2157,44 +3896,60 @@
         "nuget.frameworks.nuspec"
       ]
     },
-    "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "HdSSp5MnJSsg08KMfZThpuLPJpPwE5hBXvHwoKWosyHHfe8Mh5WKT0ylEOf6yNzX6Ngjxe4Whkafh5q7Ymac4Q==",
+    "RisingV.Shared/0.1.3": {
+      "sha512": "J0MpsIDF4ZyVaHALdAaOkArsZOYQ7DCq9Ltm7Aj1UvxdBxNqQIjzXwBig7tQfVmqKicPzXOqi1MAlOypc/hbbg==",
       "type": "package",
-      "path": "runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "risingv.shared/0.1.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "License",
+        "README.md",
+        "lib/net6.0/RisingV.Shared.dll",
+        "lib/net6.0/RisingV.Shared.xml",
+        "logo_256.png",
+        "risingv.shared.0.1.3.nupkg.sha512",
+        "risingv.shared.nuspec"
+      ]
+    },
+    "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "7VSGO0URRKoMEAq0Sc9cRz8mb6zbyx/BZDEWhgPdzzpmFhkam3fJ1DAGWFXBI4nGlma+uPKpfuMQP5LXRnOH5g==",
+      "type": "package",
+      "path": "runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.debian.8-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/debian.8-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
     },
-    "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "+yH1a49wJMy8Zt4yx5RhJrxO/DBDByAiCzNwiETI+1S4mPdCu0OY4djdciC7Vssk0l22wQaDLrXxXkp+3+7bVA==",
+    "runtime.fedora.23-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "0oAaTAm6e2oVH+/Zttt0cuhGaePQYKII1dY8iaqP7CvOpVKgLybKRFvQjXR2LtxXOXTVPNv14j0ot8uV+HrUmw==",
       "type": "package",
-      "path": "runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/fedora.23-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
     },
-    "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "c3YNH1GQJbfIPJeCnr4avseugSqPrxwIqzthYyZDN6EuOyNOzq+y2KSUfRcXauya1sF4foESTgwM5e1A8arAKw==",
+    "runtime.fedora.24-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "G24ibsCNi5Kbz0oXWynBoRgtGvsw5ZSVEWjv13/KiCAM8C6wz9zzcCniMeQFIkJ2tasjo2kXlvlBZhplL51kGg==",
       "type": "package",
-      "path": "runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/fedora.24-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
@@ -2255,44 +4010,44 @@
         "runtime.native.system.security.cryptography.apple.nuspec"
       ]
     },
-    "runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "NS1U+700m4KFRHR5o4vo9DSlTmlCKu/u7dtE5sUHVIPB+xpXxYQvgBgA6wEIeCz6Yfn0Z52/72WYsToCEPJnrw==",
+    "runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "QR1OwtwehHxSeQvZKXe+iSd+d3XZNkEcuWMFYa2i0aG1l+lR739HPicKMlTbJst3spmeekDVBUS7SeS26s4U/g==",
       "type": "package",
-      "path": "runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
         "lib/netstandard1.0/_._",
-        "runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.native.system.security.cryptography.openssl.nuspec"
       ]
     },
-    "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "b3pthNgxxFcD+Pc0WSEoC0+md3MyhRS6aCEeenvNE3Fdw1HyJ18ZhRFVJJzIeR/O/jpxPboB805Ho0T3Ul7w8A==",
+    "runtime.opensuse.13.2-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "I+GNKGg2xCHueRd1m9PzeEW7WLbNNLznmTuEi8/vZX71HudUbx1UTwlGkiwMri7JLl8hGaIAWnA/GONhu+LOyQ==",
       "type": "package",
-      "path": "runtime.opensuse.13.2-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.opensuse.13.2-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.opensuse.13.2-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.opensuse.13.2-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.opensuse.13.2-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/opensuse.13.2-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
     },
-    "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "KeLz4HClKf+nFS7p/6Fi/CqyLXh81FpiGzcmuS8DGi9lUqSnZ6Es23/gv2O+1XVGfrbNmviF7CckBpavkBoIFQ==",
+    "runtime.opensuse.42.1-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "1Z3TAq1ytS1IBRtPXJvEUZdVsfWfeNEhBkbiOCGEl9wwAfsjP2lz3ZFDx5tq8p60/EqbS0HItG5piHuB71RjoA==",
       "type": "package",
-      "path": "runtime.opensuse.42.1-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.opensuse.42.1-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.opensuse.42.1-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.opensuse.42.1-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.opensuse.42.1-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/opensuse.42.1-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
@@ -2311,74 +4066,146 @@
         "runtimes/osx.10.10-x64/native/System.Security.Cryptography.Native.Apple.dylib"
       ]
     },
-    "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "X7IdhILzr4ROXd8mI1BUCQMSHSQwelUlBjF1JyTKCjXaOGn2fB4EKBxQbCK2VjO3WaWIdlXZL3W6TiIVnrhX4g==",
+    "runtime.osx.10.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "6mU/cVmmHtQiDXhnzUImxIcDL48GbTk+TsptXyJA+MIOG9LRjPoAQC/qBFB7X+UNyK86bmvGwC8t+M66wsYC8w==",
       "type": "package",
-      "path": "runtime.osx.10.10-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.osx.10.10-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.osx.10.10-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.osx.10.10-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.osx.10.10-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/osx.10.10-x64/native/System.Security.Cryptography.Native.OpenSsl.dylib"
       ]
     },
-    "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "nyFNiCk/r+VOiIqreLix8yN+q3Wga9+SE8BCgkf+2BwEKiNx6DyvFjCgkfV743/grxv8jHJ8gUK4XEQw7yzRYg==",
+    "runtime.rhel.7-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "vjwG0GGcTW/PPg6KVud8F9GLWYuAV1rrw1BKAqY0oh4jcUqg15oYF1+qkGR2x2ZHM4DQnWKQ7cJgYbfncz/lYg==",
       "type": "package",
-      "path": "runtime.rhel.7-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.rhel.7-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.rhel.7-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.rhel.7-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.rhel.7-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/rhel.7-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
     },
-    "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "ytoewC6wGorL7KoCAvRfsgoJPJbNq+64k2SqW6JcOAebWsFUvCCYgfzQMrnpvPiEl4OrblUlhF2ji+Q1+SVLrQ==",
+    "runtime.ubuntu.14.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "7KMFpTkHC/zoExs+PwP8jDCWcrK9H6L7soowT80CUx3e+nxP/AFnq0AQAW5W76z2WYbLAYCRyPfwYFG6zkvQRw==",
       "type": "package",
-      "path": "runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.ubuntu.14.04-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/ubuntu.14.04-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
     },
-    "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "I8bKw2I8k58Wx7fMKQJn2R8lamboCAiHfHeV/pS65ScKWMMI0+wJkLYlEKvgW1D/XvSl/221clBoR2q9QNNM7A==",
+    "runtime.ubuntu.16.04-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "xrlmRCnKZJLHxyyLIqkZjNXqgxnKdZxfItrPkjI+6pkRo5lHX8YvSZlWrSI5AVwLMi4HbNWP7064hcAWeZKp5w==",
       "type": "package",
-      "path": "runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.ubuntu.16.04-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/ubuntu.16.04-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
       ]
     },
-    "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.0": {
-      "sha512": "VB5cn/7OzUfzdnC8tqAIMQciVLiq2epm2NrAm1E9OjNRyG4lVhfR61SMcLizejzQP8R8Uf/0l5qOIbUEi+RdEg==",
+    "runtime.ubuntu.16.10-x64.runtime.native.System.Security.Cryptography.OpenSsl/4.3.2": {
+      "sha512": "leXiwfiIkW7Gmn7cgnNcdtNAU70SjmKW3jxGj1iKHOvdn0zRWsgv/l2OJUO5zdGdiv2VRFnAsxxhDgMzofPdWg==",
       "type": "package",
-      "path": "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl/4.3.0",
+      "path": "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl/4.3.2",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
         "ThirdPartyNotices.txt",
         "dotnet_library_license.txt",
-        "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
+        "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl.4.3.2.nupkg.sha512",
         "runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl.nuspec",
         "runtimes/ubuntu.16.10-x64/native/System.Security.Cryptography.Native.OpenSsl.so"
+      ]
+    },
+    "Samboy063.Cpp2IL.Core/2022.1.0-pre-release.18": {
+      "sha512": "eX9d1IK05jWaEaeuMAE0L5WYHT7thtxz+aWLL/CAaCzZ0TzRPD+WFTjJ0KQO0YWBVO300CX3GwmPmf7TNO+wUg==",
+      "type": "package",
+      "path": "samboy063.cpp2il.core/2022.1.0-pre-release.18",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net6.0/Cpp2IL.Core.dll",
+        "lib/net7.0/Cpp2IL.Core.dll",
+        "lib/net8.0/Cpp2IL.Core.dll",
+        "lib/netstandard2.0/Cpp2IL.Core.dll",
+        "samboy063.cpp2il.core.2022.1.0-pre-release.18.nupkg.sha512",
+        "samboy063.cpp2il.core.nuspec"
+      ]
+    },
+    "Samboy063.LibCpp2IL/2022.1.0-pre-release.18": {
+      "sha512": "9zJdTAeErpwJpYDHYwwI0MAC1OyBEfC1ce7dpAOYRUUYCfeaKVWxnSCcyaoY6HDzIoxPkhbfllbwOe49ZmUYuQ==",
+      "type": "package",
+      "path": "samboy063.libcpp2il/2022.1.0-pre-release.18",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net6.0/LibCpp2IL.dll",
+        "lib/net7.0/LibCpp2IL.dll",
+        "lib/net8.0/LibCpp2IL.dll",
+        "lib/netstandard2.0/LibCpp2IL.dll",
+        "samboy063.libcpp2il.2022.1.0-pre-release.18.nupkg.sha512",
+        "samboy063.libcpp2il.nuspec"
+      ]
+    },
+    "Samboy063.WasmDisassembler/2022.1.0-pre-release.15": {
+      "sha512": "e6qw81SHS+fS7iZ3qfqZBavVarYbkPElNgDCANF6dNFTYq5+hc80am+4FqQDl+ZVNS47bZDZobxIzHhmriCXGg==",
+      "type": "package",
+      "path": "samboy063.wasmdisassembler/2022.1.0-pre-release.15",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net6.0/WasmDisassembler.dll",
+        "lib/net7.0/WasmDisassembler.dll",
+        "lib/net8.0/WasmDisassembler.dll",
+        "lib/netstandard2.0/WasmDisassembler.dll",
+        "samboy063.wasmdisassembler.2022.1.0-pre-release.15.nupkg.sha512",
+        "samboy063.wasmdisassembler.nuspec"
+      ]
+    },
+    "SemanticVersioning/2.0.2": {
+      "sha512": "4EQgYdNZ92SyaO7YFk6olVnebF5V+jrHyMUjvPq89tLeMo8NSfgDF+6Zwq/lgh9j/0yfQp9Lkm0ZA0rUATCZFA==",
+      "type": "package",
+      "path": "semanticversioning/2.0.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net35/SemanticVersioning.dll",
+        "lib/net45/SemanticVersioning.dll",
+        "lib/netstandard1.1/SemanticVersioning.dll",
+        "lib/netstandard2.0/SemanticVersioning.dll",
+        "semanticversioning.2.0.2.nupkg.sha512",
+        "semanticversioning.nuspec"
+      ]
+    },
+    "StableNameDotNet/0.1.0-pre-release.15": {
+      "sha512": "aIkEOo8V76vE+9CppHpTFLGXalBw6TAl4/tb6vadmS+gHJMshTVehzQv9cJXy4xZDdANV1uGMRaUFZERcDA2xQ==",
+      "type": "package",
+      "path": "stablenamedotnet/0.1.0-pre-release.15",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/netstandard2.0/StableNameDotNet.dll",
+        "stablenamedotnet.0.1.0-pre-release.15.nupkg.sha512",
+        "stablenamedotnet.nuspec"
       ]
     },
     "System.AppContext/4.3.0": {
@@ -2585,6 +4412,235 @@
         "ref/xamarinwatchos10/_._",
         "system.collections.concurrent.4.3.0.nupkg.sha512",
         "system.collections.concurrent.nuspec"
+      ]
+    },
+    "System.Collections.NonGeneric/4.3.0": {
+      "sha512": "prtjIEMhGUnQq6RnPEYLpFt8AtLbp9yq2zxOSrY7KJJZrw25Fi97IzBqY7iqssbM61Ek5b8f3MG/sG1N2sN5KA==",
+      "type": "package",
+      "path": "system.collections.nongeneric/4.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "ThirdPartyNotices.txt",
+        "dotnet_library_license.txt",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.Collections.NonGeneric.dll",
+        "lib/netstandard1.3/System.Collections.NonGeneric.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Collections.NonGeneric.dll",
+        "ref/netstandard1.3/System.Collections.NonGeneric.dll",
+        "ref/netstandard1.3/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/de/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/es/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/fr/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/it/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/ja/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/ko/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/ru/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/zh-hans/System.Collections.NonGeneric.xml",
+        "ref/netstandard1.3/zh-hant/System.Collections.NonGeneric.xml",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "system.collections.nongeneric.4.3.0.nupkg.sha512",
+        "system.collections.nongeneric.nuspec"
+      ]
+    },
+    "System.Collections.Specialized/4.3.0": {
+      "sha512": "Epx8PoVZR0iuOnJJDzp7pWvdfMMOAvpUo95pC4ScH2mJuXkKA2Y4aR3cG9qt2klHgSons1WFh4kcGW7cSXvrxg==",
+      "type": "package",
+      "path": "system.collections.specialized/4.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "ThirdPartyNotices.txt",
+        "dotnet_library_license.txt",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net46/System.Collections.Specialized.dll",
+        "lib/netstandard1.3/System.Collections.Specialized.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net46/System.Collections.Specialized.dll",
+        "ref/netstandard1.3/System.Collections.Specialized.dll",
+        "ref/netstandard1.3/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/de/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/es/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/fr/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/it/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/ja/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/ko/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/ru/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/zh-hans/System.Collections.Specialized.xml",
+        "ref/netstandard1.3/zh-hant/System.Collections.Specialized.xml",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "system.collections.specialized.4.3.0.nupkg.sha512",
+        "system.collections.specialized.nuspec"
+      ]
+    },
+    "System.ComponentModel/4.3.0": {
+      "sha512": "VyGn1jGRZVfxnh8EdvDCi71v3bMXrsu8aYJOwoV7SNDLVhiEqwP86pPMyRGsDsxhXAm2b3o9OIqeETfN5qfezw==",
+      "type": "package",
+      "path": "system.componentmodel/4.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "ThirdPartyNotices.txt",
+        "dotnet_library_license.txt",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net45/_._",
+        "lib/netcore50/System.ComponentModel.dll",
+        "lib/netstandard1.3/System.ComponentModel.dll",
+        "lib/portable-net45+win8+wp8+wpa81/_._",
+        "lib/win8/_._",
+        "lib/wp80/_._",
+        "lib/wpa81/_._",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net45/_._",
+        "ref/netcore50/System.ComponentModel.dll",
+        "ref/netcore50/System.ComponentModel.xml",
+        "ref/netcore50/de/System.ComponentModel.xml",
+        "ref/netcore50/es/System.ComponentModel.xml",
+        "ref/netcore50/fr/System.ComponentModel.xml",
+        "ref/netcore50/it/System.ComponentModel.xml",
+        "ref/netcore50/ja/System.ComponentModel.xml",
+        "ref/netcore50/ko/System.ComponentModel.xml",
+        "ref/netcore50/ru/System.ComponentModel.xml",
+        "ref/netcore50/zh-hans/System.ComponentModel.xml",
+        "ref/netcore50/zh-hant/System.ComponentModel.xml",
+        "ref/netstandard1.0/System.ComponentModel.dll",
+        "ref/netstandard1.0/System.ComponentModel.xml",
+        "ref/netstandard1.0/de/System.ComponentModel.xml",
+        "ref/netstandard1.0/es/System.ComponentModel.xml",
+        "ref/netstandard1.0/fr/System.ComponentModel.xml",
+        "ref/netstandard1.0/it/System.ComponentModel.xml",
+        "ref/netstandard1.0/ja/System.ComponentModel.xml",
+        "ref/netstandard1.0/ko/System.ComponentModel.xml",
+        "ref/netstandard1.0/ru/System.ComponentModel.xml",
+        "ref/netstandard1.0/zh-hans/System.ComponentModel.xml",
+        "ref/netstandard1.0/zh-hant/System.ComponentModel.xml",
+        "ref/portable-net45+win8+wp8+wpa81/_._",
+        "ref/win8/_._",
+        "ref/wp80/_._",
+        "ref/wpa81/_._",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "system.componentmodel.4.3.0.nupkg.sha512",
+        "system.componentmodel.nuspec"
+      ]
+    },
+    "System.ComponentModel.Primitives/4.3.0": {
+      "sha512": "j8GUkCpM8V4d4vhLIIoBLGey2Z5bCkMVNjEZseyAlm4n5arcsJOeI3zkUP+zvZgzsbLTYh4lYeP/ZD/gdIAPrw==",
+      "type": "package",
+      "path": "system.componentmodel.primitives/4.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "ThirdPartyNotices.txt",
+        "dotnet_library_license.txt",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net45/System.ComponentModel.Primitives.dll",
+        "lib/netstandard1.0/System.ComponentModel.Primitives.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net45/System.ComponentModel.Primitives.dll",
+        "ref/netstandard1.0/System.ComponentModel.Primitives.dll",
+        "ref/netstandard1.0/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/de/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/es/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/fr/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/it/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/ja/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/ko/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/ru/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/zh-hans/System.ComponentModel.Primitives.xml",
+        "ref/netstandard1.0/zh-hant/System.ComponentModel.Primitives.xml",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "system.componentmodel.primitives.4.3.0.nupkg.sha512",
+        "system.componentmodel.primitives.nuspec"
+      ]
+    },
+    "System.ComponentModel.TypeConverter/4.3.0": {
+      "sha512": "16pQ6P+EdhcXzPiEK4kbA953Fu0MNG2ovxTZU81/qsCd1zPRsKc3uif5NgvllCY598k6bI0KUyKW8fanlfaDQg==",
+      "type": "package",
+      "path": "system.componentmodel.typeconverter/4.3.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "ThirdPartyNotices.txt",
+        "dotnet_library_license.txt",
+        "lib/MonoAndroid10/_._",
+        "lib/MonoTouch10/_._",
+        "lib/net45/System.ComponentModel.TypeConverter.dll",
+        "lib/net462/System.ComponentModel.TypeConverter.dll",
+        "lib/netstandard1.0/System.ComponentModel.TypeConverter.dll",
+        "lib/netstandard1.5/System.ComponentModel.TypeConverter.dll",
+        "lib/xamarinios10/_._",
+        "lib/xamarinmac20/_._",
+        "lib/xamarintvos10/_._",
+        "lib/xamarinwatchos10/_._",
+        "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
+        "ref/net45/System.ComponentModel.TypeConverter.dll",
+        "ref/net462/System.ComponentModel.TypeConverter.dll",
+        "ref/netstandard1.0/System.ComponentModel.TypeConverter.dll",
+        "ref/netstandard1.0/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/de/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/es/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/fr/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/it/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/ja/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/ko/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/ru/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/zh-hans/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.0/zh-hant/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/System.ComponentModel.TypeConverter.dll",
+        "ref/netstandard1.5/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/de/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/es/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/fr/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/it/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/ja/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/ko/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/ru/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/zh-hans/System.ComponentModel.TypeConverter.xml",
+        "ref/netstandard1.5/zh-hant/System.ComponentModel.TypeConverter.xml",
+        "ref/xamarinios10/_._",
+        "ref/xamarinmac20/_._",
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "system.componentmodel.typeconverter.4.3.0.nupkg.sha512",
+        "system.componentmodel.typeconverter.nuspec"
       ]
     },
     "System.Console/4.3.0": {
@@ -3432,10 +5488,10 @@
         "system.linq.expressions.nuspec"
       ]
     },
-    "System.Net.Http/4.3.0": {
-      "sha512": "sYg+FtILtRQuYWSIAuNOELwVuVsxVyJGWQyOnlAzhV4xvhyFnON1bAzYYC+jjRW8JREM45R0R5Dgi8MTC5sEwA==",
+    "System.Net.Http/4.3.4": {
+      "sha512": "aOa2d51SEbmM+H+Csw7yJOuNZoHkrP2XnAurye5HWYgGVVU54YZDvsLUYRv6h18X3sPnjNCANmN7ZhIPiqMcjA==",
       "type": "package",
-      "path": "system.net.http/4.3.0",
+      "path": "system.net.http/4.3.4",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
@@ -3457,49 +5513,9 @@
         "ref/monotouch10/_._",
         "ref/net45/_._",
         "ref/net46/System.Net.Http.dll",
-        "ref/net46/System.Net.Http.xml",
-        "ref/net46/de/System.Net.Http.xml",
-        "ref/net46/es/System.Net.Http.xml",
-        "ref/net46/fr/System.Net.Http.xml",
-        "ref/net46/it/System.Net.Http.xml",
-        "ref/net46/ja/System.Net.Http.xml",
-        "ref/net46/ko/System.Net.Http.xml",
-        "ref/net46/ru/System.Net.Http.xml",
-        "ref/net46/zh-hans/System.Net.Http.xml",
-        "ref/net46/zh-hant/System.Net.Http.xml",
         "ref/netcore50/System.Net.Http.dll",
-        "ref/netcore50/System.Net.Http.xml",
-        "ref/netcore50/de/System.Net.Http.xml",
-        "ref/netcore50/es/System.Net.Http.xml",
-        "ref/netcore50/fr/System.Net.Http.xml",
-        "ref/netcore50/it/System.Net.Http.xml",
-        "ref/netcore50/ja/System.Net.Http.xml",
-        "ref/netcore50/ko/System.Net.Http.xml",
-        "ref/netcore50/ru/System.Net.Http.xml",
-        "ref/netcore50/zh-hans/System.Net.Http.xml",
-        "ref/netcore50/zh-hant/System.Net.Http.xml",
         "ref/netstandard1.1/System.Net.Http.dll",
-        "ref/netstandard1.1/System.Net.Http.xml",
-        "ref/netstandard1.1/de/System.Net.Http.xml",
-        "ref/netstandard1.1/es/System.Net.Http.xml",
-        "ref/netstandard1.1/fr/System.Net.Http.xml",
-        "ref/netstandard1.1/it/System.Net.Http.xml",
-        "ref/netstandard1.1/ja/System.Net.Http.xml",
-        "ref/netstandard1.1/ko/System.Net.Http.xml",
-        "ref/netstandard1.1/ru/System.Net.Http.xml",
-        "ref/netstandard1.1/zh-hans/System.Net.Http.xml",
-        "ref/netstandard1.1/zh-hant/System.Net.Http.xml",
         "ref/netstandard1.3/System.Net.Http.dll",
-        "ref/netstandard1.3/System.Net.Http.xml",
-        "ref/netstandard1.3/de/System.Net.Http.xml",
-        "ref/netstandard1.3/es/System.Net.Http.xml",
-        "ref/netstandard1.3/fr/System.Net.Http.xml",
-        "ref/netstandard1.3/it/System.Net.Http.xml",
-        "ref/netstandard1.3/ja/System.Net.Http.xml",
-        "ref/netstandard1.3/ko/System.Net.Http.xml",
-        "ref/netstandard1.3/ru/System.Net.Http.xml",
-        "ref/netstandard1.3/zh-hans/System.Net.Http.xml",
-        "ref/netstandard1.3/zh-hant/System.Net.Http.xml",
         "ref/portable-net45+win8+wpa81/_._",
         "ref/win8/_._",
         "ref/wpa81/_._",
@@ -3510,7 +5526,7 @@
         "runtimes/win/lib/net46/System.Net.Http.dll",
         "runtimes/win/lib/netcore50/System.Net.Http.dll",
         "runtimes/win/lib/netstandard1.3/System.Net.Http.dll",
-        "system.net.http.4.3.0.nupkg.sha512",
+        "system.net.http.4.3.4.nupkg.sha512",
         "system.net.http.nuspec"
       ]
     },
@@ -3782,26 +5798,34 @@
         "system.reflection.nuspec"
       ]
     },
-    "System.Reflection.Emit/4.3.0": {
-      "sha512": "228FG0jLcIwTVJyz8CLFKueVqQK36ANazUManGaJHkO0icjiIypKW7YLWLIWahyIkdh5M7mV2dJepllLyA1SKg==",
+    "System.Reflection.Emit/4.7.0": {
+      "sha512": "VR4kk8XLKebQ4MZuKuIni/7oh+QGFmZW3qORd1GvBq/8026OpW501SzT/oypwiQl4TvT8ErnReh/NzY9u+C6wQ==",
       "type": "package",
-      "path": "system.reflection.emit/4.3.0",
+      "path": "system.reflection.emit/4.7.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "ThirdPartyNotices.txt",
-        "dotnet_library_license.txt",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
         "lib/MonoAndroid10/_._",
-        "lib/monotouch10/_._",
+        "lib/MonoTouch10/_._",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Emit.dll",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.1/System.Reflection.Emit.dll",
+        "lib/netstandard1.1/System.Reflection.Emit.xml",
         "lib/netstandard1.3/System.Reflection.Emit.dll",
+        "lib/netstandard2.0/System.Reflection.Emit.dll",
+        "lib/netstandard2.0/System.Reflection.Emit.xml",
+        "lib/netstandard2.1/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "lib/xamarintvos10/_._",
         "lib/xamarinwatchos10/_._",
         "ref/MonoAndroid10/_._",
+        "ref/MonoTouch10/_._",
         "ref/net45/_._",
+        "ref/netcoreapp2.0/_._",
         "ref/netstandard1.1/System.Reflection.Emit.dll",
         "ref/netstandard1.1/System.Reflection.Emit.xml",
         "ref/netstandard1.1/de/System.Reflection.Emit.xml",
@@ -3813,25 +5837,41 @@
         "ref/netstandard1.1/ru/System.Reflection.Emit.xml",
         "ref/netstandard1.1/zh-hans/System.Reflection.Emit.xml",
         "ref/netstandard1.1/zh-hant/System.Reflection.Emit.xml",
+        "ref/netstandard2.0/System.Reflection.Emit.dll",
+        "ref/netstandard2.0/System.Reflection.Emit.xml",
+        "ref/netstandard2.1/_._",
+        "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
-        "system.reflection.emit.4.3.0.nupkg.sha512",
-        "system.reflection.emit.nuspec"
+        "ref/xamarintvos10/_._",
+        "ref/xamarinwatchos10/_._",
+        "runtimes/aot/lib/netcore50/System.Reflection.Emit.dll",
+        "runtimes/aot/lib/netcore50/System.Reflection.Emit.xml",
+        "system.reflection.emit.4.7.0.nupkg.sha512",
+        "system.reflection.emit.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
       ]
     },
-    "System.Reflection.Emit.ILGeneration/4.3.0": {
-      "sha512": "59tBslAk9733NXLrUJrwNZEzbMAcu8k344OYo+wfSVygcgZ9lgBdGIzH/nrg3LYhXceynyvTc8t5/GD4Ri0/ng==",
+    "System.Reflection.Emit.ILGeneration/4.7.0": {
+      "sha512": "AucBYo3DSI0IDxdUjKksBcQJXPHyoPyrCXYURW1WDsLI4M65Ar/goSHjdnHOAY9MiYDNKqDlIgaYm+zL2hA1KA==",
       "type": "package",
-      "path": "system.reflection.emit.ilgeneration/4.3.0",
+      "path": "system.reflection.emit.ilgeneration/4.7.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "ThirdPartyNotices.txt",
-        "dotnet_library_license.txt",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Emit.ILGeneration.dll",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.0/System.Reflection.Emit.ILGeneration.dll",
+        "lib/netstandard1.0/System.Reflection.Emit.ILGeneration.xml",
         "lib/netstandard1.3/System.Reflection.Emit.ILGeneration.dll",
+        "lib/netstandard2.0/System.Reflection.Emit.ILGeneration.dll",
+        "lib/netstandard2.0/System.Reflection.Emit.ILGeneration.xml",
+        "lib/netstandard2.1/_._",
         "lib/portable-net45+wp8/_._",
         "lib/wp80/_._",
         "lib/xamarinios10/_._",
@@ -3841,6 +5881,7 @@
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net45/_._",
+        "ref/netcoreapp2.0/_._",
         "ref/netstandard1.0/System.Reflection.Emit.ILGeneration.dll",
         "ref/netstandard1.0/System.Reflection.Emit.ILGeneration.xml",
         "ref/netstandard1.0/de/System.Reflection.Emit.ILGeneration.xml",
@@ -3852,31 +5893,43 @@
         "ref/netstandard1.0/ru/System.Reflection.Emit.ILGeneration.xml",
         "ref/netstandard1.0/zh-hans/System.Reflection.Emit.ILGeneration.xml",
         "ref/netstandard1.0/zh-hant/System.Reflection.Emit.ILGeneration.xml",
+        "ref/netstandard2.0/System.Reflection.Emit.ILGeneration.dll",
+        "ref/netstandard2.0/System.Reflection.Emit.ILGeneration.xml",
+        "ref/netstandard2.1/_._",
         "ref/portable-net45+wp8/_._",
         "ref/wp80/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "ref/xamarintvos10/_._",
         "ref/xamarinwatchos10/_._",
-        "runtimes/aot/lib/netcore50/_._",
-        "system.reflection.emit.ilgeneration.4.3.0.nupkg.sha512",
-        "system.reflection.emit.ilgeneration.nuspec"
+        "runtimes/aot/lib/netcore50/System.Reflection.Emit.ILGeneration.dll",
+        "runtimes/aot/lib/netcore50/System.Reflection.Emit.ILGeneration.xml",
+        "system.reflection.emit.ilgeneration.4.7.0.nupkg.sha512",
+        "system.reflection.emit.ilgeneration.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
       ]
     },
-    "System.Reflection.Emit.Lightweight/4.3.0": {
-      "sha512": "oadVHGSMsTmZsAF864QYN1t1QzZjIcuKU3l2S9cZOwDdDueNTrqq1yRj7koFfIGEnKpt6NjpL3rOzRhs4ryOgA==",
+    "System.Reflection.Emit.Lightweight/4.7.0": {
+      "sha512": "a4OLB4IITxAXJeV74MDx49Oq2+PsF6Sml54XAFv+2RyWwtDBcabzoxiiJRhdhx+gaohLh4hEGCLQyBozXoQPqA==",
       "type": "package",
-      "path": "system.reflection.emit.lightweight/4.3.0",
+      "path": "system.reflection.emit.lightweight/4.7.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "ThirdPartyNotices.txt",
-        "dotnet_library_license.txt",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net45/_._",
         "lib/netcore50/System.Reflection.Emit.Lightweight.dll",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.0/System.Reflection.Emit.Lightweight.dll",
+        "lib/netstandard1.0/System.Reflection.Emit.Lightweight.xml",
         "lib/netstandard1.3/System.Reflection.Emit.Lightweight.dll",
+        "lib/netstandard2.0/System.Reflection.Emit.Lightweight.dll",
+        "lib/netstandard2.0/System.Reflection.Emit.Lightweight.xml",
+        "lib/netstandard2.1/_._",
         "lib/portable-net45+wp8/_._",
         "lib/wp80/_._",
         "lib/xamarinios10/_._",
@@ -3886,6 +5939,7 @@
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net45/_._",
+        "ref/netcoreapp2.0/_._",
         "ref/netstandard1.0/System.Reflection.Emit.Lightweight.dll",
         "ref/netstandard1.0/System.Reflection.Emit.Lightweight.xml",
         "ref/netstandard1.0/de/System.Reflection.Emit.Lightweight.xml",
@@ -3897,15 +5951,21 @@
         "ref/netstandard1.0/ru/System.Reflection.Emit.Lightweight.xml",
         "ref/netstandard1.0/zh-hans/System.Reflection.Emit.Lightweight.xml",
         "ref/netstandard1.0/zh-hant/System.Reflection.Emit.Lightweight.xml",
+        "ref/netstandard2.0/System.Reflection.Emit.Lightweight.dll",
+        "ref/netstandard2.0/System.Reflection.Emit.Lightweight.xml",
+        "ref/netstandard2.1/_._",
         "ref/portable-net45+wp8/_._",
         "ref/wp80/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "ref/xamarintvos10/_._",
         "ref/xamarinwatchos10/_._",
-        "runtimes/aot/lib/netcore50/_._",
-        "system.reflection.emit.lightweight.4.3.0.nupkg.sha512",
-        "system.reflection.emit.lightweight.nuspec"
+        "runtimes/aot/lib/netcore50/System.Reflection.Emit.Lightweight.dll",
+        "runtimes/aot/lib/netcore50/System.Reflection.Emit.Lightweight.xml",
+        "system.reflection.emit.lightweight.4.7.0.nupkg.sha512",
+        "system.reflection.emit.lightweight.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
       ]
     },
     "System.Reflection.Extensions/4.3.0": {
@@ -4043,21 +6103,30 @@
         "system.reflection.primitives.nuspec"
       ]
     },
-    "System.Reflection.TypeExtensions/4.3.0": {
-      "sha512": "7u6ulLcZbyxB5Gq0nMkQttcdBTx57ibzw+4IOXEfR+sXYQoHvjW5LTLyNr8O22UIMrqYbchJQJnos4eooYzYJA==",
+    "System.Reflection.TypeExtensions/4.7.0": {
+      "sha512": "VybpaOQQhqE6siHppMktjfGBw1GCwvCqiufqmP8F1nj7fTUNtW35LOEt3UZTEsECfo+ELAl/9o9nJx3U91i7vA==",
       "type": "package",
-      "path": "system.reflection.typeextensions/4.3.0",
+      "path": "system.reflection.typeextensions/4.7.0",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "ThirdPartyNotices.txt",
-        "dotnet_library_license.txt",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
         "lib/MonoAndroid10/_._",
         "lib/MonoTouch10/_._",
         "lib/net46/System.Reflection.TypeExtensions.dll",
-        "lib/net462/System.Reflection.TypeExtensions.dll",
+        "lib/net461/System.Reflection.TypeExtensions.dll",
+        "lib/net461/System.Reflection.TypeExtensions.xml",
         "lib/netcore50/System.Reflection.TypeExtensions.dll",
+        "lib/netcoreapp1.0/System.Reflection.TypeExtensions.dll",
+        "lib/netcoreapp2.0/_._",
+        "lib/netstandard1.3/System.Reflection.TypeExtensions.dll",
+        "lib/netstandard1.3/System.Reflection.TypeExtensions.xml",
         "lib/netstandard1.5/System.Reflection.TypeExtensions.dll",
+        "lib/netstandard1.5/System.Reflection.TypeExtensions.xml",
+        "lib/netstandard2.0/System.Reflection.TypeExtensions.dll",
+        "lib/netstandard2.0/System.Reflection.TypeExtensions.xml",
+        "lib/uap10.0.16299/_._",
         "lib/xamarinios10/_._",
         "lib/xamarinmac20/_._",
         "lib/xamarintvos10/_._",
@@ -4065,7 +6134,11 @@
         "ref/MonoAndroid10/_._",
         "ref/MonoTouch10/_._",
         "ref/net46/System.Reflection.TypeExtensions.dll",
-        "ref/net462/System.Reflection.TypeExtensions.dll",
+        "ref/net461/System.Reflection.TypeExtensions.dll",
+        "ref/net461/System.Reflection.TypeExtensions.xml",
+        "ref/net472/System.Reflection.TypeExtensions.dll",
+        "ref/net472/System.Reflection.TypeExtensions.xml",
+        "ref/netcoreapp2.0/_._",
         "ref/netstandard1.3/System.Reflection.TypeExtensions.dll",
         "ref/netstandard1.3/System.Reflection.TypeExtensions.xml",
         "ref/netstandard1.3/de/System.Reflection.TypeExtensions.xml",
@@ -4088,13 +6161,19 @@
         "ref/netstandard1.5/ru/System.Reflection.TypeExtensions.xml",
         "ref/netstandard1.5/zh-hans/System.Reflection.TypeExtensions.xml",
         "ref/netstandard1.5/zh-hant/System.Reflection.TypeExtensions.xml",
+        "ref/netstandard2.0/System.Reflection.TypeExtensions.dll",
+        "ref/netstandard2.0/System.Reflection.TypeExtensions.xml",
+        "ref/uap10.0.16299/_._",
         "ref/xamarinios10/_._",
         "ref/xamarinmac20/_._",
         "ref/xamarintvos10/_._",
         "ref/xamarinwatchos10/_._",
         "runtimes/aot/lib/netcore50/System.Reflection.TypeExtensions.dll",
-        "system.reflection.typeextensions.4.3.0.nupkg.sha512",
-        "system.reflection.typeextensions.nuspec"
+        "runtimes/aot/lib/uap10.0.16299/_._",
+        "system.reflection.typeextensions.4.7.0.nupkg.sha512",
+        "system.reflection.typeextensions.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
       ]
     },
     "System.Resources.ResourceManager/4.3.0": {
@@ -4929,6 +7008,28 @@
         "system.text.encoding.extensions.nuspec"
       ]
     },
+    "System.Text.Json/5.0.2": {
+      "sha512": "I47dVIGiV6SfAyppphxqupertT/5oZkYLDCX6vC3HpOI4ZLjyoKAreUoem2ie6G0RbRuFrlqz/PcTQjfb2DOfQ==",
+      "type": "package",
+      "path": "system.text.json/5.0.2",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "Icon.png",
+        "LICENSE.TXT",
+        "THIRD-PARTY-NOTICES.TXT",
+        "lib/net461/System.Text.Json.dll",
+        "lib/net461/System.Text.Json.xml",
+        "lib/netcoreapp3.0/System.Text.Json.dll",
+        "lib/netcoreapp3.0/System.Text.Json.xml",
+        "lib/netstandard2.0/System.Text.Json.dll",
+        "lib/netstandard2.0/System.Text.Json.xml",
+        "system.text.json.5.0.2.nupkg.sha512",
+        "system.text.json.nuspec",
+        "useSharedDesignerContext.txt",
+        "version.txt"
+      ]
+    },
     "System.Text.RegularExpressions/4.3.0": {
       "sha512": "RpT2DA+L660cBt1FssIE9CAGpLFdFPuheB7pLpKpn6ZXNby7jDERe8Ua/Ne2xGiwLVG2JOqziiaVCGDon5sKFA==",
       "type": "package",
@@ -5366,6 +7467,405 @@
         "system.xml.xdocument.nuspec"
       ]
     },
+    "VRising.Unhollowed.Client/1.1.9.9219901": {
+      "sha512": "tpZ29dI7YfPQ1scelUcnKY1aYpzitkBYL6RKoaO4BHN4f7IS4/+yWAWd+12YzxUVu1kpcAywNo9/UQr4pNby1w==",
+      "type": "package",
+      "path": "vrising.unhollowed.client/1.1.9.9219901",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "images/icon.jpg",
+        "lib/net6.0/Backtrace.Unity.dll",
+        "lib/net6.0/Il2CppInterop.Common.dll",
+        "lib/net6.0/Il2CppInterop.Generator.dll",
+        "lib/net6.0/Il2CppInterop.HarmonySupport.dll",
+        "lib/net6.0/Il2CppInterop.Runtime.dll",
+        "lib/net6.0/Il2CppMono.Security.dll",
+        "lib/net6.0/Il2CppSystem.Configuration.dll",
+        "lib/net6.0/Il2CppSystem.Core.dll",
+        "lib/net6.0/Il2CppSystem.Data.dll",
+        "lib/net6.0/Il2CppSystem.Drawing.dll",
+        "lib/net6.0/Il2CppSystem.Net.Http.dll",
+        "lib/net6.0/Il2CppSystem.Numerics.dll",
+        "lib/net6.0/Il2CppSystem.Runtime.CompilerServices.Unsafe.dll",
+        "lib/net6.0/Il2CppSystem.Runtime.Serialization.dll",
+        "lib/net6.0/Il2CppSystem.Xml.Linq.dll",
+        "lib/net6.0/Il2CppSystem.Xml.dll",
+        "lib/net6.0/Il2CppSystem.dll",
+        "lib/net6.0/Il2Cppmscorlib.dll",
+        "lib/net6.0/Lidgren.Network.dll",
+        "lib/net6.0/MagicaCloth.dll",
+        "lib/net6.0/Malee.ReorderableList.dll",
+        "lib/net6.0/Newtonsoft.Json.dll",
+        "lib/net6.0/ProjectM.Behaviours.dll",
+        "lib/net6.0/ProjectM.Camera.dll",
+        "lib/net6.0/ProjectM.CastleBuilding.Systems.dll",
+        "lib/net6.0/ProjectM.CastleDyeSystem.dll",
+        "lib/net6.0/ProjectM.CodeGeneration.dll",
+        "lib/net6.0/ProjectM.Conversion.dll",
+        "lib/net6.0/ProjectM.DualsensePC.dll",
+        "lib/net6.0/ProjectM.Editor.SampleHandler.dll",
+        "lib/net6.0/ProjectM.Gameplay.Scripting.dll",
+        "lib/net6.0/ProjectM.Gameplay.Systems.dll",
+        "lib/net6.0/ProjectM.GeneratedNetCode.dll",
+        "lib/net6.0/ProjectM.HUD.dll",
+        "lib/net6.0/ProjectM.Haptics.dll",
+        "lib/net6.0/ProjectM.Hybrid.Performance.dll",
+        "lib/net6.0/ProjectM.LiveBuildPerformanceTests.GlowingVampire.dll",
+        "lib/net6.0/ProjectM.LiveBuildPerformanceTests.Utilities.dll",
+        "lib/net6.0/ProjectM.Misc.Systems.dll",
+        "lib/net6.0/ProjectM.Pathfinding.dll",
+        "lib/net6.0/ProjectM.PerformanceTests.Editor.dll",
+        "lib/net6.0/ProjectM.Presentation.Systems.dll",
+        "lib/net6.0/ProjectM.Roofs.dll",
+        "lib/net6.0/ProjectM.ScriptableSystems.dll",
+        "lib/net6.0/ProjectM.Shared.ColorData.dll",
+        "lib/net6.0/ProjectM.Shared.Systems.dll",
+        "lib/net6.0/ProjectM.Shared.dll",
+        "lib/net6.0/ProjectM.Steam.dll",
+        "lib/net6.0/ProjectM.Terrain.dll",
+        "lib/net6.0/ProjectM.VFXRendererUtility.dll",
+        "lib/net6.0/ProjectM.Wind.Shared.dll",
+        "lib/net6.0/ProjectM.dll",
+        "lib/net6.0/RCONServerLib.dll",
+        "lib/net6.0/RTLTMPro.dll",
+        "lib/net6.0/RootMotion.dll",
+        "lib/net6.0/Rukhanka.DebugDrawer.dll",
+        "lib/net6.0/Rukhanka.Hybrid.dll",
+        "lib/net6.0/Rukhanka.Runtime.dll",
+        "lib/net6.0/Rukhanka.Toolbox.dll",
+        "lib/net6.0/Sequencer.dll",
+        "lib/net6.0/Stunlock.Animation.StunCloth.Runtime.dll",
+        "lib/net6.0/Stunlock.Console.dll",
+        "lib/net6.0/Stunlock.ContentTests.dll",
+        "lib/net6.0/Stunlock.Core.Animation.dll",
+        "lib/net6.0/Stunlock.Core.dll",
+        "lib/net6.0/Stunlock.Fmod.dll",
+        "lib/net6.0/Stunlock.Localization.dll",
+        "lib/net6.0/Stunlock.Metrics.dll",
+        "lib/net6.0/Stunlock.Network.EosSdk.dll",
+        "lib/net6.0/Stunlock.Network.Lidgren.dll",
+        "lib/net6.0/Stunlock.Network.Steam.dll",
+        "lib/net6.0/Stunlock.Network.dll",
+        "lib/net6.0/Stunlock.Tools.dll",
+        "lib/net6.0/Unity.Burst.Unsafe.dll",
+        "lib/net6.0/Unity.Burst.dll",
+        "lib/net6.0/Unity.Collections.LowLevel.ILSupport.dll",
+        "lib/net6.0/Unity.Collections.dll",
+        "lib/net6.0/Unity.Deformations.dll",
+        "lib/net6.0/Unity.Entities.Graphics.dll",
+        "lib/net6.0/Unity.Entities.Hybrid.HybridComponents.dll",
+        "lib/net6.0/Unity.Entities.Hybrid.dll",
+        "lib/net6.0/Unity.Entities.dll",
+        "lib/net6.0/Unity.InputSystem.ForUI.dll",
+        "lib/net6.0/Unity.InputSystem.dll",
+        "lib/net6.0/Unity.Mathematics.Extensions.Hybrid.dll",
+        "lib/net6.0/Unity.Mathematics.Extensions.dll",
+        "lib/net6.0/Unity.Mathematics.dll",
+        "lib/net6.0/Unity.MemoryProfiler.dll",
+        "lib/net6.0/Unity.Physics.Hybrid.dll",
+        "lib/net6.0/Unity.Physics.dll",
+        "lib/net6.0/Unity.Profiling.Core.dll",
+        "lib/net6.0/Unity.RenderPipelines.Core.Runtime.dll",
+        "lib/net6.0/Unity.RenderPipelines.HighDefinition.Config.Runtime.dll",
+        "lib/net6.0/Unity.RenderPipelines.HighDefinition.Runtime.dll",
+        "lib/net6.0/Unity.Scenes.dll",
+        "lib/net6.0/Unity.Serialization.dll",
+        "lib/net6.0/Unity.TextMeshPro.dll",
+        "lib/net6.0/Unity.Transforms.Hybrid.dll",
+        "lib/net6.0/Unity.Transforms.dll",
+        "lib/net6.0/Unity.VisualEffectGraph.Runtime.dll",
+        "lib/net6.0/UnityEngine.AIModule.dll",
+        "lib/net6.0/UnityEngine.AccessibilityModule.dll",
+        "lib/net6.0/UnityEngine.AndroidJNIModule.dll",
+        "lib/net6.0/UnityEngine.AnimationModule.dll",
+        "lib/net6.0/UnityEngine.AssetBundleModule.dll",
+        "lib/net6.0/UnityEngine.AudioModule.dll",
+        "lib/net6.0/UnityEngine.ClothModule.dll",
+        "lib/net6.0/UnityEngine.ClusterInputModule.dll",
+        "lib/net6.0/UnityEngine.ClusterRendererModule.dll",
+        "lib/net6.0/UnityEngine.ContentLoadModule.dll",
+        "lib/net6.0/UnityEngine.CoreModule.dll",
+        "lib/net6.0/UnityEngine.CrashReportingModule.dll",
+        "lib/net6.0/UnityEngine.DSPGraphModule.dll",
+        "lib/net6.0/UnityEngine.DirectorModule.dll",
+        "lib/net6.0/UnityEngine.GIModule.dll",
+        "lib/net6.0/UnityEngine.GameCenterModule.dll",
+        "lib/net6.0/UnityEngine.GridModule.dll",
+        "lib/net6.0/UnityEngine.HotReloadModule.dll",
+        "lib/net6.0/UnityEngine.IMGUIModule.dll",
+        "lib/net6.0/UnityEngine.ImageConversionModule.dll",
+        "lib/net6.0/UnityEngine.InputLegacyModule.dll",
+        "lib/net6.0/UnityEngine.InputModule.dll",
+        "lib/net6.0/UnityEngine.JSONSerializeModule.dll",
+        "lib/net6.0/UnityEngine.LocalizationModule.dll",
+        "lib/net6.0/UnityEngine.ParticleSystemModule.dll",
+        "lib/net6.0/UnityEngine.PerformanceReportingModule.dll",
+        "lib/net6.0/UnityEngine.Physics2DModule.dll",
+        "lib/net6.0/UnityEngine.PhysicsModule.dll",
+        "lib/net6.0/UnityEngine.ProfilerModule.dll",
+        "lib/net6.0/UnityEngine.PropertiesModule.dll",
+        "lib/net6.0/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll",
+        "lib/net6.0/UnityEngine.ScreenCaptureModule.dll",
+        "lib/net6.0/UnityEngine.SharedInternalsModule.dll",
+        "lib/net6.0/UnityEngine.SpriteMaskModule.dll",
+        "lib/net6.0/UnityEngine.SpriteShapeModule.dll",
+        "lib/net6.0/UnityEngine.StreamingModule.dll",
+        "lib/net6.0/UnityEngine.SubstanceModule.dll",
+        "lib/net6.0/UnityEngine.SubsystemsModule.dll",
+        "lib/net6.0/UnityEngine.TLSModule.dll",
+        "lib/net6.0/UnityEngine.TerrainModule.dll",
+        "lib/net6.0/UnityEngine.TerrainPhysicsModule.dll",
+        "lib/net6.0/UnityEngine.TextCoreFontEngineModule.dll",
+        "lib/net6.0/UnityEngine.TextCoreTextEngineModule.dll",
+        "lib/net6.0/UnityEngine.TextRenderingModule.dll",
+        "lib/net6.0/UnityEngine.TilemapModule.dll",
+        "lib/net6.0/UnityEngine.UI.dll",
+        "lib/net6.0/UnityEngine.UIElementsModule.dll",
+        "lib/net6.0/UnityEngine.UIModule.dll",
+        "lib/net6.0/UnityEngine.UmbraModule.dll",
+        "lib/net6.0/UnityEngine.UnityAnalyticsCommonModule.dll",
+        "lib/net6.0/UnityEngine.UnityAnalyticsModule.dll",
+        "lib/net6.0/UnityEngine.UnityConnectModule.dll",
+        "lib/net6.0/UnityEngine.UnityCurlModule.dll",
+        "lib/net6.0/UnityEngine.UnityTestProtocolModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestAssetBundleModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestAudioModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestTextureModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestWWWModule.dll",
+        "lib/net6.0/UnityEngine.VFXModule.dll",
+        "lib/net6.0/UnityEngine.VRModule.dll",
+        "lib/net6.0/UnityEngine.VehiclesModule.dll",
+        "lib/net6.0/UnityEngine.VideoModule.dll",
+        "lib/net6.0/UnityEngine.VirtualTexturingModule.dll",
+        "lib/net6.0/UnityEngine.WindModule.dll",
+        "lib/net6.0/UnityEngine.XRModule.dll",
+        "lib/net6.0/UnityEngine.dll",
+        "lib/net6.0/VivoxUnity.dll",
+        "lib/net6.0/__Generated.dll",
+        "lib/net6.0/com.rlabrecque.steamworks.net.dll",
+        "lib/net6.0/com.stunlock.network.eos.dll",
+        "lib/net6.0/com.stunlock.platform.dll",
+        "lib/net6.0/com.stunlock.platform.pc.dll",
+        "vrising.unhollowed.client.1.1.9.9219901.nupkg.sha512",
+        "vrising.unhollowed.client.nuspec"
+      ]
+    },
+    "VRising.UnhollowedX.Client/1.0.10": {
+      "sha512": "e031JW3TUs8untv6GBx7oGPNwlRwIDBlvghUUUpSl69I0hbdKyn7E5RnDThZWoRPocoRyQWj4RUkfiMIfOTVRg==",
+      "type": "package",
+      "path": "vrising.unhollowedx.client/1.0.10",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net6.0/Backtrace.Unity.dll",
+        "lib/net6.0/Il2CppMono.Security.dll",
+        "lib/net6.0/Il2CppSystem.Configuration.dll",
+        "lib/net6.0/Il2CppSystem.Core.dll",
+        "lib/net6.0/Il2CppSystem.Data.dll",
+        "lib/net6.0/Il2CppSystem.Drawing.dll",
+        "lib/net6.0/Il2CppSystem.Net.Http.dll",
+        "lib/net6.0/Il2CppSystem.Numerics.dll",
+        "lib/net6.0/Il2CppSystem.Runtime.CompilerServices.Unsafe.dll",
+        "lib/net6.0/Il2CppSystem.Runtime.Serialization.dll",
+        "lib/net6.0/Il2CppSystem.Xml.Linq.dll",
+        "lib/net6.0/Il2CppSystem.Xml.dll",
+        "lib/net6.0/Il2CppSystem.dll",
+        "lib/net6.0/Il2Cppmscorlib.dll",
+        "lib/net6.0/Lidgren.Network.dll",
+        "lib/net6.0/MagicaCloth.dll",
+        "lib/net6.0/Malee.ReorderableList.dll",
+        "lib/net6.0/MethodAddressToToken.db",
+        "lib/net6.0/MethodXrefScanCache.db",
+        "lib/net6.0/Newtonsoft.Json.dll",
+        "lib/net6.0/ProjectM.Behaviours.dll",
+        "lib/net6.0/ProjectM.Camera.dll",
+        "lib/net6.0/ProjectM.CastleBuilding.Systems.dll",
+        "lib/net6.0/ProjectM.CastleDyeSystem.dll",
+        "lib/net6.0/ProjectM.CodeGeneration.dll",
+        "lib/net6.0/ProjectM.Conversion.dll",
+        "lib/net6.0/ProjectM.DualsensePC.dll",
+        "lib/net6.0/ProjectM.Editor.SampleHandler.dll",
+        "lib/net6.0/ProjectM.Gameplay.Scripting.dll",
+        "lib/net6.0/ProjectM.Gameplay.Systems.dll",
+        "lib/net6.0/ProjectM.GeneratedNetCode.dll",
+        "lib/net6.0/ProjectM.HUD.dll",
+        "lib/net6.0/ProjectM.Haptics.dll",
+        "lib/net6.0/ProjectM.Hybrid.Performance.dll",
+        "lib/net6.0/ProjectM.LiveBuildPerformanceTests.GlowingVampire.dll",
+        "lib/net6.0/ProjectM.LiveBuildPerformanceTests.Utilities.dll",
+        "lib/net6.0/ProjectM.Misc.Systems.dll",
+        "lib/net6.0/ProjectM.Pathfinding.dll",
+        "lib/net6.0/ProjectM.PerformanceTests.Editor.dll",
+        "lib/net6.0/ProjectM.Presentation.Systems.dll",
+        "lib/net6.0/ProjectM.Roofs.dll",
+        "lib/net6.0/ProjectM.ScriptableSystems.dll",
+        "lib/net6.0/ProjectM.Shared.ColorData.dll",
+        "lib/net6.0/ProjectM.Shared.Systems.dll",
+        "lib/net6.0/ProjectM.Shared.dll",
+        "lib/net6.0/ProjectM.Steam.dll",
+        "lib/net6.0/ProjectM.Terrain.dll",
+        "lib/net6.0/ProjectM.VFXRendererUtility.dll",
+        "lib/net6.0/ProjectM.Wind.Shared.dll",
+        "lib/net6.0/ProjectM.dll",
+        "lib/net6.0/RCONServerLib.dll",
+        "lib/net6.0/RTLTMPro.dll",
+        "lib/net6.0/RootMotion.dll",
+        "lib/net6.0/Rukhanka.DebugDrawer.dll",
+        "lib/net6.0/Rukhanka.Hybrid.dll",
+        "lib/net6.0/Rukhanka.Runtime.dll",
+        "lib/net6.0/Rukhanka.Toolbox.dll",
+        "lib/net6.0/Sequencer.dll",
+        "lib/net6.0/Stunlock.Animation.StunCloth.Runtime.dll",
+        "lib/net6.0/Stunlock.Console.dll",
+        "lib/net6.0/Stunlock.ContentTests.dll",
+        "lib/net6.0/Stunlock.Core.Animation.dll",
+        "lib/net6.0/Stunlock.Core.dll",
+        "lib/net6.0/Stunlock.Fmod.dll",
+        "lib/net6.0/Stunlock.Localization.dll",
+        "lib/net6.0/Stunlock.Metrics.dll",
+        "lib/net6.0/Stunlock.Network.EosSdk.dll",
+        "lib/net6.0/Stunlock.Network.Lidgren.dll",
+        "lib/net6.0/Stunlock.Network.Steam.dll",
+        "lib/net6.0/Stunlock.Network.dll",
+        "lib/net6.0/Stunlock.Tools.dll",
+        "lib/net6.0/Unity.Burst.Unsafe.dll",
+        "lib/net6.0/Unity.Burst.dll",
+        "lib/net6.0/Unity.Collections.LowLevel.ILSupport.dll",
+        "lib/net6.0/Unity.Collections.dll",
+        "lib/net6.0/Unity.Deformations.dll",
+        "lib/net6.0/Unity.Entities.Graphics.dll",
+        "lib/net6.0/Unity.Entities.Hybrid.HybridComponents.dll",
+        "lib/net6.0/Unity.Entities.Hybrid.dll",
+        "lib/net6.0/Unity.Entities.dll",
+        "lib/net6.0/Unity.InputSystem.ForUI.dll",
+        "lib/net6.0/Unity.InputSystem.dll",
+        "lib/net6.0/Unity.Mathematics.Extensions.Hybrid.dll",
+        "lib/net6.0/Unity.Mathematics.Extensions.dll",
+        "lib/net6.0/Unity.Mathematics.dll",
+        "lib/net6.0/Unity.MemoryProfiler.dll",
+        "lib/net6.0/Unity.Physics.Hybrid.dll",
+        "lib/net6.0/Unity.Physics.dll",
+        "lib/net6.0/Unity.Profiling.Core.dll",
+        "lib/net6.0/Unity.RenderPipelines.Core.Runtime.dll",
+        "lib/net6.0/Unity.RenderPipelines.HighDefinition.Config.Runtime.dll",
+        "lib/net6.0/Unity.RenderPipelines.HighDefinition.Runtime.dll",
+        "lib/net6.0/Unity.Scenes.dll",
+        "lib/net6.0/Unity.Serialization.dll",
+        "lib/net6.0/Unity.TextMeshPro.dll",
+        "lib/net6.0/Unity.Transforms.Hybrid.dll",
+        "lib/net6.0/Unity.Transforms.dll",
+        "lib/net6.0/Unity.VisualEffectGraph.Runtime.dll",
+        "lib/net6.0/UnityEngine.AIModule.dll",
+        "lib/net6.0/UnityEngine.AccessibilityModule.dll",
+        "lib/net6.0/UnityEngine.AndroidJNIModule.dll",
+        "lib/net6.0/UnityEngine.AnimationModule.dll",
+        "lib/net6.0/UnityEngine.AssetBundleModule.dll",
+        "lib/net6.0/UnityEngine.AudioModule.dll",
+        "lib/net6.0/UnityEngine.ClothModule.dll",
+        "lib/net6.0/UnityEngine.ClusterInputModule.dll",
+        "lib/net6.0/UnityEngine.ClusterRendererModule.dll",
+        "lib/net6.0/UnityEngine.ContentLoadModule.dll",
+        "lib/net6.0/UnityEngine.CoreModule.dll",
+        "lib/net6.0/UnityEngine.CrashReportingModule.dll",
+        "lib/net6.0/UnityEngine.DSPGraphModule.dll",
+        "lib/net6.0/UnityEngine.DirectorModule.dll",
+        "lib/net6.0/UnityEngine.GIModule.dll",
+        "lib/net6.0/UnityEngine.GameCenterModule.dll",
+        "lib/net6.0/UnityEngine.GridModule.dll",
+        "lib/net6.0/UnityEngine.HotReloadModule.dll",
+        "lib/net6.0/UnityEngine.IMGUIModule.dll",
+        "lib/net6.0/UnityEngine.ImageConversionModule.dll",
+        "lib/net6.0/UnityEngine.InputLegacyModule.dll",
+        "lib/net6.0/UnityEngine.InputModule.dll",
+        "lib/net6.0/UnityEngine.JSONSerializeModule.dll",
+        "lib/net6.0/UnityEngine.LocalizationModule.dll",
+        "lib/net6.0/UnityEngine.ParticleSystemModule.dll",
+        "lib/net6.0/UnityEngine.PerformanceReportingModule.dll",
+        "lib/net6.0/UnityEngine.Physics2DModule.dll",
+        "lib/net6.0/UnityEngine.PhysicsModule.dll",
+        "lib/net6.0/UnityEngine.ProfilerModule.dll",
+        "lib/net6.0/UnityEngine.PropertiesModule.dll",
+        "lib/net6.0/UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll",
+        "lib/net6.0/UnityEngine.ScreenCaptureModule.dll",
+        "lib/net6.0/UnityEngine.SharedInternalsModule.dll",
+        "lib/net6.0/UnityEngine.SpriteMaskModule.dll",
+        "lib/net6.0/UnityEngine.SpriteShapeModule.dll",
+        "lib/net6.0/UnityEngine.StreamingModule.dll",
+        "lib/net6.0/UnityEngine.SubstanceModule.dll",
+        "lib/net6.0/UnityEngine.SubsystemsModule.dll",
+        "lib/net6.0/UnityEngine.TLSModule.dll",
+        "lib/net6.0/UnityEngine.TerrainModule.dll",
+        "lib/net6.0/UnityEngine.TerrainPhysicsModule.dll",
+        "lib/net6.0/UnityEngine.TextCoreFontEngineModule.dll",
+        "lib/net6.0/UnityEngine.TextCoreTextEngineModule.dll",
+        "lib/net6.0/UnityEngine.TextRenderingModule.dll",
+        "lib/net6.0/UnityEngine.TilemapModule.dll",
+        "lib/net6.0/UnityEngine.UI.dll",
+        "lib/net6.0/UnityEngine.UIElementsModule.dll",
+        "lib/net6.0/UnityEngine.UIModule.dll",
+        "lib/net6.0/UnityEngine.UmbraModule.dll",
+        "lib/net6.0/UnityEngine.UnityAnalyticsCommonModule.dll",
+        "lib/net6.0/UnityEngine.UnityAnalyticsModule.dll",
+        "lib/net6.0/UnityEngine.UnityConnectModule.dll",
+        "lib/net6.0/UnityEngine.UnityCurlModule.dll",
+        "lib/net6.0/UnityEngine.UnityTestProtocolModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestAssetBundleModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestAudioModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestTextureModule.dll",
+        "lib/net6.0/UnityEngine.UnityWebRequestWWWModule.dll",
+        "lib/net6.0/UnityEngine.VFXModule.dll",
+        "lib/net6.0/UnityEngine.VRModule.dll",
+        "lib/net6.0/UnityEngine.VehiclesModule.dll",
+        "lib/net6.0/UnityEngine.VideoModule.dll",
+        "lib/net6.0/UnityEngine.VirtualTexturingModule.dll",
+        "lib/net6.0/UnityEngine.WindModule.dll",
+        "lib/net6.0/UnityEngine.XRModule.dll",
+        "lib/net6.0/UnityEngine.dll",
+        "lib/net6.0/VivoxUnity.dll",
+        "lib/net6.0/__Generated.dll",
+        "lib/net6.0/assembly-hash.txt",
+        "lib/net6.0/com.rlabrecque.steamworks.net.dll",
+        "lib/net6.0/com.stunlock.network.eos.dll",
+        "lib/net6.0/com.stunlock.platform.dll",
+        "lib/net6.0/com.stunlock.platform.pc.dll",
+        "vrising.unhollowedx.client.1.0.10.nupkg.sha512",
+        "vrising.unhollowedx.client.nuspec"
+      ]
+    },
+    "VRising.VAMP/1.3.3": {
+      "sha512": "EW0BdSqpBn3DDugScyPji6ngN0FGLVoD4YG8Gqsn3KGD7gyqlzO48z9V95HRyqOZvU2+z/y9LTF2hIpSRnnE+g==",
+      "type": "package",
+      "path": "vrising.vamp/1.3.3",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "README.md",
+        "images/logo_256.png",
+        "lib/net6.0/VAMP.dll",
+        "vrising.vamp.1.3.3.nupkg.sha512",
+        "vrising.vamp.nuspec"
+      ]
+    },
+    "VRising.VampireCommandFramework/0.10.4": {
+      "sha512": "d1uCylAu9cynb2QIQGWFKXrMLUSubJRc41uFrS3LlmxY+roW5Pj3Vg2WB4J9H5zqm/31UD2x8X27SugFk7OrfA==",
+      "type": "package",
+      "path": "vrising.vampirecommandframework/0.10.4",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "docs/README.md",
+        "images/logo.png",
+        "lib/net6.0/VampireCommandFramework.deps.json",
+        "lib/net6.0/VampireCommandFramework.dll",
+        "lib/net6.0/VampireCommandFramework.pdb",
+        "vrising.vampirecommandframework.0.10.4.nupkg.sha512",
+        "vrising.vampirecommandframework.nuspec"
+      ]
+    },
     "xunit/2.5.0": {
       "sha512": "f2V5wuAdoaq0mRTt9UBmPbVex9HcwFYn+y7WaKUz5Xpakcrv7lhtQWBJUWNY4N3Z+o+atDBLyAALM1QWx04C6Q==",
       "type": "package",
@@ -5508,12 +8008,18 @@
         "xunit.runner.visualstudio.2.5.0.nupkg.sha512",
         "xunit.runner.visualstudio.nuspec"
       ]
+    },
+    "VAutomationCore/1.0.0": {
+      "type": "project",
+      "path": "../../VAutomationCore.csproj",
+      "msbuildProject": "../../VAutomationCore.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
-      "Microsoft.Extensions.Logging.Abstractions >= 6.0.0",
+      "Microsoft.Extensions.Logging.Abstractions >= 6.0.1",
       "Microsoft.NET.Test.Sdk >= 17.7.2",
+      "VAutomationCore >= 1.0.0",
       "xunit >= 2.5.0",
       "xunit.runner.visualstudio >= 2.5.0"
     ]
@@ -5545,7 +8051,11 @@
       "frameworks": {
         "net6.0": {
           "targetAlias": "net6.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "D:\\VAutomationCore\\VAutomationCore\\VAutomationCore.csproj": {
+              "projectPath": "D:\\VAutomationCore\\VAutomationCore\\VAutomationCore.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
@@ -5560,7 +8070,7 @@
         "dependencies": {
           "Microsoft.Extensions.Logging.Abstractions": {
             "target": "Package",
-            "version": "[6.0.0, )"
+            "version": "[6.0.1, )"
           },
           "Microsoft.NET.Test.Sdk": {
             "target": "Package",

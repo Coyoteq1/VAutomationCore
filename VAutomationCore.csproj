@@ -95,6 +95,7 @@
     <Compile Include="Core\Commands\CommandBase.cs" />
     <Compile Include="Core\Commands\CommandException.cs" />
     <Compile Include="Core\Commands\ChatColor.cs" />
+    <Compile Include="Core\AssemblyInfo.cs" />
     <Compile Include="Core\Services\ServiceInitializer.cs" />
     <Compile Include="Core\Services\GameActionService.cs" />
     <Compile Include="Core\Services\DebugEventBridge.cs" />
@@ -102,10 +103,6 @@
     <Compile Include="Core\Services\SandboxCsvWriter.cs" />
     <Compile Include="Core\Services\SandboxDeltaComputer.cs" />
     <Compile Include="Core\Data\*.cs" />
-    <Compile Include="..\Models\*.cs" />
-    <Compile Include="..\Helpers\*.cs" />
-    <Compile Remove="..\Helpers\ECSServiceManager.cs" />
-    <Compile Include="..\Extensions\*.cs" />
     <Compile Include="Chat\ChatService.cs" />
     <Compile Include="Models\GlowZoneEntry.cs" />
     <Compile Include="Models\PlayerZoneState.cs" />
@@ -120,11 +117,6 @@
     <Compile Include="Json\VAutoJsonOptions.cs" />
     <Compile Include="MyPluginInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs" />
-    <Compile Include="..\Networking\*.cs" />
-    <Compile Remove="..\Networking\WireService.cs" />
-    <Compile Remove="..\Extensions\*.cs" />
-    <Compile Remove="..\Helpers\*.cs" />
-    <Compile Remove="..\Networking\*.cs" />
     <Compile Remove="..\Commands\**\*.cs" />
   </ItemGroup>
 
