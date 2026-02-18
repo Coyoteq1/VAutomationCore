@@ -52,7 +52,7 @@ namespace VAutomationCore
         {
             try
             {
-                _harmony?.UnpatchSelf();
+                _harmony?.UnpatchAll(MyPluginInfo.GUID);
             }
             catch (Exception ex)
             {

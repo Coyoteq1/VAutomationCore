@@ -282,3 +282,7 @@ D:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\VAMP.dl
 D:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\VampireCommandFramework.dll
 D:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\VAutomationCore.dll
 D:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\VAutomationCore.pdb
+d:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\BepInEx.Preloader.Core.dll
+d:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\MonoMod.Backports.dll
+d:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\MonoMod.ILHelpers.dll
+d:\VAutomationCore\VAutomationCore\tests\Bluelock.Tests\bin\Debug\net6.0\BepInEx.Preloader.Core.xml

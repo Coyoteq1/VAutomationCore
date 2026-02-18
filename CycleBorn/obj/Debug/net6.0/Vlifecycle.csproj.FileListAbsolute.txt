@@ -15,3 +15,7 @@ D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Cycleborn.dll
 D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\refint\Cycleborn.dll
 D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\Cycleborn.pdb
 D:\VAutomationCore\VAutomationCore\CycleBorn\obj\Debug\net6.0\ref\Cycleborn.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\BepInEx.Preloader.Core.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\MonoMod.Backports.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\MonoMod.ILHelpers.dll
+D:\VAutomationCore\VAutomationCore\CycleBorn\bin\Debug\net6.0\BepInEx.Preloader.Core.xml

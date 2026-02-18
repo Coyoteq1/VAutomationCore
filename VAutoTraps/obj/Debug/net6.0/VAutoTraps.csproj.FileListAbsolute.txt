@@ -14,3 +14,7 @@ D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Debug\net6.0\VAutoTraps.dll
 D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Debug\net6.0\refint\VAutoTraps.dll
 D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Debug\net6.0\VAutoTraps.pdb
 D:\VAutomationCore\VAutomationCore\VAutoTraps\obj\Debug\net6.0\ref\VAutoTraps.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Debug\net6.0\BepInEx.Preloader.Core.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Debug\net6.0\MonoMod.Backports.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Debug\net6.0\MonoMod.ILHelpers.dll
+D:\VAutomationCore\VAutomationCore\VAutoTraps\bin\Debug\net6.0\BepInEx.Preloader.Core.xml

@@ -15,4 +15,4 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = Vlifecycle
-build_property.ProjectDir = D:\VAutomationCore\VAutomationCore\CycleBorn\
+build_property.ProjectDir = d:\VAutomationCore\VAutomationCore\CycleBorn\

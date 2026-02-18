@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "r92+H4f5vT7MNYBBfnez9klbjlFEu0GKh7JPthzoZme38S+Nsi7kQ2EmyvHzn/vCUR2cA5vpTUHgBjL7jd1NjQ==",
+  "dgSpecHash": "x61poIyNKAIfhA5SK8rOD7IT1YOxqvTTu9toWX3Prx8ADxFC1NVM3mTvRG3Hgyp1OGsKMC5PPrmtOaMY/wqOMg==",
   "success": true,
-  "projectFilePath": "D:\\VAutomationCore\\VAutomationCore\\VAutomationCore.csproj",
+  "projectFilePath": "d:\\VAutomationCore\\VAutomationCore\\VAutomationCore.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\coyot.RWE\\.nuget\\packages\\asmresolver\\6.0.0-beta.1\\asmresolver.6.0.0-beta.1.nupkg.sha512",
     "C:\\Users\\coyot.RWE\\.nuget\\packages\\asmresolver.dotnet\\6.0.0-beta.1\\asmresolver.dotnet.6.0.0-beta.1.nupkg.sha512",

@@ -36,6 +36,12 @@
     <Compile Include="..\..\Bluelock\Services\GlowTileGeometry.cs">
       <Link>GlowTileGeometry.cs</Link>
     </Compile>
+    <Compile Include="..\..\Bluelock\Models\ZoneDefinition.cs">
+      <Link>ZoneDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Bluelock\Models\ZoneBorderConfig.cs">
+      <Link>ZoneBorderConfig.cs</Link>
+    </Compile>
   </ItemGroup>
 
 </Project>

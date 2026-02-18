@@ -8,6 +8,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using VAutomationCore.Core.Logging;
 
 namespace VAutomationCore.Core.Services
 {
@@ -17,6 +18,7 @@ namespace VAutomationCore.Core.Services
     /// </summary>
     public static class GameActionService
     {
+        private static readonly CoreLogger Log = new("GameActions");
         private static readonly PrefabGUID TeleportBuffGuid = new(150521246);
         public const string EventPlayerDetect = "PlayerDetect";
         public const string EventPlayerExit = "PlayerExit";
@@ -36,8 +38,17 @@ namespace VAutomationCore.Core.Services
         }
 
         private static readonly object EventLock = new();
+        private static readonly object StateRestoreLock = new();
         private static readonly Dictionary<string, List<EventActionBinding>> _eventBindings =
             new(StringComparer.OrdinalIgnoreCase);
+        
+        /// <summary>
+        /// Tracks applied buffs per player for restoration on exit.
+        /// Key: platformId, Value: List of buff GUIDs applied during zone.
+        /// </summary>
+        private static readonly Dictionary<ulong, List<PrefabGUID>> _appliedBuffsByPlayer =
+            new();
+        
         private static readonly Dictionary<string, GameAction> _actions = new(StringComparer.OrdinalIgnoreCase)
         {
             ["ApplyBuff"] = args =>
@@ -80,6 +91,7 @@ namespace VAutomationCore.Core.Services
 
             if (!_actions.TryGetValue(actionName, out var action))
             {
+                Log.Debug($"Action '{actionName}' not registered.");
                 return false;
             }
 
@@ -87,8 +99,9 @@ namespace VAutomationCore.Core.Services
             {
                 return action.Invoke(args);
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warning($"Action '{actionName}' failed: {ex.Message}");
                 return false;
             }
         }
@@ -169,6 +182,13 @@ namespace VAutomationCore.Core.Services
                 bindings = new List<EventActionBinding>(bindings);
             }
 
+            // Validate entities in args before processing
+            if (!ValidateEventArgs(args))
+            {
+                Log.Debug($"Event '{eventName}' skipped: invalid entity in args.");
+                return 0;
+            }
+
             var fired = 0;
             foreach (var binding in bindings)
             {
@@ -179,8 +199,9 @@ namespace VAutomationCore.Core.Services
                     {
                         actionArgs = binding.ArgTransform(args);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Log.Warning($"ArgTransform for action '{binding.ActionName}' in event '{eventName}' failed: {ex.Message}");
                         continue;
                     }
                 }
@@ -202,6 +223,152 @@ namespace VAutomationCore.Core.Services
             fired += TriggerEvent(EventPlayerEnter, args);
             fired += TriggerEvent(EventPlayerPostEnter, args);
             return fired;
+        }
+
+        /// <summary>
+        /// Captures the list of buffs applied to a player (for restoration on exit).
+        /// Call on zone entry to snapshot applied buffs.
+        /// </summary>
+        public static void CaptureBuffSnapshot(ulong platformId, Entity targetEntity)
+        {
+            if (platformId == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var em = UnifiedCore.EntityManager;
+                if (!IsEntityValid(em, targetEntity))
+                {
+                    return;
+                }
+
+                lock (StateRestoreLock)
+                {
+                    if (!_appliedBuffsByPlayer.ContainsKey(platformId))
+                    {
+                        _appliedBuffsByPlayer[platformId] = new List<PrefabGUID>();
+                    }
+                }
+
+                Log.Debug($"Buff snapshot captured for platform {platformId}");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"Failed to capture buff snapshot for platform {platformId}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Tracks a buff as applied for a player (for state restoration on exit).
+        /// </summary>
+        public static void TrackAppliedBuff(ulong platformId, PrefabGUID buffGuid)
+        {
+            if (platformId == 0 || buffGuid == PrefabGUID.Empty)
+            {
+                return;
+            }
+
+            lock (StateRestoreLock)
+            {
+                if (!_appliedBuffsByPlayer.TryGetValue(platformId, out var buffs))
+                {
+                    buffs = new List<PrefabGUID>();
+                    _appliedBuffsByPlayer[platformId] = buffs;
+                }
+
+                if (!buffs.Contains(buffGuid))
+                {
+                    buffs.Add(buffGuid);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Restores player state by removing tracked buffs on zone exit.
+        /// </summary>
+        public static bool RestorePlayerStateOnExit(ulong platformId, Entity targetEntity)
+        {
+            if (platformId == 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                var em = UnifiedCore.EntityManager;
+                if (!IsEntityValid(em, targetEntity))
+                {
+                    return false;
+                }
+
+                List<PrefabGUID> buffsToRemove = null;
+                lock (StateRestoreLock)
+                {
+                    if (_appliedBuffsByPlayer.TryGetValue(platformId, out var buffs))
+                    {
+                        buffsToRemove = new List<PrefabGUID>(buffs);
+                        _appliedBuffsByPlayer.Remove(platformId);
+                    }
+                }
+
+                if (buffsToRemove != null && buffsToRemove.Count > 0)
+                {
+                    var removedCount = 0;
+                    foreach (var buffGuid in buffsToRemove)
+                    {
+                        if (TryRemoveBuff(targetEntity, buffGuid))
+                        {
+                            removedCount++;
+                        }
+                    }
+
+                    Log.Info($"Player {platformId} exited zone: restored state by removing {removedCount}/{buffsToRemove.Count} buffs");
+                    return true;
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning($"Failed to restore state for player {platformId}: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Clears all tracked state for a player (e.g., on disconnect).
+        /// </summary>
+        public static void ClearPlayerTrackedState(ulong platformId)
+        {
+            if (platformId == 0)
+            {
+                return;
+            }
+
+            lock (StateRestoreLock)
+            {
+                _appliedBuffsByPlayer.Remove(platformId);
+            }
+
+            Log.Debug($"Cleared tracked state for player {platformId}");
+        }
+
+        /// <summary>
+        /// Gets count of tracked buffs for a player.
+        /// </summary>
+        public static int GetTrackedBuffCount(ulong platformId)
+        {
+            if (platformId == 0)
+            {
+                return 0;
+            }
+
+            lock (StateRestoreLock)
+            {
+                return _appliedBuffsByPlayer.TryGetValue(platformId, out var buffs) ? buffs.Count : 0;
+            }
         }
 
         public static bool TryApplyBuff(Entity targetEntity, PrefabGUID buffGuid, out Entity buffEntity, float duration = 0f)
@@ -369,8 +536,9 @@ namespace VAutomationCore.Core.Services
                 ServerChatUtils.SendSystemMessageToAllClients(em, ref msg);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warning($"Failed to send system message to all: {ex.Message}");
                 return false;
             }
         }
@@ -410,8 +578,9 @@ namespace VAutomationCore.Core.Services
                 ServerChatUtils.SendSystemMessageToClient(em, user, ref msg);
                 return true;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warning($"Failed to send system message to user entity {userEntity.Index}: {ex.Message}");
                 return false;
             }
         }
@@ -452,8 +621,9 @@ namespace VAutomationCore.Core.Services
                     query.Dispose();
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warning($"Failed to find user by platform ID {platformId}: {ex.Message}");
                 return false;
             }
 
@@ -470,6 +640,7 @@ namespace VAutomationCore.Core.Services
                 var debugEvents = server.GetExistingSystemManaged<DebugEventsSystem>();
                 if (debugEvents == null)
                 {
+                    Log.Debug($"DebugEventsSystem not available for buff {buffGuid.GuidHash}.");
                     return false;
                 }
 
@@ -493,8 +664,9 @@ namespace VAutomationCore.Core.Services
                 debugEvents.ApplyBuff(fromCharacter, applyEvent);
                 return BuffUtility.TryGetBuff(em, targetEntity, buffGuid, out buffEntity);
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Warning($"Failed to apply buff {buffGuid.GuidHash} to entity {targetEntity.Index}: {ex.Message}");
                 return false;
             }
         }
@@ -662,6 +834,37 @@ namespace VAutomationCore.Core.Services
         private static bool IsEntityValid(EntityManager em, Entity entity)
         {
             return entity != Entity.Null && em != default && em.Exists(entity);
+        }
+
+        /// <summary>
+        /// Validates that any Entity arguments in the event args are still valid.
+        /// </summary>
+        private static bool ValidateEventArgs(object[] args)
+        {
+            if (args == null || args.Length == 0)
+            {
+                return true;
+            }
+
+            try
+            {
+                var em = UnifiedCore.EntityManager;
+                foreach (var arg in args)
+                {
+                    if (arg is Entity entity && entity != Entity.Null)
+                    {
+                        if (!IsEntityValid(em, entity))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
     }

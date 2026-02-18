@@ -66,10 +66,29 @@ namespace VAuto.Core.Services
         }
 
         public static void OnZoneEnterStart(Entity character, string zoneId) => OnZoneEnterStart(character, zoneId, true);
+        public static void OnPlayerEnter(Entity character, string zoneId) => OnPlayerEnter(character, zoneId, true);
+        public static void OnPlayerExit(Entity character, string zoneId) => OnPlayerExit(character, zoneId, true);
+        public static void OnPlayerIsInZone(Entity character, string zoneId) => OnPlayerIsInZone(character, zoneId, true);
         public static void OnPlayerEnterZone(Entity character) => OnPlayerEnterZone(character, true);
         public static void OnPlayerIsInZone(Entity character) => OnPlayerIsInZone(character, true);
         public static void OnPlayerExitZone(Entity character) => OnPlayerExitZone(character, true);
         public static void FlushSnapshotsToDisk() => PersistSnapshotsToDisk();
+
+        public static void OnPlayerEnter(Entity character, string zoneId, bool enableUnlock)
+        {
+            OnZoneEnterStart(character, zoneId, enableUnlock);
+            OnPlayerEnterZone(character, enableUnlock);
+        }
+
+        public static void OnPlayerExit(Entity character, string zoneId, bool enableUnlock)
+        {
+            OnPlayerExitZone(character, enableUnlock);
+        }
+
+        public static void OnPlayerIsInZone(Entity character, string zoneId, bool enableUnlock)
+        {
+            OnPlayerIsInZone(character, enableUnlock);
+        }
 
         public static void OnZoneEnterStart(Entity character, string zoneId, bool enableUnlock)
         {

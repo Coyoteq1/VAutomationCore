@@ -10,3 +10,8 @@ D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.dll
 D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\refint\VAutomationCore.dll
 D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.pdb
 D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\ref\VAutomationCore.dll
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\BepInEx.Preloader.Core.dll
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\MonoMod.Backports.dll
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\MonoMod.ILHelpers.dll
+D:\VAutomationCore\VAutomationCore\bin\Debug\net6.0\BepInEx.Preloader.Core.xml
+D:\VAutomationCore\VAutomationCore\obj\Debug\net6.0\VAutomationCore.csproj.CopyComplete
