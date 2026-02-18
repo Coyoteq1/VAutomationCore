@@ -7531,15 +7531,15 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\VAutomationCore\\VAutomationCore\\CycleBorn\\Vlifecycle.csproj",
+      "projectUniqueName": "D:\\VAutomationCore\\VAutomationCore\\CycleBorn\\Vlifecycle.csproj",
       "projectName": "Cycleborn",
-      "projectPath": "d:\\VAutomationCore\\VAutomationCore\\CycleBorn\\Vlifecycle.csproj",
+      "projectPath": "D:\\VAutomationCore\\VAutomationCore\\CycleBorn\\Vlifecycle.csproj",
       "packagesPath": "C:\\Users\\coyot.RWE\\.nuget\\packages\\",
-      "outputPath": "d:\\VAutomationCore\\VAutomationCore\\CycleBorn\\obj\\",
+      "outputPath": "D:\\VAutomationCore\\VAutomationCore\\CycleBorn\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "d:\\VAutomationCore\\NuGet.Config",
-        "d:\\NuGet.Config",
+        "D:\\VAutomationCore\\NuGet.Config",
+        "D:\\NuGet.Config",
         "C:\\Users\\coyot.RWE\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [

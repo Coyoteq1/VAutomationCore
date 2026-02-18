@@ -1,1 +1,48 @@
+# Build outputs
+bin/
+obj/
+[Bb]uild/
+[Dd]ist/
+
+# .NET specific
+*.dll
+*.pdb
+*.cache
+*.exe
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# NuGet packages
+*.nupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+
+# IDE files
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+.idea/
+
+# Thunderstore related
+thunderstore.toml
+
+# Testing artifacts
+TestResults/
+[Tt]est[Rr]esult*/
+
+# Temporary files
+*.log
+*.tmp
+temp/
+tmp/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
 olddocs/

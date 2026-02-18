@@ -10,8 +10,6 @@ namespace VAutomationCore.Core.Services
     /// </summary>
     public static class ServiceInitializer
     {
-        private static readonly List<Action> _initializers = new();
-        private static readonly List<Func<bool>> _validators = new();
         private static readonly Dictionary<string, Action> _namedInitializers = new();
         private static readonly Dictionary<string, Func<bool>> _namedValidators = new();
         private static bool _servicesInitialized;
@@ -202,8 +200,6 @@ namespace VAutomationCore.Core.Services
         {
             lock (_lock)
             {
-                _initializers.Clear();
-                _validators.Clear();
                 _namedInitializers.Clear();
                 _namedValidators.Clear();
                 _servicesInitialized = false;

@@ -12,13 +12,17 @@ namespace VAutomationCore.Services
     {
         private static readonly object Sync = new();
         private static readonly Dictionary<Entity, PlayerZoneState> PlayerStates = new();
+        private static bool _initialized;
 
         public static event Action<Entity, string>? OnPlayerEntered;
         public static event Action<Entity, string>? OnPlayerExited;
 
         public static void Initialize()
         {
-            // optional hook for future init work
+            lock (Sync)
+            {
+                _initialized = true;
+            }
         }
 
         /// <summary>
@@ -26,6 +30,9 @@ namespace VAutomationCore.Services
         /// </summary>
         public static void PublishPlayerEntered(Entity player, string zoneId)
         {
+            EnsureInitialized();
+            var normalizedZoneId = zoneId ?? string.Empty;
+
             lock (Sync)
             {
                 if (!PlayerStates.TryGetValue(player, out var state))
@@ -35,14 +42,14 @@ namespace VAutomationCore.Services
                 }
 
                 state.PreviousZoneId = state.CurrentZoneId ?? string.Empty;
-                state.CurrentZoneId = zoneId ?? string.Empty;
+                state.CurrentZoneId = normalizedZoneId;
                 state.WasInZone = true;
                 state.IsInAnyZone = !string.IsNullOrWhiteSpace(state.CurrentZoneId);
                 state.LastUpdateTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 state.EnteredAt = DateTime.UtcNow;
             }
 
-            OnPlayerEntered?.Invoke(player, zoneId);
+            InvokeSafely(OnPlayerEntered, player, normalizedZoneId);
         }
 
         /// <summary>
@@ -50,6 +57,9 @@ namespace VAutomationCore.Services
         /// </summary>
         public static void PublishPlayerExited(Entity player, string zoneId)
         {
+            EnsureInitialized();
+            var normalizedZoneId = zoneId ?? string.Empty;
+
             lock (Sync)
             {
                 if (!PlayerStates.TryGetValue(player, out var state))
@@ -58,14 +68,14 @@ namespace VAutomationCore.Services
                     PlayerStates[player] = state;
                 }
 
-                state.PreviousZoneId = state.CurrentZoneId ?? zoneId ?? string.Empty;
+                state.PreviousZoneId = state.CurrentZoneId ?? normalizedZoneId;
                 state.CurrentZoneId = string.Empty;
                 state.IsInAnyZone = false;
                 state.LastUpdateTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
                 state.ExitedAt = DateTime.UtcNow;
             }
 
-            OnPlayerExited?.Invoke(player, zoneId);
+            InvokeSafely(OnPlayerExited, player, normalizedZoneId);
         }
 
         /// <summary>
@@ -73,6 +83,8 @@ namespace VAutomationCore.Services
         /// </summary>
         public static PlayerZoneState GetPlayerZoneState(Entity player)
         {
+            EnsureInitialized();
+
             lock (Sync)
             {
                 if (PlayerStates.TryGetValue(player, out var state))
@@ -94,6 +106,8 @@ namespace VAutomationCore.Services
                 return;
             }
 
+            EnsureInitialized();
+
             lock (Sync)
             {
                 state.LastUpdateTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -106,9 +120,41 @@ namespace VAutomationCore.Services
         /// </summary>
         public static void RemovePlayerZoneState(Entity player)
         {
+            EnsureInitialized();
+
             lock (Sync)
             {
                 PlayerStates.Remove(player);
+            }
+        }
+
+        private static void EnsureInitialized()
+        {
+            if (_initialized)
+            {
+                return;
+            }
+
+            Initialize();
+        }
+
+        private static void InvokeSafely(Action<Entity, string>? handlers, Entity player, string zoneId)
+        {
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (var handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    ((Action<Entity, string>)handler).Invoke(player, zoneId);
+                }
+                catch
+                {
+                    // One subscriber should never block zone transition processing.
+                }
             }
         }
     }

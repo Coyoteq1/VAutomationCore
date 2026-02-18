@@ -1,0 +1,45 @@
+name: Update NuGet Dependencies
+
+on:
+  schedule:
+    - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update-nuget:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project:
+          - Bluelock/VAutoZone.sln
+          - CycleBorn/Vlifecycle.sln
+          - VAutomationCore.csproj
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Install dotnet-outdated
+        run: dotnet tool install --global dotnet-outdated-tool
+
+      - name: Add dotnet tools to PATH
+        run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ matrix.project }}
+
+      - name: Update NuGet packages
+        run: dotnet outdated --upgrade --solution ${{ matrix.project }}
+
+      - name: Commit changes
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add .
+          git commit -m "chore: update NuGet dependencies" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
