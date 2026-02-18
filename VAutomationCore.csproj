@@ -98,6 +98,9 @@
     <Compile Include="Core\Services\ServiceInitializer.cs" />
     <Compile Include="Core\Services\GameActionService.cs" />
     <Compile Include="Core\Services\DebugEventBridge.cs" />
+    <Compile Include="Core\Services\SandboxSnapshotStore.cs" />
+    <Compile Include="Core\Services\SandboxCsvWriter.cs" />
+    <Compile Include="Core\Services\SandboxDeltaComputer.cs" />
     <Compile Include="Core\Data\*.cs" />
     <Compile Include="..\Models\*.cs" />
     <Compile Include="..\Helpers\*.cs" />
