@@ -1,13 +1,28 @@
 using System;
 using System.Linq;
+using System.Runtime.InteropServices;
 using VAuto.Zone.Services;
 using Xunit;
 
 namespace VAuto.Zone.Tests
 {
+    public sealed class RequiresGameAssemblyFactAttribute : FactAttribute
+    {
+        public RequiresGameAssemblyFactAttribute()
+        {
+            if (!NativeLibrary.TryLoad("GameAssembly", out var handle))
+            {
+                Skip = "Requires GameAssembly/Il2Cpp runtime.";
+                return;
+            }
+
+            NativeLibrary.Free(handle);
+        }
+    }
+
     public class GlowTileGeometryTests
     {
-        [Fact]
+        [RequiresGameAssemblyFact]
         public void Generate_ReturnsExpectedCount()
         {
             var radius = 10f;
@@ -18,7 +33,7 @@ namespace VAuto.Zone.Tests
             Assert.Equal(expected, positions.Count);
         }
 
-        [Fact]
+        [RequiresGameAssemblyFact]
         public void Generate_RotationOffsetsPositions()
         {
             var radius = 10f;
@@ -29,7 +44,7 @@ namespace VAuto.Zone.Tests
             Assert.NotEqual(basePoint.z, rotatedPoint.z);
         }
 
-        [Fact]
+        [RequiresGameAssemblyFact]
         public void Generate_PointsApproximatelySpacing()
         {
             var radius = 5f;

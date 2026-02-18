@@ -95,6 +95,8 @@
     <Compile Include="Core\Commands\CommandBase.cs" />
     <Compile Include="Core\Commands\CommandException.cs" />
     <Compile Include="Core\Commands\ChatColor.cs" />
+    <Compile Include="Core\Lifecycle\*.cs" />
+    <Compile Include="Core\Events\*.cs" />
     <Compile Include="Core\AssemblyInfo.cs" />
     <Compile Include="Core\Services\ServiceInitializer.cs" />
     <Compile Include="Core\Services\GameActionService.cs" />
@@ -102,6 +104,7 @@
     <Compile Include="Core\Services\SandboxSnapshotStore.cs" />
     <Compile Include="Core\Services\SandboxCsvWriter.cs" />
     <Compile Include="Core\Services\SandboxDeltaComputer.cs" />
+    <Compile Include="Core\Services\Sandbox\*.cs" />
     <Compile Include="Core\Data\*.cs" />
     <Compile Include="Chat\ChatService.cs" />
     <Compile Include="Models\GlowZoneEntry.cs" />
