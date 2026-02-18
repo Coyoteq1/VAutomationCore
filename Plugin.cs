@@ -52,7 +52,11 @@ namespace VAutomationCore
         {
             try
             {
-                _harmony?.UnpatchAll(MyPluginInfo.GUID);
+                if (_harmony != null)
+                {
+                    var unpatchAll = typeof(Harmony).GetMethod("UnpatchAll", new[] { typeof(string) });
+                    unpatchAll?.Invoke(_harmony, new object[] { MyPluginInfo.GUID });
+                }
             }
             catch (Exception ex)
             {
