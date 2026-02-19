@@ -1,5 +1,6 @@
 {
     "dotnet.defaultSolution": "enable",
     "codium.codeCompletion.enable": true,
-    "CodeGPT.apiKey": "Gemini CLI"
+    "CodeGPT.apiKey": "Gemini CLI",
+    "python-envs.defaultEnvManager": "ms-python.python:system"
 }

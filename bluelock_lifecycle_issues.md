@@ -1,17 +1,16 @@
 ﻿# BlueLock + Lifecycle Issue Tracker
 
-Last updated: 2026-02-18
+Last updated: 2026-02-19
 
-## Verified from latest logs
+## Resolved
 
-1) ArenaBuild loadout command fails
+1) ArenaBuild loadout command fails - **RESOLVED**
 - Symptom: `[KitService] ArenaBuild apply failed ... give_build ... Unmatched`
 - Root cause: ArenaBuild command is not being matched at runtime.
-- What was changed:
-  - Added command fallback attempts: `give_build` + `giveb`, and `clear_build` + `clearb`.
-  - Default build id changed to `brute` (was `EmptyDefault`).
-- Files:
-  - `BlueLock/Services/KitService.cs`
+- Fix applied: Added command fallback attempts: `give_build` + `giveb`, and `clear_build` + `clearb`. Default build id changed to `brute`.
+- Files: `Bluelock/Services/KitService.cs`
+
+## Verified from latest logs
 
 2) Curl/TLS certificate failures
 - Symptom: `Curl error 60: Cert verify failed. Certificate has expired.`
@@ -46,13 +45,51 @@ Last updated: 2026-02-18
 - Action:
   - Increase zone hysteresis/cooldown or reduce teleport bounce at zone edge.
 
+7) Sandbox progression journal file format issue
+- Symptom: Issues with `sandbox_progression_journal.jsonl` file.
+- Scope: State persistence/sandbox system.
+- Action:
+  - Verify the file is valid JSONL format (one JSON object per line).
+  - Check for parsing errors in sandbox state loading/saving.
+  - Files:
+    - `Core/Services/SandboxSnapshotStore.cs`
+    - Core/Services/SandboxPersistenceService.cs`
+
+8) Lifecycle flow broken - only kits and give commands work
+- Symptom: Zone enter/exit only executes kits and `give` commands. No bosses, tiles, units, restore items, clear items, or glow are spawning.
+- Scope: Complete lifecycle step failure on zone enter.
+- What works: Kit application, give commands (via KitService)
+- What is broken:
+  - Boss spawning (ZoneBossSpawnerService)
+  - Tile/structure spawning (ZoneStructureLoader, SchematicZoneService)
+  - Item restoration (sandbox snapshot restore)
+  - Item clearing
+  - Glow border rendering (GlowTileService, ZoneGlowBorderService)
+- Root cause: Multiple issues found:
+  1. **Config vs Code mismatch**: `VAuto.ZoneLifecycle.json` uses `apply_kit` but Plugin.cs expects `kit_apply`
+     - Config line 12: `"apply_kit"`
+     - Plugin.cs line 2528: `case "kit_apply":`
+  2. **Missing glow_spawn**: `glow_spawn` is not included in onEnter actions
+     - Glow steps exist in Plugin.cs (lines 2548-2556) but config doesn't reference them
+  3. **Empty templates**: All zones have `"templates": {}` (empty object) in VAuto.Zones.json
+     - Lines 55, 94, 133, 172, 211 all show `"templates": {}`
+     - ApplyZoneTemplatesOnEnter exits early when templates are empty
+     - This explains why no bosses, tiles, or units spawn
+  4. **Action tokens may be failing silently**: TryRunZoneEnterStep catches exceptions but may not be logging all failures
+- Files to investigate:
+  - `Bluelock/config/VAuto.ZoneLifecycle.json`
+  - `Bluelock/Plugin.cs` lines 2509-2622 (action token switch)
+  - `Bluelock/Services/ZoneBossSpawnerService.cs`
+  - `Bluelock/Services/ZoneStructureLoader.cs`
+  - `Bluelock/Services/GlowTileService.cs`
+
 ## Immediate checklist
 
-- [ ] Confirm `ArenaBuilds.dll` is installed and loaded on startup if ArenaBuild path is required.
-- [ ] In ArenaBuild `builds.json`, ensure build key `brute` exists.
-- [ ] Re-test zone enter in zone `1` and confirm no `Unmatched` command warnings.
 - [ ] If TLS errors continue, identify offending endpoint/plugin and rotate certificate.
 - [ ] Validate glow prefab mapping for zone `1`.
+- [ ] **FIX ISSUE #8**: Add templates to zone configs OR remove empty templates check
+- [ ] **FIX ISSUE #8**: Add `glow_spawn` to onEnter actions in VAuto.ZoneLifecycle.json
+- [ ] **FIX ISSUE #8**: Change `apply_kit` to `kit_apply` in VAuto.ZoneLifecycle.json OR add fallback in Plugin.cs
 
 ## Current deployment note
 

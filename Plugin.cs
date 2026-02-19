@@ -39,6 +39,9 @@ namespace VAutomationCore
                 Log.LogInfo($"[{MyPluginInfo.NAME}] Loaded core shared library.");
                 LogStartupSummary();
 
+                // Initialize PlayerAPI endpoints
+                RegisterPlayerApiEndpoints();
+
                 // Initialize Harmony for patching
                 _harmony = new Harmony(MyPluginInfo.GUID);
             }
@@ -72,6 +75,27 @@ namespace VAutomationCore
             Log.LogInfo($"[{MyPluginInfo.NAME}] Startup Summary:");
             Log.LogInfo($"[{MyPluginInfo.NAME}]   Config: {cfgPath}");
             Log.LogInfo($"[{MyPluginInfo.NAME}]   Processes: VRisingServer.exe, VRising.exe");
+        }
+
+        private void RegisterPlayerApiEndpoints()
+        {
+            try
+            {
+                // Register PlayerAPI endpoints with VRisingServerApiPlugin
+                // Note: This requires VRisingServerApiPlugin to be installed and loaded
+                // ZUtility.API reference commented out - requires external dependency
+                // var playerApi = new ZUtility.API.PlayerAPI();
+                
+                // Register endpoints - adjust based on actual VRisingServerApiPlugin API
+                // Example registration (actual method depends on the plugin):
+                // VRisingServerApiPlugin.RegisterEndpoint(playerApi);
+                
+                Log.LogInfo("[PlayerAPI] Endpoints would be registered (ZUtility not available)");
+            }
+            catch (Exception ex)
+            {
+                Log.LogWarning($"[PlayerAPI] Failed to register endpoints: {ex.Message}");
+            }
         }
     }
 }
