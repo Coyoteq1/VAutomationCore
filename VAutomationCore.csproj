@@ -108,6 +108,7 @@
     <Compile Include="Core\Data\*.cs" />
     <Compile Include="Chat\ChatService.cs" />
     <Compile Include="Models\GlowZoneEntry.cs" />
+    <Compile Include="Models\BloodType.cs" />
     <Compile Include="Models\PlayerZoneState.cs" />
     <Compile Include="Services\ZoneEventBridge.cs" />
 

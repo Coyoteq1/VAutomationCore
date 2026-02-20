@@ -100,6 +100,46 @@ namespace VAuto.Core.Services
         private static readonly Dictionary<string, SandboxDeltaSnapshot> ActiveDeltas = new(StringComparer.Ordinal);
         private static bool _dirty;
 
+        // ============== Diagnostic Methods ==============
+        
+        /// <summary>
+        /// Get snapshot counts for diagnostics.
+        /// </summary>
+        public static (int activeBaselines, int pendingContexts, int activeDeltas, bool isDirty) GetSnapshotCounts()
+        {
+            lock (Sync)
+            {
+                return (ActiveBaselines.Count, PendingContexts.Count, ActiveDeltas.Count, _dirty);
+            }
+        }
+        
+        /// <summary>
+        /// Get baseline snapshot info for a player.
+        /// </summary>
+        public static (string? zoneId, int rowCount, DateTime? capturedUtc) GetBaselineInfo(ulong platformId)
+        {
+            lock (Sync)
+            {
+                var baseline = ActiveBaselines.Values.FirstOrDefault(b => b.PlatformId == platformId);
+                if (baseline != null)
+                {
+                    return (baseline.ZoneId, baseline.Rows?.Length ?? 0, baseline.CapturedUtc);
+                }
+                return (null, 0, null);
+            }
+        }
+        
+        /// <summary>
+        /// Check if player has active baseline.
+        /// </summary>
+        public static bool HasActiveBaseline(ulong platformId)
+        {
+            lock (Sync)
+            {
+                return ActiveBaselines.Values.Any(b => b.PlatformId == platformId);
+            }
+        }
+
         public static void ClearAll()
         {
             lock (Sync)
