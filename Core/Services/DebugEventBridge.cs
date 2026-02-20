@@ -78,7 +78,33 @@ namespace VAuto.Core.Services
         public static void OnPlayerIsInZone(Entity character) => OnPlayerIsInZone(character, true);
         public static void OnPlayerExitZone(Entity character) => OnPlayerExitZone(character, true);
         public static void FlushSnapshotsToDisk() => PersistSnapshotsToDisk();
-
+        
+        // ============== Diagnostic Methods ==============
+        
+        /// <summary>
+        /// Get sandbox snapshot counts for diagnostics.
+        /// </summary>
+        public static (int activeBaselines, int pendingContexts, int activeDeltas, bool isDirty) GetSnapshotCounts()
+        {
+            return SandboxSnapshotStore.GetSnapshotCounts();
+        }
+        
+        /// <summary>
+        /// Get baseline info for a player.
+        /// </summary>
+        public static (string? zoneId, int rowCount, DateTime? capturedUtc) GetBaselineInfo(ulong platformId)
+        {
+            return SandboxSnapshotStore.GetBaselineInfo(platformId);
+        }
+        
+        /// <summary>
+        /// Check if player has active baseline.
+        /// </summary>
+        public static bool HasActiveBaseline(ulong platformId)
+        {
+            return SandboxSnapshotStore.HasActiveBaseline(platformId);
+        }
+        
         public static void OnPlayerEnter(Entity character, string zoneId, bool enableUnlock)
         {
             OnZoneEnterStart(character, zoneId, enableUnlock);

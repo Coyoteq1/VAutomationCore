@@ -9,6 +9,8 @@ namespace VAutomationCore.Models
         public string PreviousZoneId { get; set; } = string.Empty;
         public bool WasInZone { get; set; }
         public bool IsInAnyZone { get; set; }
+        public BloodType BloodType { get; set; } = BloodType.Frail;
+        public float BloodQuality { get; set; }
         public long LastUpdateTimestamp { get; set; }
         public DateTime? EnteredAt { get; set; }
         public DateTime? ExitedAt { get; set; }
