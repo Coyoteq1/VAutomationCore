@@ -2,7 +2,6 @@ using System;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Unity.Mathematics;
 using VAutomationCore.Core.Logging;
 using ProjectM;
@@ -17,20 +16,24 @@ namespace VAutomationCore.Core.Config
     {
         private static readonly ConcurrentDictionary<string, object> _configs = new();
         private static readonly string _configPath;
-        private static readonly object _initLock = new();
-        private static readonly CoreLogger _log = new CoreLogger("ConfigService");
-        
+        private static readonly CoreLogger _log = new("ConfigService");
+        private static readonly JsonSerializerOptions _jsonOptions = CreateJsonOptions();
+
         static ConfigService()
         {
             _configPath = Path.Combine(BepInEx.Paths.ConfigPath, "VAuto");
-            
-            // Ensure config directory exists
+
             if (!Directory.Exists(_configPath))
             {
                 Directory.CreateDirectory(_configPath);
             }
         }
-        
+
+        /// <summary>
+        /// Gets the root folder where VAutomationCore configuration files are stored.
+        /// </summary>
+        public static string ConfigRootPath => _configPath;
+
         /// <summary>
         /// Gets a configuration object of type T, loading from disk if not cached.
         /// </summary>
@@ -39,31 +42,31 @@ namespace VAutomationCore.Core.Config
         /// <returns>The loaded or default configuration.</returns>
         public static T GetConfig<T>(string? fileName = null) where T : new()
         {
-            var key = typeof(T).Name;
-            var configFile = fileName ?? $"{key}.json";
+            var configFile = ResolveConfigFileName<T>(fileName);
+            var cacheKey = GetCacheKey<T>(configFile);
             var fullPath = Path.Combine(_configPath, configFile);
-            
-            return (T)_configs.GetOrAdd(key, _ =>
+
+            return (T)_configs.GetOrAdd(cacheKey, _ =>
             {
                 if (!File.Exists(fullPath))
                 {
                     var defaultConfig = new T();
-                    SaveConfig(defaultConfig, configFile);
+                    TrySaveConfig(defaultConfig, configFile);
                     _log.Info($"Created default config: {configFile}");
                     return defaultConfig;
                 }
-                
+
                 try
                 {
                     var json = File.ReadAllText(fullPath);
-                    var result = JsonSerializer.Deserialize<T>(json, GetJsonOptions());
-                    
+                    var result = JsonSerializer.Deserialize<T>(json, _jsonOptions);
+
                     if (result == null)
                     {
                         _log.Warning($"Failed to deserialize {configFile}, using defaults");
                         return new T();
                     }
-                    
+
                     _log.Debug($"Loaded config: {configFile}");
                     return result;
                 }
@@ -74,7 +77,25 @@ namespace VAutomationCore.Core.Config
                 }
             });
         }
-        
+
+        /// <summary>
+        /// Attempts to get a configuration object without throwing exceptions to callers.
+        /// </summary>
+        public static bool TryGetConfig<T>(out T config, string? fileName = null) where T : new()
+        {
+            try
+            {
+                config = GetConfig<T>(fileName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.Exception(ex, $"TryGetConfig failed for {ResolveConfigFileName<T>(fileName)}");
+                config = new T();
+                return false;
+            }
+        }
+
         /// <summary>
         /// Saves a configuration object to disk and updates the cache.
         /// </summary>
@@ -83,23 +104,33 @@ namespace VAutomationCore.Core.Config
         /// <param name="fileName">Optional custom filename.</param>
         public static void SaveConfig<T>(T config, string? fileName = null)
         {
-            var key = typeof(T).Name;
-            var configFile = fileName ?? $"{key}.json";
+            TrySaveConfig(config, fileName);
+        }
+
+        /// <summary>
+        /// Attempts to save a configuration object and returns success/failure.
+        /// </summary>
+        public static bool TrySaveConfig<T>(T config, string? fileName = null)
+        {
+            var configFile = ResolveConfigFileName<T>(fileName);
             var fullPath = Path.Combine(_configPath, configFile);
-            
+            var cacheKey = GetCacheKey<T>(configFile);
+
             try
             {
-                var json = JsonSerializer.Serialize(config, GetJsonOptions());
+                var json = JsonSerializer.Serialize(config, _jsonOptions);
                 File.WriteAllText(fullPath, json);
-                _configs[key] = config!;
+                _configs[cacheKey] = config!;
                 _log.Info($"Saved config: {configFile}");
+                return true;
             }
             catch (Exception ex)
             {
                 _log.Exception(ex, $"Error saving {configFile}");
+                return false;
             }
         }
-        
+
         /// <summary>
         /// Reloads a configuration from disk, bypassing cache.
         /// </summary>
@@ -108,17 +139,22 @@ namespace VAutomationCore.Core.Config
         /// <returns>The freshly loaded configuration.</returns>
         public static T ReloadConfig<T>(string? fileName = null) where T : new()
         {
-            var key = typeof(T).Name;
-            var configFile = fileName ?? $"{key}.json";
-            var fullPath = Path.Combine(_configPath, configFile);
-            
-            // Remove from cache
-            _configs.TryRemove(key, out _);
-            
-            // Force reload
+            var configFile = ResolveConfigFileName<T>(fileName);
+            var cacheKey = GetCacheKey<T>(configFile);
+            _configs.TryRemove(cacheKey, out _);
+
             return GetConfig<T>(configFile);
         }
-        
+
+        /// <summary>
+        /// Gets the full path to a specific config file for type T.
+        /// </summary>
+        public static string GetConfigFullPath<T>(string? fileName = null)
+        {
+            var configFile = ResolveConfigFileName<T>(fileName);
+            return Path.Combine(_configPath, configFile);
+        }
+
         /// <summary>
         /// Checks if a configuration file exists.
         /// </summary>
@@ -127,11 +163,10 @@ namespace VAutomationCore.Core.Config
         /// <returns>True if the file exists.</returns>
         public static bool ConfigExists<T>(string? fileName = null)
         {
-            var configFile = fileName ?? $"{typeof(T).Name}.json";
-            var fullPath = Path.Combine(_configPath, configFile);
+            var fullPath = GetConfigFullPath<T>(fileName);
             return File.Exists(fullPath);
         }
-        
+
         /// <summary>
         /// Clears all cached configurations.
         /// </summary>
@@ -140,11 +175,18 @@ namespace VAutomationCore.Core.Config
             _configs.Clear();
             _log.Info("Config cache cleared");
         }
-        
-        /// <summary>
-        /// Gets the JSON serializer options with custom converters.
-        /// </summary>
-        private static JsonSerializerOptions GetJsonOptions()
+
+        private static string ResolveConfigFileName<T>(string? fileName)
+        {
+            return string.IsNullOrWhiteSpace(fileName) ? $"{typeof(T).Name}.json" : fileName;
+        }
+
+        private static string GetCacheKey<T>(string configFile)
+        {
+            return $"{typeof(T).FullName}:{configFile.Trim().ToLowerInvariant()}";
+        }
+
+        private static JsonSerializerOptions CreateJsonOptions()
         {
             return new JsonSerializerOptions
             {

@@ -27,6 +27,44 @@ Load order: `VAutomationCore` → `lifecycle` → `BlueLock`
 
 ---
 
+## Developer API Surface (New)
+
+`VAutomationCore` now includes reusable coding APIs for mod authors beyond workflow automation.
+
+### New APIs
+
+- `VAutomationCore.Core.Api.OperationResult` and `OperationResult<T>` for explicit success/failure contracts.
+- `VAutomationCore.Core.Api.CoreExecution` for safe execution wrappers (sync/async).
+- `VAutomationCore.Core.Api.RetryPolicy` for configurable retry + backoff behavior.
+- `VAutomationCore.Core.Api.ServiceRegistry` for typed runtime service registration and lookup.
+- `VAutomationCore.Core.Config.ConfigService` now supports:
+  - Safe `TryGetConfig` / `TrySaveConfig` helpers.
+  - `GetConfigFullPath<T>()` path resolution.
+  - Correct cache isolation per type + file name (no cross-file collisions).
+- `VAutomationCore.Core.Events.TypedEventBus` now supports:
+  - `SubscribeScoped<T>()` disposable subscriptions.
+  - `PublishAndCount<T>()` delivery metrics.
+  - `GetSubscriberCount<T>()` and `HasSubscribers<T>()`.
+
+### Quick Usage
+
+```csharp
+using VAutomationCore.Core.Api;
+using VAutomationCore.Core.Config;
+
+var save = CoreExecution.RunWithRetry(
+    () => ConfigService.SaveConfig(mySettings, "server_rules.json"),
+    new RetryPolicy { MaxAttempts = 3, InitialDelay = TimeSpan.FromMilliseconds(200) },
+    operationName: "save_server_rules");
+
+if (!save)
+{
+    // Handle save.ErrorMessage / save.Exception
+}
+```
+
+---
+
 ## Directory Structure
 
 ```
@@ -588,4 +626,3 @@ These commands are safe because lifecycle guarantees reversibility.
 | `olddocs/` | Legacy docs (git-ignored) |
 
 > Restart the server after changing any `.cfg` or `.json` file or replacing plugin DLLs.
-
