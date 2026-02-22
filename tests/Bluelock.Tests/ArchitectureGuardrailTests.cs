@@ -47,11 +47,9 @@ namespace Bluelock.Tests
 
             var allowedByProject = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
             {
-                // Temporary exception: Bluelock currently references CycleBorn.
                 ["VAutoZone.csproj"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    "../VAutomationCore.csproj",
-                    "../CycleBorn/Vlifecycle.csproj"
+                    "../VAutomationCore.csproj"
                 },
                 ["Vlifecycle.csproj"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {

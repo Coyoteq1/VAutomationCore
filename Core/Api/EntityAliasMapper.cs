@@ -246,8 +246,8 @@ namespace VAutomationCore.Core.Api
                 return false;
             }
 
-            return typeof(IComponentData).IsAssignableFrom(type)
-                   || typeof(IBufferElementData).IsAssignableFrom(type);
+            // Verify it's actually an ECS component (implements IComponentData)
+            return typeof(IComponentData).IsAssignableFrom(type);
         }
 
         private static Type ResolveType(string fullName)

@@ -67,6 +67,7 @@ namespace VAuto.Zone.Commands
 <color=#00FFFF>.z radius [name] [radius] (.z r)</color> - Set zone radius
 <color=#00FFFF>.z tp [name] (.z teleport)</color> - Teleport to zone center
 <color=#00FFFF>.z status [name] (.z s)</color> - Show zone details including lifecycle status
+<color=#00FFFF>.z identify (.z id)</color> - Identify best matching zone(s) at your position
 <color=#00FFFF>.z diag (.z dg)</color> - Show live runtime diagnostics for your player
 <color=#00FFFF>.z default [name] (.z d)</color> - Set default zone (checked first for zone detection)
 <color=#00FFFF>.z arena [name] [on/off]</color> - Toggle arena damage mode
@@ -102,6 +103,12 @@ namespace VAuto.Zone.Commands
                 if (zones.Any(z => string.Equals(z.Name, name, StringComparison.OrdinalIgnoreCase)))
                 {
                     ctx.Reply($"<color=#FF0000>Error: Zone '{name}' already exists.</color>");
+                    return;
+                }
+
+                if (ZoneConfigService.TryFindSameLocationZone(name, position.x, position.z, radius, out var locationConflict))
+                {
+                    ctx.Reply($"<color=#FF0000>Error: Zone '{name}' conflicts with existing zone '{locationConflict.Id}' at nearly the same location/radius. Move center or change radius.</color>");
                     return;
                 }
 
@@ -302,6 +309,13 @@ namespace VAuto.Zone.Commands
                     return;
                 }
 
+                var referenceRadius = zone.Radius > 0f ? zone.Radius : 50f;
+                if (ZoneConfigService.TryFindSameLocationZone(zone.Name, position.x, position.z, referenceRadius, out var locationConflict))
+                {
+                    ctx.Reply($"<color=#FF0000>Error: New center conflicts with zone '{locationConflict.Id}' at nearly the same location/radius.</color>");
+                    return;
+                }
+
                 var oldCenter = zone.Center;
                 zone.Center = position;
 
@@ -348,6 +362,12 @@ namespace VAuto.Zone.Commands
                 if (zone == null)
                 {
                     ctx.Reply($"<color=#FF0000>Error: Zone '{name}' not found.</color>");
+                    return;
+                }
+
+                if (ZoneConfigService.TryFindSameLocationZone(zone.Name, zone.Center.x, zone.Center.z, radius, out var locationConflict))
+                {
+                    ctx.Reply($"<color=#FF0000>Error: Radius update conflicts with zone '{locationConflict.Id}' at nearly the same location/radius.</color>");
                     return;
                 }
 
@@ -487,6 +507,54 @@ namespace VAuto.Zone.Commands
             {
                 Plugin.Logger.LogError($"ArenaDefault error: {ex.Message}");
                 ctx.Reply("<color=#FF0000>Error setting default zone.</color>");
+            }
+        }
+
+        [Command("identify", shortHand: "id", description: "Identify best matching zone(s) at your position", adminOnly: true)]
+        public static void Identify(ChatCommandContext ctx)
+        {
+            try
+            {
+                if (!TryGetPlayerPosition(ctx, out var position))
+                {
+                    ctx.Reply("<color=#FF0000>Error: Could not determine your position.</color>");
+                    return;
+                }
+
+                var matches = ZoneConfigService.GetZoneMatchesAtPosition(position.x, position.z);
+                if (matches.Count == 0)
+                {
+                    ctx.Reply($"<color=#FFFF00>No zone matched at ({position.x:F1}, {position.y:F1}, {position.z:F1}).</color>");
+                    return;
+                }
+
+                var lines = new List<string>
+                {
+                    $"<color=#00FFFF>[Zone Identify]</color> Pos=({position.x:F1}, {position.y:F1}, {position.z:F1})"
+                };
+
+                var max = Math.Min(5, matches.Count);
+                for (var i = 0; i < max; i++)
+                {
+                    var match = matches[i];
+                    var zone = match.Zone;
+                    var tags = zone?.Tags != null && zone.Tags.Count > 0 ? string.Join(",", zone.Tags) : "none";
+                    var templates = zone?.Templates?.Count ?? 0;
+                    var glowAuto = zone?.GlowTileEnabled == true && zone.GlowTileAutoSpawnOnEnter;
+                    var defaultLabel = match.IsDefault ? " [DEFAULT]" : string.Empty;
+                    lines.Add(
+                        $"{i + 1}. {zone?.Id ?? "unknown"}{defaultLabel} " +
+                        $"r={match.FootprintRadius:F1} " +
+                        $"dist={math.sqrt(match.DistanceSq):F2} " +
+                        $"glowAuto={glowAuto} templates={templates} tags={tags}");
+                }
+
+                ctx.Reply(string.Join("\n", lines));
+            }
+            catch (Exception ex)
+            {
+                Plugin.Logger.LogError($"ArenaIdentify error: {ex.Message}");
+                ctx.Reply("<color=#FF0000>Error identifying zone.</color>");
             }
         }
 

@@ -1,0 +1,90 @@
+<error_handling>
+  <overview>
+    Guidance for diagnosing and recovering from failures during cross-project engineering work.
+    Focus on containment, reversibility, and preserving repository integrity.
+  </overview>
+
+  <error_categories>
+    <category name="scope_and_requirements">
+      <symptoms>
+        <symptom>Requested outcome is unclear or contradictory.</symptom>
+        <symptom>Newly discovered constraints invalidate the initial approach.</symptom>
+      </symptoms>
+      <response>
+        <step>Pause broad implementation and restate resolved objective and constraints.</step>
+        <step>Reduce scope to a validated minimal objective.</step>
+        <step>Defer uncertain extensions into explicit follow-up items.</step>
+      </response>
+    </category>
+
+    <category name="integration_and_contract_failures">
+      <symptoms>
+        <symptom>Changes compile or validate locally but fail at project boundaries.</symptom>
+        <symptom>Consumer modules exhibit incompatibility after shared contract updates.</symptom>
+      </symptoms>
+      <response>
+        <step>Identify the exact failing boundary and classify compatibility type.</step>
+        <step>Apply additive or coordinated compatibility adjustments.</step>
+        <step>Re-run boundary-focused validation before widening scope.</step>
+      </response>
+    </category>
+
+    <category name="regression_detection">
+      <symptoms>
+        <symptom>Previously stable behavior changes unexpectedly in adjacent modules.</symptom>
+        <symptom>Validation reveals side effects outside intended scope.</symptom>
+      </symptoms>
+      <response>
+        <step>Stop additional edits and isolate latest safe state.</step>
+        <step>Determine whether regression originates from behavior change or structural coupling.</step>
+        <step>Introduce minimal corrective patch and re-validate affected boundaries.</step>
+      </response>
+    </category>
+
+    <category name="configuration_or_packaging_drift">
+      <symptoms>
+        <symptom>Code behavior diverges from schema/config expectations.</symptom>
+        <symptom>Build or packaging outputs become inconsistent with modified modules.</symptom>
+      </symptoms>
+      <response>
+        <step>Reconcile configuration/schema artifacts with implemented behavior.</step>
+        <step>Verify packaging manifests and related outputs reflect current module state.</step>
+        <step>Record the alignment actions in completion notes.</step>
+      </response>
+    </category>
+  </error_categories>
+
+  <recovery_strategy>
+    <phase name="containment">
+      <action>Limit further modifications until failure source is isolated.</action>
+      <action>Preserve a clear baseline for comparison and rollback decisions.</action>
+    </phase>
+
+    <phase name="diagnosis">
+      <action>Classify failure as requirement, compatibility, regression, or artifact-alignment issue.</action>
+      <action>Trace impact across directly coupled modules first, then adjacent consumers.</action>
+    </phase>
+
+    <phase name="remediation">
+      <action>Apply the narrowest viable fix that restores expected behavior.</action>
+      <action>Avoid unrelated cleanup during failure remediation.</action>
+    </phase>
+
+    <phase name="verification">
+      <action>Re-run validations covering both the original failure path and direct dependencies.</action>
+      <action>Confirm no new drift was introduced while remediating.</action>
+    </phase>
+  </recovery_strategy>
+
+  <escalation_conditions>
+    <condition>Stop and clarify when requirements conflict with established architecture constraints.</condition>
+    <condition>Escalate scope review when a local fix repeatedly causes cross-project regressions.</condition>
+    <condition>Require explicit decision when remediation implies unavoidable breaking contract changes.</condition>
+  </escalation_conditions>
+
+  <completion_requirements>
+    <requirement>Document root cause category and remediation intent.</requirement>
+    <requirement>Record validations executed after remediation.</requirement>
+    <requirement>List remaining risks and follow-up stabilization actions.</requirement>
+  </completion_requirements>
+</error_handling>

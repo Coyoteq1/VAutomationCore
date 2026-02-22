@@ -1,0 +1,22 @@
+# General VCS / editor
+.git/
+.vs/
+.vscode/
+
+# .NET build outputs
+bin/
+obj/
+
+# Node outputs
+node_modules/
+dist/
+build/
+
+# Local artifacts
+_bepinex_out/
+*.csv
+*.md
+*.txt
+*.log
+*.tmp
+*.cache

@@ -18,7 +18,7 @@ namespace VAutomationCore.Core
     {
         private static World? _server;
         private static bool _initialized;
-        private static readonly ManualLogSource Log = Plugin.Log;
+        private static readonly ManualLogSource Log = Plugin.CoreLog;
         
         /// <summary>
         /// Gets the server World. Lazy initializes on first access using main-thread guard pattern.

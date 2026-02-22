@@ -50,6 +50,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" IncludeAssets="compile" />
+    <PackageReference Include="VampireReferenceAssemblies" Version="1.1.11-r96495-b8" />
     <PackageReference Include="VRising.VampireCommandFramework" Version="0.10.4" />
     <PackageReference Include="Lib.Harmony" Version="2.2.2" />
     <PackageReference Include="Il2CppInterop.Runtime" Version="1.4.6-ci.426" />

@@ -19,7 +19,7 @@ namespace VAutomationCore.Core.Logging
         /// <param name="source">The source name for log messages.</param>
         public CoreLogger(string source)
         {
-            _log = Plugin.Log;
+            _log = Plugin.CoreLog;
             _source = source;
         }
 

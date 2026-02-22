@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 
 namespace VAutomationCore.Core.TrapLifecycle
 {
@@ -44,10 +45,9 @@ namespace VAutomationCore.Core.TrapLifecycle
 
         public static bool AreOverridesEnabled()
         {
-            lock (_lock)
-            {
-                return _policy != null && _policy.IsEnabled;
-            }
+            // Use volatile read to avoid lock overhead on every check
+            var policy = Volatile.Read(ref _policy);
+            return policy != null && policy.IsEnabled;
         }
 
         public static TrapLifecycleDecision EvaluateEnter(TrapLifecycleContext ctx)
@@ -88,10 +88,8 @@ namespace VAutomationCore.Core.TrapLifecycle
 
         private static ITrapLifecyclePolicy GetPolicy()
         {
-            lock (_lock)
-            {
-                return _policy;
-            }
+            // Use volatile read for thread-safe access without lock overhead
+            return Volatile.Read(ref _policy);
         }
     }
 }

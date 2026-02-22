@@ -119,7 +119,9 @@ namespace VAutomationCore.Core.Api
 
         internal static bool IsConsoleInvocation(ChatCommandContext ctx)
         {
-            return ctx == null || ctx.Event == null;
+            // Console invocation can be detected by checking if Event is null,
+            // as VampireCommandFramework only provides Event for chat-context invocations
+            return ctx?.Event == null;
         }
 
         internal static ulong ResolveSubjectId(ChatCommandContext ctx)

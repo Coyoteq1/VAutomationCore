@@ -2190,14 +2190,28 @@ namespace VAuto.Zone
                     return;
                 }
 
+                var zone = ZoneConfigService.GetZoneById(zoneId);
+                if (zone == null)
+                {
+                    return;
+                }
+
+                if (!ZoneTemplateService.TryValidateZoneSpawnLocation(zoneId, out var locationError))
+                {
+                    Logger.LogWarning($"[BlueLock] Zone '{zoneId}' template auto-spawn blocked: {locationError}");
+                    return;
+                }
+
                 var templates = ZoneConfigService.GetBuildTemplatesForZone(zoneId);
                 if (templates == null || templates.Count == 0)
                 {
                     return;
                 }
 
-                foreach (var template in templates)
+                for (var i = 0; i < templates.Count; i++)
                 {
+                    var template = templates[i];
+                    var templateType = ResolveTemplateTypeForZone(zone, template, i);
                     var isSchematic = ZoneSchematicLoader.TryGetSchematicPath(template) != null ||
                                       template.EndsWith(".schematic", StringComparison.OrdinalIgnoreCase);
 
@@ -2210,7 +2224,9 @@ namespace VAuto.Zone
                         }
                         else
                         {
-                            Logger.LogInfo($"[BlueLock] Zone '{zoneId}' applied schematic ({schematicResult.EntityCount} entities)");
+                            var origin = new float3(zone.CenterX, zone.CenterY, zone.CenterZ);
+                            _ = ZoneTemplateService.TrackExternalSpawn(zoneId, templateType, template, schematicResult.Entities, origin);
+                            Logger.LogInfo($"[BlueLock] Zone '{zoneId}' applied schematic '{template}' ({schematicResult.EntityCount} entities)");
                         }
                     }
                     else
@@ -2218,18 +2234,21 @@ namespace VAuto.Zone
                         // Template placement can trigger spawn-chain side effects; skip InitializeNewSpawnChainSystem once to reduce racey transitions.
                         // This mirrors common KindredSchematics mitigation patterns.
                         Patches.SkipInitializeNewSpawnChainOnce = true;
-                        var zone = ZoneConfigService.GetZoneById(zoneId);
-                        var origin = zone != null
-                            ? new float3(zone.CenterX, zone.CenterY, zone.CenterZ)
-                            : float3.zero;
-                        var result = BuildingService.Instance.LoadTemplate(template, em, origin, 0f);
+                        var result = ZoneTemplateService.SpawnZoneTemplate(zoneId, templateType, template, em);
                         if (!result.Success)
                         {
                             Logger.LogWarning($"[BlueLock] Zone '{zoneId}' template '{template}' failed: {result.Error}");
                         }
                         else
                         {
-                            Logger.LogInfo($"[BlueLock] Zone '{zoneId}' applied template '{template}'");
+                            if (string.Equals(result.Status, "AlreadySpawned", StringComparison.OrdinalIgnoreCase))
+                            {
+                                Logger.LogDebug($"[BlueLock] Zone '{zoneId}' template '{template}' already active (type='{templateType}').");
+                            }
+                            else
+                            {
+                                Logger.LogInfo($"[BlueLock] Zone '{zoneId}' applied template '{template}' ({result.EntityCount} entities)");
+                            }
                         }
                     }
                 }
@@ -2238,6 +2257,22 @@ namespace VAuto.Zone
             {
                 Logger.LogWarning($"[BlueLock] Failed to apply zone templates for '{zoneId}': {ex.Message}");
             }
+        }
+
+        private static string ResolveTemplateTypeForZone(ZoneDefinition zone, string templateName, int index)
+        {
+            if (zone?.Templates != null && zone.Templates.Count > 0)
+            {
+                foreach (var pair in zone.Templates)
+                {
+                    if (string.Equals(pair.Value, templateName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return pair.Key;
+                    }
+                }
+            }
+
+            return $"auto_{index + 1}";
         }
 
         private static void HandleZoneExit(Entity player, string zoneId)

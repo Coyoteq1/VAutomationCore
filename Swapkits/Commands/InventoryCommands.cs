@@ -174,32 +174,28 @@ namespace ExtraSlots.Commands
         public static void BindKey(ChatCommandContext ctx, string key, string itemId)
         {
             var steamId = ctx.User.PlatformId;
-            var keyCode = ParseKey(key);
-            
-            if (keyCode == KeyCode.None)
+            if (!WeaponBindsSystem.Instance.TryParseKey(key, out var keyCode, out var error))
             {
-                ctx.Reply("Invalid key. Use: F1-F12, 1-9, Q, W, E, R, T, Y");
+                ctx.Reply(error);
                 return;
             }
             
             WeaponBindsSystem.Instance.BindKey(steamId, keyCode, itemId);
-            ctx.Reply($"Bound {itemId} to {key}");
+            ctx.Reply($"Bound {itemId} to {keyCode}");
         }
         
         [Command("extra unbind", description: "Unbind key", adminOnly: false)]
         public static void UnbindKey(ChatCommandContext ctx, string key)
         {
             var steamId = ctx.User.PlatformId;
-            var keyCode = ParseKey(key);
-            
-            if (keyCode == KeyCode.None)
+            if (!WeaponBindsSystem.Instance.TryParseKey(key, out var keyCode, out var error))
             {
-                ctx.Reply("Invalid key");
+                ctx.Reply(error);
                 return;
             }
             
             WeaponBindsSystem.Instance.UnbindKey(steamId, keyCode);
-            ctx.Reply($"Unbound key {key}");
+            ctx.Reply($"Unbound key {keyCode}");
         }
         
         [Command("extra binds", description: "List keybinds", adminOnly: false)]
@@ -220,41 +216,30 @@ namespace ExtraSlots.Commands
                 ctx.Reply($"  {(KeyCode)bind.Key} -> {bind.Value}");
             }
         }
-        
-        private static KeyCode ParseKey(string key)
+
+        [Command("extra binds clear", description: "Clear your saved keybinds", adminOnly: false)]
+        public static void ClearBinds(ChatCommandContext ctx)
         {
-            key = key.ToUpper();
-            return key switch
+            var steamId = ctx.User.PlatformId;
+            WeaponBindsSystem.Instance.ClearBinds(steamId);
+            ctx.Reply("All keybinds cleared.");
+        }
+
+        [Command("extra keys", description: "List configured bind key aliases", adminOnly: false)]
+        public static void ListKeyAliases(ChatCommandContext ctx)
+        {
+            var aliases = WeaponBindsSystem.Instance.GetKeyAliases();
+            if (aliases.Count == 0)
             {
-                "1" => KeyCode.Alpha1,
-                "2" => KeyCode.Alpha2,
-                "3" => KeyCode.Alpha3,
-                "4" => KeyCode.Alpha4,
-                "5" => KeyCode.Alpha5,
-                "6" => KeyCode.Alpha6,
-                "7" => KeyCode.Alpha7,
-                "8" => KeyCode.Alpha8,
-                "9" => KeyCode.Alpha9,
-                "F1" => KeyCode.F1,
-                "F2" => KeyCode.F2,
-                "F3" => KeyCode.F3,
-                "F4" => KeyCode.F4,
-                "F5" => KeyCode.F5,
-                "F6" => KeyCode.F6,
-                "F7" => KeyCode.F7,
-                "F8" => KeyCode.F8,
-                "F9" => KeyCode.F9,
-                "F10" => KeyCode.F10,
-                "F11" => KeyCode.F11,
-                "F12" => KeyCode.F12,
-                "Q" => KeyCode.Q,
-                "W" => KeyCode.W,
-                "E" => KeyCode.E,
-                "R" => KeyCode.R,
-                "T" => KeyCode.T,
-                "Y" => KeyCode.Y,
-                _ => KeyCode.None
-            };
+                ctx.Reply("No key aliases configured.");
+                return;
+            }
+
+            ctx.Reply($"Key aliases (restrict={WeaponBindsSystem.Instance.IsRestrictedToAliases}):");
+            foreach (var alias in aliases.OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase))
+            {
+                ctx.Reply($"  {alias.Key} -> {alias.Value}");
+            }
         }
         
         // Revive Commands

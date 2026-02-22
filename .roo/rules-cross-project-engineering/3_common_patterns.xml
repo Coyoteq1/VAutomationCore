@@ -1,0 +1,88 @@
+<common_patterns>
+  <pattern name="cross_project_feature_slice">
+    <use_when>
+      Implementing or extending a capability that touches multiple modules or shared services.
+    </use_when>
+    <approach>
+      <step number="1">Define capability boundary and expected user-visible behavior.</step>
+      <step number="2">Map participating projects and integration touchpoints.</step>
+      <step number="3">Implement minimal vertical slice end-to-end.</step>
+      <step number="4">Validate direct dependencies before expanding scope.</step>
+    </approach>
+    <success_signals>
+      <signal>Behavior is coherent across all affected modules.</signal>
+      <signal>No unrelated modules require accidental adjustments.</signal>
+      <signal>Changes remain understandable as one cohesive intent.</signal>
+    </success_signals>
+  </pattern>
+
+  <pattern name="shared_contract_evolution">
+    <use_when>
+      Modifying shared models, interfaces, or lifecycle contracts consumed by multiple projects.
+    </use_when>
+    <approach>
+      <step number="1">Classify change as additive, compatibility-preserving, or breaking.</step>
+      <step number="2">Identify all consumer paths and expected compatibility behavior.</step>
+      <step number="3">Apply provider and consumer updates in coordinated sequence.</step>
+      <step number="4">Validate integration behavior at each boundary.</step>
+    </approach>
+    <success_signals>
+      <signal>Consumer code remains stable with explicit compatibility handling.</signal>
+      <signal>No hidden assumptions remain in downstream modules.</signal>
+    </success_signals>
+  </pattern>
+
+  <pattern name="stabilization_after_bug_fix">
+    <use_when>
+      Addressing regressions or flaky behavior that may be caused by cross-module interactions.
+    </use_when>
+    <approach>
+      <step number="1">Reconstruct failure path and isolate likely integration boundary.</step>
+      <step number="2">Apply the narrowest corrective change to restore expected behavior.</step>
+      <step number="3">Add or strengthen validation to prevent recurrence.</step>
+      <step number="4">Review adjacent modules for similar failure conditions.</step>
+    </approach>
+    <success_signals>
+      <signal>Primary defect is resolved without unrelated behavior drift.</signal>
+      <signal>Validation clearly covers the failure scenario.</signal>
+    </success_signals>
+  </pattern>
+
+  <pattern name="configuration_schema_sync">
+    <use_when>
+      Feature work introduces or modifies configuration-driven behavior.
+    </use_when>
+    <approach>
+      <step number="1">Define config intent, defaults, and constraints.</step>
+      <step number="2">Align code paths with schema/contracts and fallback behavior.</step>
+      <step number="3">Update affected configuration artifacts in the same workstream.</step>
+      <step number="4">Validate parsing and behavior under expected and edge inputs.</step>
+    </approach>
+    <success_signals>
+      <signal>Runtime behavior matches schema and defaults.</signal>
+      <signal>No orphan config keys or undocumented toggles are introduced.</signal>
+    </success_signals>
+  </pattern>
+
+  <pattern name="targeted_cleanup_without_behavior_change">
+    <use_when>
+      Improving maintainability (naming, organization, duplication reduction) while preserving behavior.
+    </use_when>
+    <approach>
+      <step number="1">State explicit non-goal: no functional behavior changes.</step>
+      <step number="2">Perform tightly scoped cleanup in one area at a time.</step>
+      <step number="3">Validate baseline behavior remains intact.</step>
+      <step number="4">Capture optional follow-up improvements separately.</step>
+    </approach>
+    <success_signals>
+      <signal>Readability and maintainability improve without runtime deltas.</signal>
+      <signal>Reviewers can verify intent quickly due to focused scope.</signal>
+    </success_signals>
+  </pattern>
+
+  <selection_guidance>
+    <rule>If the request is ambiguous, prefer the most conservative pattern first.</rule>
+    <rule>Combine patterns only when scope clearly requires it; keep phase boundaries explicit.</rule>
+    <rule>When combining patterns, retain separate validation checkpoints for each risk area.</rule>
+  </selection_guidance>
+</common_patterns>

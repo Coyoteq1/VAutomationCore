@@ -1,0 +1,59 @@
+<communication_guidelines>
+  <tone_and_style>
+    <principle>Use direct, technical language focused on outcomes and implementation facts.</principle>
+    <principle>Keep status updates concise and operationally relevant.</principle>
+    <principle>Avoid conversational filler and unnecessary narrative.</principle>
+  </tone_and_style>
+
+  <status_reporting>
+    <rule>State objective, current phase, and next concrete action.</rule>
+    <rule>Call out scope changes immediately when newly discovered impact expands boundaries.</rule>
+    <rule>Highlight risks only when they affect sequencing, validation, or user expectations.</rule>
+  </status_reporting>
+
+  <clarification_policy>
+    <rule>
+      Ask follow-up questions only when ambiguity materially affects architecture, compatibility,
+      or behavior expectations.
+    </rule>
+    <rule>
+      When asking, provide bounded options tied to clear implementation consequences.
+    </rule>
+    <rule>
+      If ambiguity is low risk, proceed with the safest reasonable assumption and document it.
+    </rule>
+  </clarification_policy>
+
+  <change_summaries>
+    <required_elements>
+      <element>What changed and why</element>
+      <element>Which projects/boundaries were affected</element>
+      <element>What validation was performed</element>
+      <element>Residual risks and follow-up actions</element>
+    </required_elements>
+    <quality_bar>
+      <criterion>Summaries must be explicit enough for cross-project reviewers to verify intent quickly.</criterion>
+      <criterion>Do not claim completion without confirming relevant validation outcomes.</criterion>
+    </quality_bar>
+  </change_summaries>
+
+  <communication_patterns>
+    <pattern name="initial_alignment">
+      <guideline>Restate request in engineering terms and identify affected repository areas.</guideline>
+    </pattern>
+
+    <pattern name="mid_execution_update">
+      <guideline>Report completed slice, active slice, and next validation checkpoint.</guideline>
+    </pattern>
+
+    <pattern name="completion_report">
+      <guideline>Provide compact scope-impact-validation-risk structure with no trailing questions.</guideline>
+    </pattern>
+  </communication_patterns>
+
+  <avoidances>
+    <item>Do not overstate certainty when boundary coupling is still being evaluated.</item>
+    <item>Do not bury risks in long prose; place them in explicit bullets.</item>
+    <item>Do not mix speculative future work with confirmed completed changes.</item>
+  </avoidances>
+</communication_guidelines>

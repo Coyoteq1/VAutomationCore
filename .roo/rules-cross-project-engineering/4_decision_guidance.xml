@@ -1,0 +1,95 @@
+<decision_guidance>
+  <principles>
+    <principle>Prefer the smallest complete solution that satisfies the request and preserves repository coherence.</principle>
+    <principle>Choose approaches that keep shared contracts stable unless explicit contract evolution is required.</principle>
+    <principle>Separate behavior change from structural cleanup when mixed intent would reduce review clarity.</principle>
+    <principle>Use explicit validation checkpoints whenever crossing project boundaries.</principle>
+  </principles>
+
+  <decision_matrix>
+    <decision type="scope_selection">
+      <question>Should the change remain local or span multiple projects?</question>
+      <choose option="local">
+        If the request and impact are confined to one module and no shared contract is touched.
+      </choose>
+      <choose option="cross_project">
+        If shared services, lifecycle boundaries, configuration contracts, or packaging outputs are affected.
+      </choose>
+    </decision>
+
+    <decision type="strategy_selection">
+      <question>Should implementation be single-pass or phased?</question>
+      <choose option="single_pass">
+        If impact is narrow, dependencies are straightforward, and validation is simple.
+      </choose>
+      <choose option="phased">
+        If multiple boundaries are touched, compatibility risk exists, or rollback clarity is needed.
+      </choose>
+    </decision>
+
+    <decision type="abstraction_introduction">
+      <question>Should new shared abstractions be introduced?</question>
+      <choose option="yes">
+        Only when duplication or inconsistency is material and the abstraction reduces long-term risk.
+      </choose>
+      <choose option="no">
+        When existing structures can satisfy the requirement with focused improvements.
+      </choose>
+    </decision>
+
+    <decision type="compatibility_handling">
+      <question>How to treat shared contract changes?</question>
+      <choose option="additive">
+        Prefer additive evolution with compatibility-preserving defaults.
+      </choose>
+      <choose option="coordinated_update">
+        If additive change is insufficient, update provider and consumers in a controlled sequence.
+      </choose>
+    </decision>
+  </decision_matrix>
+
+  <guardrails>
+    <guardrail>
+      Do not proceed with high-impact changes when the request is materially ambiguous; clarify the
+      outcome first.
+    </guardrail>
+    <guardrail>
+      Do not expand scope to opportunistic rewrites unless they are required for correctness or stability.
+    </guardrail>
+    <guardrail>
+      Do not leave configuration/schema or packaging artifacts inconsistent with code behavior.
+    </guardrail>
+    <guardrail>
+      Do not mark completion without validating impacted modules and direct integration paths.
+    </guardrail>
+  </guardrails>
+
+  <tradeoff_guidance>
+    <tradeoff>
+      <situation>Fast delivery versus architecture quality</situation>
+      <preferred_resolution>
+        Deliver minimal correct functionality first, then isolate architectural enhancements into explicit
+        follow-up steps.
+      </preferred_resolution>
+    </tradeoff>
+
+    <tradeoff>
+      <situation>Broad cleanup versus low regression risk</situation>
+      <preferred_resolution>
+        Prioritize low-risk targeted cleanup with clear boundaries and incremental validation.
+      </preferred_resolution>
+    </tradeoff>
+
+    <tradeoff>
+      <situation>Shared abstraction versus localized implementation</situation>
+      <preferred_resolution>
+        Use shared abstraction only when at least two active paths benefit and maintenance burden is reduced.
+      </preferred_resolution>
+    </tradeoff>
+  </tradeoff_guidance>
+
+  <validation_alignment>
+    <rule>Ensure final validation scope matches the selected strategy and impacted boundaries.</rule>
+    <rule>Re-check earlier assumptions when implementation reveals wider coupling than expected.</rule>
+  </validation_alignment>
+</decision_guidance>

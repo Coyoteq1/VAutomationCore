@@ -277,15 +277,31 @@ namespace VLifecycle
             Log.LogInfo("[VLifecycle] Startup Summary:");
             Log.LogInfo($"[VLifecycle]   Config(JSON): {_configPath}");
             Log.LogInfo($"[VLifecycle]   Legacy Config(JSON): {_legacyConfigPath}");
+            Log.LogInfo($"[VLifecycle]   Sandbox Main Arena: {SandboxDefaultArenaId}");
+            Log.LogInfo($"[VLifecycle]   Sandbox Experimental Arena: {SandboxExperimentalArenaId}");
             Log.LogInfo("[VLifecycle]   Command Roots: lifecycle");
         }
 
         #region Sandbox Configuration Accessors
-        public static bool SandboxEnabled => _jsonConfig?.Sandbox?.Enabled ?? true;
-        public static bool SandboxAutoApplyUnlocks => _jsonConfig?.Sandbox?.AutoApplyUnlocks ?? true;
-        public static bool SandboxSuppressVBloodFeed => _jsonConfig?.Sandbox?.SuppressVBloodFeed ?? true;
-        public static float SandboxDespawnDelaySeconds => (float)(_jsonConfig?.Sandbox?.DespawnDelaySeconds ?? 2.0);
-        public static string SandboxDefaultArenaId => _jsonConfig?.Sandbox?.DefaultArenaId ?? "sandbox_main";
+        public static SandboxRuntimeConfig GetSandboxRuntimeConfig(string arenaId = "")
+        {
+            var sandbox = _jsonConfig?.Sandbox ?? new SandboxSection();
+            return sandbox.ResolveRuntime(arenaId);
+        }
+
+        public static bool SandboxEnabled => GetSandboxRuntimeConfig().Enabled;
+        public static bool SandboxAutoApplyUnlocks => GetSandboxRuntimeConfig().AutoApplyUnlocks;
+        public static bool SandboxSuppressVBloodFeed => GetSandboxRuntimeConfig().SuppressVBloodFeed;
+        public static float SandboxDespawnDelaySeconds => (float)GetSandboxRuntimeConfig().DespawnDelaySeconds;
+        public static string SandboxDefaultArenaId => GetSandboxRuntimeConfig().DefaultArenaId;
+        public static string SandboxExperimentalArenaId => _jsonConfig?.Sandbox?.ExperimentalArenaId ?? "sandbox_experimental";
+        public static bool SandboxRoutingEnabled => _jsonConfig?.Sandbox?.RouteArenaById ?? true;
+
+        public static bool IsExperimentalSandboxArena(string arenaId)
+        {
+            var sandbox = _jsonConfig?.Sandbox ?? new SandboxSection();
+            return sandbox.IsExperimentalArena(arenaId);
+        }
         #endregion
 
         #region Stages Configuration Accessors
@@ -380,6 +396,107 @@ namespace VLifecycle
         public bool SuppressVBloodFeed { get; set; } = true;
         public double DespawnDelaySeconds { get; set; } = 2.0;
         public string DefaultArenaId { get; set; } = "sandbox_main";
+
+        // Second sandbox profile: same lifecycle flow, different tuning.
+        public bool ExperimentalEnabled { get; set; } = true;
+        public bool ExperimentalAutoApplyUnlocks { get; set; } = true;
+        public bool ExperimentalSuppressVBloodFeed { get; set; } = false;
+        public double ExperimentalDespawnDelaySeconds { get; set; } = 0.5;
+        public string ExperimentalArenaId { get; set; } = "sandbox_experimental";
+        public List<string> ExperimentalArenaAliases { get; set; } = new() { "sandbox_experimental", "sandbox_exp" };
+        public bool RouteArenaById { get; set; } = true;
+        public string ExperimentalArenaIdMatchToken { get; set; } = "experimental";
+
+        public SandboxRuntimeConfig ResolveRuntime(string arenaId)
+        {
+            var normalizedArenaId = (arenaId ?? string.Empty).Trim();
+            if (RouteArenaById && IsExperimentalArena(normalizedArenaId))
+            {
+                return new SandboxRuntimeConfig(
+                    profileId: SandboxRuntimeConfig.ExperimentalProfileId,
+                    enabled: ExperimentalEnabled,
+                    autoApplyUnlocks: ExperimentalAutoApplyUnlocks,
+                    suppressVBloodFeed: ExperimentalSuppressVBloodFeed,
+                    despawnDelaySeconds: ExperimentalDespawnDelaySeconds,
+                    defaultArenaId: string.IsNullOrWhiteSpace(ExperimentalArenaId) ? "sandbox_experimental" : ExperimentalArenaId);
+            }
+
+            return new SandboxRuntimeConfig(
+                profileId: SandboxRuntimeConfig.MainProfileId,
+                enabled: Enabled,
+                autoApplyUnlocks: AutoApplyUnlocks,
+                suppressVBloodFeed: SuppressVBloodFeed,
+                despawnDelaySeconds: DespawnDelaySeconds,
+                defaultArenaId: string.IsNullOrWhiteSpace(DefaultArenaId) ? "sandbox_main" : DefaultArenaId);
+        }
+
+        public bool IsExperimentalArena(string arenaId)
+        {
+            if (string.IsNullOrWhiteSpace(arenaId))
+            {
+                return false;
+            }
+
+            var candidate = arenaId.Trim();
+            if (!string.IsNullOrWhiteSpace(ExperimentalArenaId) &&
+                string.Equals(candidate, ExperimentalArenaId, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (ExperimentalArenaAliases != null)
+            {
+                foreach (var alias in ExperimentalArenaAliases)
+                {
+                    if (string.IsNullOrWhiteSpace(alias))
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(candidate, alias.Trim(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(ExperimentalArenaIdMatchToken) &&
+                candidate.Contains(ExperimentalArenaIdMatchToken, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            return false;
+        }
+    }
+
+    public sealed class SandboxRuntimeConfig
+    {
+        public const string MainProfileId = "main";
+        public const string ExperimentalProfileId = "experimental";
+
+        public string ProfileId { get; }
+        public bool Enabled { get; }
+        public bool AutoApplyUnlocks { get; }
+        public bool SuppressVBloodFeed { get; }
+        public double DespawnDelaySeconds { get; }
+        public string DefaultArenaId { get; }
+
+        public SandboxRuntimeConfig(
+            string profileId,
+            bool enabled,
+            bool autoApplyUnlocks,
+            bool suppressVBloodFeed,
+            double despawnDelaySeconds,
+            string defaultArenaId)
+        {
+            ProfileId = string.IsNullOrWhiteSpace(profileId) ? MainProfileId : profileId;
+            Enabled = enabled;
+            AutoApplyUnlocks = autoApplyUnlocks;
+            SuppressVBloodFeed = suppressVBloodFeed;
+            DespawnDelaySeconds = despawnDelaySeconds;
+            DefaultArenaId = string.IsNullOrWhiteSpace(defaultArenaId) ? "sandbox_main" : defaultArenaId;
+        }
     }
 
     public class StagesSection

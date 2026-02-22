@@ -1,0 +1,123 @@
+<best_practices>
+  <general_principles>
+    <principle priority="high">
+      <name>System-wide consistency first</name>
+      <description>
+        Treat repository-level consistency as a core quality attribute. Ensure naming,
+        layering, and contract usage remain coherent between projects.
+      </description>
+      <rationale>
+        Multi-project codebases degrade quickly when local conventions diverge and
+        integration assumptions are implicit.
+      </rationale>
+    </principle>
+
+    <principle priority="high">
+      <name>Small safe increments</name>
+      <description>
+        Implement changes in tightly scoped steps that can be validated independently.
+      </description>
+      <rationale>
+        Incremental execution reduces blast radius and makes root-cause analysis faster
+        when integration issues appear.
+      </rationale>
+    </principle>
+
+    <principle priority="medium">
+      <name>Explicit boundaries and ownership</name>
+      <description>
+        Keep responsibilities clear between project modules and shared utilities.
+        Avoid hidden coupling through ad-hoc cross-project assumptions.
+      </description>
+      <rationale>
+        Clear boundaries reduce regression risk and simplify future extension work.
+      </rationale>
+    </principle>
+  </general_principles>
+
+  <engineering_conventions>
+    <convention category="changeset_design">
+      <rule>Group edits by objective and affected boundary, not by file proximity.</rule>
+      <good>One cohesive intent per changeset (feature slice, fix slice, stabilization slice).</good>
+      <bad>Mixing unrelated cleanup with behavior changes in the same update.</bad>
+    </convention>
+
+    <convention category="contracts_and_models">
+      <rule>
+        When shared contracts change, verify downstream usage paths and compatibility
+        expectations before extending scope.
+      </rule>
+      <good>Adjust dependent modules in the same effort when compatibility requires it.</good>
+      <bad>Changing a shared model without auditing consumer impact.</bad>
+    </convention>
+
+    <convention category="configuration_alignment">
+      <rule>
+        Keep configuration keys, schema expectations, and defaults aligned with code behavior.
+      </rule>
+      <good>Update related schema and config artifacts when behavior or options evolve.</good>
+      <bad>Introducing behavior that relies on undocumented or stale configuration fields.</bad>
+    </convention>
+
+    <convention category="readability_and_maintenance">
+      <rule>
+        Prefer clear naming and predictable structure over dense or overly clever implementations.
+      </rule>
+      <good>Descriptive intent-revealing names and focused methods/classes.</good>
+      <bad>Cross-cutting logic hidden inside unrelated files or monolithic methods.</bad>
+    </convention>
+  </engineering_conventions>
+
+  <quality_checklist>
+    <category name="before_changes">
+      <item>Confirm objective, affected projects, and expected side effects.</item>
+      <item>Identify shared contracts, lifecycle boundaries, and integration points.</item>
+      <item>Define minimal validation criteria for each impacted module.</item>
+    </category>
+
+    <category name="during_changes">
+      <item>Keep edits aligned with existing repository patterns unless intentionally improving them.</item>
+      <item>Avoid introducing new abstractions unless they reduce duplication or risk.</item>
+      <item>Track scope creep and separate non-essential work into follow-up tasks.</item>
+    </category>
+
+    <category name="before_completion">
+      <item>Validate impacted modules and directly dependent paths.</item>
+      <item>Verify configuration and packaging artifacts remain in sync.</item>
+      <item>Summarize risks, constraints, and recommended follow-up actions.</item>
+    </category>
+  </quality_checklist>
+
+  <common_pitfalls>
+    <pitfall>
+      <description>Repository-wide edits without boundary analysis</description>
+      <why_problematic>
+        Broad modifications can create hidden regressions in adjacent projects and shared
+        services when assumptions are not explicitly reviewed.
+      </why_problematic>
+      <correct_approach>
+        Identify interfaces and integration surfaces first, then apply controlled increments.
+      </correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Untracked behavioral changes mixed with structural cleanup</description>
+      <why_problematic>
+        Mixing intent makes review and validation ambiguous, increasing defect risk.
+      </why_problematic>
+      <correct_approach>
+        Separate behavior changes from cleanup when possible and state intent explicitly.
+      </correct_approach>
+    </pitfall>
+
+    <pitfall>
+      <description>Configuration drift after code changes</description>
+      <why_problematic>
+        Runtime behavior diverges from documented configuration expectations.
+      </why_problematic>
+      <correct_approach>
+        Update relevant schemas, defaults, and config docs in the same change scope.
+      </correct_approach>
+    </pitfall>
+  </common_pitfalls>
+</best_practices>

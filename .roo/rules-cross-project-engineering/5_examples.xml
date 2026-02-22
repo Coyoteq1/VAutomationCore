@@ -1,0 +1,139 @@
+<complete_examples>
+  <example name="cross_module_feature_delivery">
+    <scenario>
+      A request adds a gameplay-adjacent capability requiring coordinated changes in shared services,
+      project-specific implementations, and configuration artifacts.
+    </scenario>
+
+    <workflow>
+      <step number="1">
+        <description>Scope and boundary mapping</description>
+        <approach>
+          Identify where the feature behavior begins, where it is transformed, and where it is consumed.
+          Map shared contracts and project boundaries that must remain coherent.
+        </approach>
+        <expected_outcome>
+          A clear list of impacted projects, interfaces, and configuration surfaces.
+        </expected_outcome>
+      </step>
+
+      <step number="2">
+        <description>Phased implementation plan</description>
+        <approach>
+          Start with shared-layer support, then implement project-specific usage, then align schema/config.
+          Keep each phase independently reviewable and reversible.
+        </approach>
+        <expected_outcome>
+          A low-risk execution order with explicit validation checkpoints.
+        </expected_outcome>
+      </step>
+
+      <step number="3">
+        <description>Validation and stabilization</description>
+        <approach>
+          Validate each changed module plus direct dependents, then verify integrated behavior and
+          packaging consistency.
+        </approach>
+        <expected_outcome>
+          Feature delivered with coherent cross-project behavior and no known regressions.
+        </expected_outcome>
+      </step>
+    </workflow>
+
+    <key_takeaways>
+      <takeaway>Cross-project feature work succeeds when boundaries and sequence are explicit.</takeaway>
+      <takeaway>Configuration and packaging updates should be treated as first-class deliverables.</takeaway>
+    </key_takeaways>
+  </example>
+
+  <example name="repository_wide_bug_fix_and_hardening">
+    <scenario>
+      A regression appears in one project but root cause traces to shared lifecycle assumptions used
+      by multiple modules.
+    </scenario>
+
+    <workflow>
+      <step number="1">
+        <description>Failure-path reconstruction</description>
+        <approach>
+          Rebuild the failing path across module boundaries and identify where assumptions diverge from
+          expected lifecycle behavior.
+        </approach>
+        <expected_outcome>
+          Root cause isolated to a specific boundary condition.
+        </expected_outcome>
+      </step>
+
+      <step number="2">
+        <description>Narrow corrective patch</description>
+        <approach>
+          Apply smallest viable fix that restores expected behavior while preserving existing contracts.
+          Avoid opportunistic broad refactoring in the same patch.
+        </approach>
+        <expected_outcome>
+          Defect is addressed with controlled impact radius.
+        </expected_outcome>
+      </step>
+
+      <step number="3">
+        <description>Preventive hardening</description>
+        <approach>
+          Add targeted validation and review adjacent paths for similar edge conditions.
+        </approach>
+        <expected_outcome>
+          Lower recurrence risk and improved confidence in related modules.
+        </expected_outcome>
+      </step>
+    </workflow>
+
+    <key_takeaways>
+      <takeaway>Root-cause precision is more valuable than broad code churn.</takeaway>
+      <takeaway>Hardening should focus on boundary conditions revealed by real failures.</takeaway>
+    </key_takeaways>
+  </example>
+
+  <example name="structured_cleanup_with_no_behavior_change">
+    <scenario>
+      Maintenance effort aims to reduce duplication and improve readability across several projects
+      without changing runtime behavior.
+    </scenario>
+
+    <workflow>
+      <step number="1">
+        <description>Declare invariants</description>
+        <approach>
+          Define explicit non-functional goals and non-goal of behavioral preservation. Record constraints
+          that must remain unchanged.
+        </approach>
+        <expected_outcome>
+          Cleanup scope is clear and review expectations are aligned.
+        </expected_outcome>
+      </step>
+
+      <step number="2">
+        <description>Incremental cleanup execution</description>
+        <approach>
+          Perform targeted structural improvements by boundary area, validating equivalence after each step.
+        </approach>
+        <expected_outcome>
+          Maintainability improvements with bounded risk per increment.
+        </expected_outcome>
+      </step>
+
+      <step number="3">
+        <description>Cross-project consistency sweep</description>
+        <approach>
+          Ensure naming, organization, and contract usage are uniformly improved across touched modules.
+        </approach>
+        <expected_outcome>
+          Consistent repository-wide quality uplift without behavioral drift.
+        </expected_outcome>
+      </step>
+    </workflow>
+
+    <key_takeaways>
+      <takeaway>Declaring behavior-preservation intent up front protects scope discipline.</takeaway>
+      <takeaway>Consistency sweeps should follow focused cleanup, not replace it.</takeaway>
+    </key_takeaways>
+  </example>
+</complete_examples>

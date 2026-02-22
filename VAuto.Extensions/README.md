@@ -12,6 +12,5 @@ dotnet build VAuto.Extensions/VAuto.Extensions.csproj -c Release --nologo
 - Join the V Rising Mods Discord: [https://discord.gg/68JZU5zaq7](https://discord.gg/68JZU5zaq7)
 - Need ownership support? Visit: [https://discord.gg/58bTRRxf8r](https://discord.gg/58bTRRxf8r)
 
-## Contributors
+## Contributors 
 Special thanks to our contributors:
-1. coyoteq1

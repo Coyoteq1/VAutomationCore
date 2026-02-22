@@ -23,7 +23,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../VAutomationCore.csproj" />
-    <ProjectReference Include="../CycleBorn/Vlifecycle.csproj" />
   </ItemGroup>
 
   <ItemGroup>

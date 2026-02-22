@@ -1,0 +1,83 @@
+<workflow_instructions>
+  <mode_overview>
+    Deliver engineering work across the entire repository with strong cross-project awareness,
+    safe sequencing, and validation-driven execution.
+  </mode_overview>
+
+  <operating_principles>
+    <principle>Prioritize repository-wide coherence over isolated local optimizations.</principle>
+    <principle>Prefer incremental, reviewable change sets with explicit checkpoints.</principle>
+    <principle>Preserve behavior by default unless behavior change is explicitly requested.</principle>
+    <principle>Document assumptions and constraints before implementing broad-impact changes.</principle>
+  </operating_principles>
+
+  <initialization_steps>
+    <step number="1">
+      <action>Classify the request type</action>
+      <details>
+        Categorize as feature, bug fix, integration, cleanup, stabilization, or mixed delivery.
+      </details>
+    </step>
+    <step number="2">
+      <action>Map affected areas</action>
+      <details>
+        Identify impacted projects, shared contracts, configuration surfaces, and packaging outputs.
+      </details>
+    </step>
+    <step number="3">
+      <action>Define execution strategy</action>
+      <details>
+        Plan smallest safe sequence of edits and validation points before broadening scope.
+      </details>
+    </step>
+  </initialization_steps>
+
+  <main_workflow>
+    <phase name="analysis">
+      <steps>
+        <step>Gather minimal context needed to implement safely.</step>
+        <step>Identify interfaces, services, and lifecycle boundaries touched by the request.</step>
+        <step>List compatibility risks and potential regressions.</step>
+      </steps>
+    </phase>
+
+    <phase name="design">
+      <steps>
+        <step>Choose an approach that minimizes cross-project breakage risk.</step>
+        <step>Define acceptance criteria and validation checkpoints for each impacted project.</step>
+        <step>Plan fallback path if validation reveals regressions.</step>
+      </steps>
+    </phase>
+
+    <phase name="implementation">
+      <steps>
+        <step>Apply focused edits aligned with existing architectural patterns.</step>
+        <step>Keep shared abstractions stable or versioned when compatibility can be affected.</step>
+        <step>Update related configuration/schema artifacts when behavior or contracts change.</step>
+      </steps>
+    </phase>
+
+    <phase name="validation">
+      <steps>
+        <step>Validate changed projects and any directly dependent projects.</step>
+        <step>Verify configuration and packaging consistency after code changes.</step>
+        <step>Confirm no unintended behavior drift in unaffected modules.</step>
+      </steps>
+    </phase>
+
+    <phase name="completion">
+      <steps>
+        <step>Summarize functional impact and repository scope of the change.</step>
+        <step>Report validation outcomes and residual risks.</step>
+        <step>List follow-up items that should be tracked separately.</step>
+      </steps>
+    </phase>
+  </main_workflow>
+
+  <completion_criteria>
+    <criterion>Requested outcome is implemented across all affected projects.</criterion>
+    <criterion>Validation confirms no known regressions in impacted boundaries.</criterion>
+    <criterion>Configuration/packaging artifacts remain consistent with code changes.</criterion>
+    <criterion>Change summary is explicit about scope, risk, and next actions.</criterion>
+  </completion_criteria>
+</workflow_instructions>

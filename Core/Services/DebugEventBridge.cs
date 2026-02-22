@@ -1747,7 +1747,7 @@ namespace VAuto.Core.Services
         {
             try
             {
-                VAutomationCore.Plugin.Log.LogInfo($"[DebugEventBridge] {message}");
+                VAutomationCore.Plugin.CoreLog.LogInfo($"[DebugEventBridge] {message}");
             }
             catch
             {
@@ -1759,7 +1759,7 @@ namespace VAuto.Core.Services
         {
             try
             {
-                VAutomationCore.Plugin.Log.LogWarning($"[DebugEventBridge] {message}");
+                VAutomationCore.Plugin.CoreLog.LogWarning($"[DebugEventBridge] {message}");
             }
             catch
             {

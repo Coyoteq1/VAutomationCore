@@ -11,6 +11,31 @@ namespace VAuto.Zone.Services
 {
     public static class ZoneTemplateService
     {
+        public static bool TryValidateZoneSpawnLocation(string zoneId, out string error)
+        {
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(zoneId))
+            {
+                error = "Zone id is required.";
+                return false;
+            }
+
+            var zone = ZoneConfigService.GetZoneById(zoneId);
+            if (zone == null)
+            {
+                error = $"Zone '{zoneId}' not found.";
+                return false;
+            }
+
+            if (!TryFindSpawnLocationConflict(zoneId, zone, out var conflictingZoneId))
+            {
+                return true;
+            }
+
+            error = $"Template spawn blocked: zone '{zoneId}' matches location with active template zone '{conflictingZoneId}'.";
+            return false;
+        }
+
         public static TemplateSpawnResult SpawnZoneTemplateType(string zoneId, string templateType, EntityManager em)
         {
             if (em == default || em.World == null || !em.World.IsCreated)
@@ -42,6 +67,39 @@ namespace VAuto.Zone.Services
                 };
             }
 
+            return SpawnZoneTemplate(zoneId, templateType, templateName, em);
+        }
+
+        public static TemplateSpawnResult SpawnZoneTemplate(string zoneId, string templateType, string templateName, EntityManager em)
+        {
+            if (em == default || em.World == null || !em.World.IsCreated)
+            {
+                return new TemplateSpawnResult
+                {
+                    Success = false,
+                    Error = "EntityManager world not ready"
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(zoneId) || string.IsNullOrWhiteSpace(templateType) || string.IsNullOrWhiteSpace(templateName))
+            {
+                return new TemplateSpawnResult
+                {
+                    Success = false,
+                    Error = "Zone, template type, and template name are required."
+                };
+            }
+
+            var zone = ZoneConfigService.GetZoneById(zoneId);
+            if (zone == null)
+            {
+                return new TemplateSpawnResult
+                {
+                    Success = false,
+                    Error = $"Zone '{zoneId}' not found"
+                };
+            }
+
             if (ZoneTemplateRegistry.IsSpawned(zoneId, templateType))
             {
                 return new TemplateSpawnResult
@@ -51,6 +109,18 @@ namespace VAuto.Zone.Services
                     ZoneId = zoneId,
                     TemplateType = templateType,
                     TemplateName = templateName
+                };
+            }
+
+            if (TryFindSpawnLocationConflict(zoneId, zone, out var conflictingZoneId))
+            {
+                return new TemplateSpawnResult
+                {
+                    Success = false,
+                    ZoneId = zoneId,
+                    TemplateType = templateType,
+                    TemplateName = templateName,
+                    Error = $"Template spawn blocked: location matches active template zone '{conflictingZoneId}'."
                 };
             }
 
@@ -88,6 +158,59 @@ namespace VAuto.Zone.Services
                 }
             }
 
+            return result;
+        }
+
+        public static TemplateSpawnResult TrackExternalSpawn(
+            string zoneId,
+            string templateType,
+            string templateName,
+            IEnumerable<Entity> entities,
+            float3 origin)
+        {
+            var entityList = entities?.Where(entity => entity != Entity.Null).ToList() ?? new List<Entity>();
+            var result = new TemplateSpawnResult
+            {
+                ZoneId = zoneId ?? string.Empty,
+                TemplateType = templateType ?? string.Empty,
+                TemplateName = templateName ?? string.Empty,
+                Entities = entityList
+            };
+
+            if (string.IsNullOrWhiteSpace(zoneId) || string.IsNullOrWhiteSpace(templateType) || entityList.Count == 0)
+            {
+                result.Success = false;
+                result.Error = "No entities to track for template spawn.";
+                return result;
+            }
+
+            if (ZoneTemplateRegistry.IsSpawned(zoneId, templateType))
+            {
+                result.Success = true;
+                result.Status = "AlreadySpawned";
+                result.Entities = new List<Entity>();
+                return result;
+            }
+
+            var metadata = new TemplateSpawnMetadata
+            {
+                SpawnedAt = DateTime.UtcNow,
+                EntityCount = entityList.Count,
+                TemplateName = templateName,
+                OriginPosition = origin,
+                Rotation = quaternion.identity
+            };
+
+            if (!ZoneTemplateRegistry.RegisterEntities(zoneId, templateType, entityList, metadata))
+            {
+                result.Success = false;
+                result.Error = $"Template '{templateType}' would exceed registry limits";
+                result.Entities = new List<Entity>();
+                return result;
+            }
+
+            result.Success = true;
+            result.Status = "Tracked";
             return result;
         }
 
@@ -176,6 +299,40 @@ namespace VAuto.Zone.Services
             }
 
             return stats;
+        }
+
+        private static bool TryFindSpawnLocationConflict(string zoneId, ZoneDefinition targetZone, out string conflictingZoneId)
+        {
+            conflictingZoneId = string.Empty;
+            if (targetZone == null)
+            {
+                return false;
+            }
+
+            foreach (var activeZoneId in ZoneTemplateRegistry.GetSpawnedZones())
+            {
+                if (string.IsNullOrWhiteSpace(activeZoneId) ||
+                    string.Equals(activeZoneId, zoneId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var activeZone = ZoneConfigService.GetZoneById(activeZoneId);
+                if (activeZone == null)
+                {
+                    continue;
+                }
+
+                if (!ZoneConfigService.AreZonesSameLocation(targetZone, activeZone))
+                {
+                    continue;
+                }
+
+                conflictingZoneId = activeZoneId;
+                return true;
+            }
+
+            return false;
         }
     }
 }

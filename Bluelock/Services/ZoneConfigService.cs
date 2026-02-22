@@ -34,6 +34,8 @@ namespace VAuto.Zone.Services
         private const float DefaultBorderHeightOffset = 0f;
         private const float DefaultGlowTileSpacing = 3f;
         private const float DefaultGlowTileHeightOffset = 0.3f;
+        private const float SameLocationCenterTolerance = 2f;
+        private const float SameLocationRadiusTolerance = 2f;
         private static ZonesConfig _zonesConfig;
         private static readonly string ConfigPath = ResolveZonesConfigPath();
         private static bool _initialized;
@@ -721,28 +723,168 @@ namespace VAuto.Zone.Services
         /// </summary>
         public static ZoneDefinition GetZoneAtPosition(float x, float z)
         {
-            if (_zonesConfig?.Zones == null) return null;
+            var matches = GetZoneMatchesAtPosition(x, z);
+            return matches.Count > 0 ? matches[0].Zone : null;
+        }
 
-            var defaultZone = GetDefaultZone();
-            if (defaultZone != null && defaultZone.IsInside(x, z))
+        /// <summary>
+        /// Returns all matching zones at a position in deterministic priority order.
+        /// Priority:
+        /// 1) default zone when matched
+        /// 2) smaller footprint (more specific zone)
+        /// 3) closer center distance
+        /// 4) lexical zone id (stable tie-break)
+        /// </summary>
+        public static List<ZoneMatchInfo> GetZoneMatchesAtPosition(float x, float z)
+        {
+            var matches = new List<ZoneMatchInfo>();
+            if (_zonesConfig?.Zones == null)
             {
-                return defaultZone;
+                return matches;
             }
 
+            var defaultZoneId = GetDefaultZoneId();
             foreach (var zone in _zonesConfig.Zones)
             {
-                if (defaultZone != null && string.Equals(zone.Id, defaultZone.Id, StringComparison.OrdinalIgnoreCase))
+                if (zone == null || !zone.IsInside(x, z))
                 {
                     continue;
                 }
 
-                if (zone.IsInside(x, z))
+                var centerDx = x - zone.CenterX;
+                var centerDz = z - zone.CenterZ;
+                var distanceSq = centerDx * centerDx + centerDz * centerDz;
+                var footprintRadius = GetZoneFootprintRadius(zone);
+                var footprintArea = math.PI * footprintRadius * footprintRadius;
+                var isDefault = !string.IsNullOrWhiteSpace(defaultZoneId) &&
+                                string.Equals(zone.Id, defaultZoneId, StringComparison.OrdinalIgnoreCase);
+
+                matches.Add(new ZoneMatchInfo
                 {
-                    return zone;
+                    Zone = zone,
+                    IsDefault = isDefault,
+                    DistanceSq = distanceSq,
+                    FootprintRadius = footprintRadius,
+                    FootprintArea = footprintArea
+                });
+            }
+
+            matches.Sort((a, b) =>
+            {
+                if (a.IsDefault != b.IsDefault)
+                {
+                    return a.IsDefault ? -1 : 1;
+                }
+
+                var areaCompare = a.FootprintArea.CompareTo(b.FootprintArea);
+                if (areaCompare != 0)
+                {
+                    return areaCompare;
+                }
+
+                var distanceCompare = a.DistanceSq.CompareTo(b.DistanceSq);
+                if (distanceCompare != 0)
+                {
+                    return distanceCompare;
+                }
+
+                return string.Compare(a.Zone?.Id ?? string.Empty, b.Zone?.Id ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            });
+
+            return matches;
+        }
+
+        /// <summary>
+        /// Checks whether a candidate zone location matches an existing zone location.
+        /// Used to prevent duplicate template-zone footprints.
+        /// </summary>
+        public static bool TryFindSameLocationZone(
+            string candidateZoneId,
+            float centerX,
+            float centerZ,
+            float referenceRadius,
+            out ZoneDefinition conflictingZone)
+        {
+            conflictingZone = null;
+            if (_zonesConfig?.Zones == null)
+            {
+                return false;
+            }
+
+            var candidateId = candidateZoneId ?? string.Empty;
+            var normalizedRadius = math.max(0.1f, referenceRadius);
+            foreach (var zone in _zonesConfig.Zones)
+            {
+                if (zone == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(candidateId) &&
+                    string.Equals(zone.Id, candidateId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var dx = centerX - zone.CenterX;
+                var dz = centerZ - zone.CenterZ;
+                var distance = math.sqrt(dx * dx + dz * dz);
+                if (distance > SameLocationCenterTolerance)
+                {
+                    continue;
+                }
+
+                var zoneRadius = GetZoneFootprintRadius(zone);
+                if (math.abs(zoneRadius - normalizedRadius) > SameLocationRadiusTolerance)
+                {
+                    continue;
+                }
+
+                conflictingZone = zone;
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool AreZonesSameLocation(ZoneDefinition left, ZoneDefinition right)
+        {
+            if (left == null || right == null)
+            {
+                return false;
+            }
+
+            var dx = left.CenterX - right.CenterX;
+            var dz = left.CenterZ - right.CenterZ;
+            var centerDistance = math.sqrt(dx * dx + dz * dz);
+            if (centerDistance > SameLocationCenterTolerance)
+            {
+                return false;
+            }
+
+            var leftRadius = GetZoneFootprintRadius(left);
+            var rightRadius = GetZoneFootprintRadius(right);
+            return math.abs(leftRadius - rightRadius) <= SameLocationRadiusTolerance;
+        }
+
+        public static float GetZoneFootprintRadius(ZoneDefinition zone)
+        {
+            if (zone == null)
+            {
+                return 0f;
+            }
+
+            if (zone.ShapeType == ZoneShapeType.Rectangle)
+            {
+                var width = math.max(0f, zone.MaxX - zone.MinX);
+                var height = math.max(0f, zone.MaxZ - zone.MinZ);
+                if (width > 0f || height > 0f)
+                {
+                    return math.sqrt(width * width + height * height) * 0.5f;
                 }
             }
-            
-            return null;
+
+            return math.max(0.1f, zone.Radius);
         }
 
         /// <summary>
@@ -1193,5 +1335,14 @@ namespace VAuto.Zone.Services
             Initialize();
             ZoneCore.LogInfo("[ZoneConfigService] Configuration reloaded");
         }
+    }
+
+    public sealed class ZoneMatchInfo
+    {
+        public ZoneDefinition Zone { get; set; }
+        public bool IsDefault { get; set; }
+        public float DistanceSq { get; set; }
+        public float FootprintRadius { get; set; }
+        public float FootprintArea { get; set; }
     }
 }
