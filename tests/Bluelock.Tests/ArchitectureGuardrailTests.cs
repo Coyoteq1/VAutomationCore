@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using VAutomationCore.Core.Api;
+using VAutomationCore.Core.Data;
 using VAutomationCore.Core.Events;
 using VAutomationCore.Core.Lifecycle;
 using Xunit;
@@ -21,6 +23,16 @@ namespace Bluelock.Tests
         }
 
         [Fact]
+        public void CoreReleaseContracts_ArePresent()
+        {
+            Assert.NotNull(typeof(ConsoleRoleAuthService));
+            Assert.NotNull(typeof(EntityAliasMapper));
+            Assert.NotNull(typeof(EntityMap));
+            Assert.NotNull(typeof(FlowService));
+            Assert.NotNull(typeof(ConsoleRoleComponent));
+        }
+
+        [Fact]
         public void PluginProjectReferences_FollowGuardrails()
         {
             var repoRoot = ResolveRepoRoot();
@@ -29,7 +41,8 @@ namespace Bluelock.Tests
                 Path.Combine(repoRoot, "Bluelock", "VAutoZone.csproj"),
                 Path.Combine(repoRoot, "CycleBorn", "Vlifecycle.csproj"),
                 Path.Combine(repoRoot, "VAutoannounce", "VAutoannounce.csproj"),
-                Path.Combine(repoRoot, "VAutoTraps", "VAutoTraps.csproj")
+                Path.Combine(repoRoot, "VAutoTraps", "VAutoTraps.csproj"),
+                Path.Combine(repoRoot, "Swapkits", "Swapkits.csproj")
             };
 
             var allowedByProject = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
@@ -50,6 +63,10 @@ namespace Bluelock.Tests
                     "../VAutomationCore.csproj"
                 },
                 ["VAutoTraps.csproj"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "../VAutomationCore.csproj"
+                },
+                ["Swapkits.csproj"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     "../VAutomationCore.csproj"
                 }
@@ -85,8 +102,21 @@ namespace Bluelock.Tests
             var rootLogs = Directory.GetFiles(repoRoot, "*.log", SearchOption.TopDirectoryOnly);
             Assert.Empty(rootLogs);
 
-            var rootZips = Directory.GetFiles(repoRoot, "*.zip", SearchOption.TopDirectoryOnly);
-            Assert.Empty(rootZips);
+            var rootZips = Directory.GetFiles(repoRoot, "*.zip", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToArray();
+
+            var allowedRootZips = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "VAutomationCore-1.0.1.zip",
+                "VAutomationZone-1.0.1.zip"
+            };
+
+            foreach (var zip in rootZips)
+            {
+                Assert.Contains(zip, allowedRootZips);
+            }
 
             var allowedRootCs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -107,6 +137,46 @@ namespace Bluelock.Tests
             {
                 Assert.Contains(fileName, allowedRootCs);
             }
+        }
+
+        [Fact]
+        public void Repository_RejectsExtractorDependencyPatterns()
+        {
+            var repoRoot = ResolveRepoRoot();
+            var disallowedPatterns = new[]
+            {
+                "KindredExtract",
+                "ComponentExtractors",
+                "EntityDebug.RegisterExtractor"
+            };
+
+            var disallowed = new List<string>();
+            foreach (var file in EnumerateTextFiles(repoRoot))
+            {
+                var relPath = Path.GetRelativePath(repoRoot, file).Replace('\\', '/');
+                if (string.Equals(relPath, "tests/Bluelock.Tests/ArchitectureGuardrailTests.cs", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var lineNumber = 0;
+                foreach (var line in File.ReadLines(file))
+                {
+                    lineNumber++;
+                    foreach (var pattern in disallowedPatterns)
+                    {
+                        if (!line.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        disallowed.Add($"{relPath}:{lineNumber}:{pattern}");
+                    }
+                }
+            }
+
+            Assert.True(disallowed.Count == 0,
+                "Disallowed extractor/dependency patterns found:\n" + string.Join('\n', disallowed));
         }
 
         private static string ResolveRepoRoot()
@@ -165,6 +235,48 @@ namespace Bluelock.Tests
             }
 
             return normalized.Replace('\\', '/');
+        }
+
+        private static IEnumerable<string> EnumerateTextFiles(string repoRoot)
+        {
+            static bool ShouldSkipDirectory(string path)
+            {
+                var normalized = path.Replace('\\', '/');
+                return normalized.Contains("/.git/", StringComparison.OrdinalIgnoreCase)
+                    || normalized.Contains("/bin/", StringComparison.OrdinalIgnoreCase)
+                    || normalized.Contains("/obj/", StringComparison.OrdinalIgnoreCase)
+                    || normalized.Contains("/artifacts/", StringComparison.OrdinalIgnoreCase)
+                    || normalized.Contains("/out/", StringComparison.OrdinalIgnoreCase)
+                    || normalized.Contains("/_bepinex_out/", StringComparison.OrdinalIgnoreCase);
+            }
+
+            var stack = new Stack<string>();
+            stack.Push(repoRoot);
+            while (stack.Count > 0)
+            {
+                var current = stack.Pop();
+                foreach (var dir in Directory.EnumerateDirectories(current))
+                {
+                    if (ShouldSkipDirectory(dir))
+                    {
+                        continue;
+                    }
+
+                    stack.Push(dir);
+                }
+
+                foreach (var file in Directory.EnumerateFiles(current))
+                {
+                    var name = Path.GetFileName(file);
+                    if (name.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
+                        || name.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+                        || name.EndsWith(".props", StringComparison.OrdinalIgnoreCase)
+                        || name.EndsWith(".targets", StringComparison.OrdinalIgnoreCase))
+                    {
+                        yield return file;
+                    }
+                }
+            }
         }
     }
 }

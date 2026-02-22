@@ -248,23 +248,11 @@ namespace VAuto.Core.Lifecycle
                 return false;
             }
             
-            // Check trap lifecycle policy via shared resolver
-            if (_trapLifecyclePolicy != null && _trapPolicyEnabled)
+            // Check trap lifecycle policy through shared contract
+            var enterDecision = EvaluateTrapPolicyEnter(characterEntity, arenaId, position);
+            if (enterDecision.OverrideTriggered)
             {
-                var characterId = GetCharacterId(characterEntity);
-                var decision = TrapPolicyResolver.EvaluateEnter(new TrapLifecycleContext
-                {
-                    CharacterId = characterId,
-                    ZoneId = arenaId,
-                    Position = position,
-                    LifecycleStage = "Enter"
-                });
-                
-                if (decision.OverrideTriggered)
-                {
-                    Log?.LogInfo($"{_logPrefix} Trap policy override on enter: {decision.Reason}");
-                    // Continue with lifecycle but may be modified by policy
-                }
+                Log?.LogInfo($"{_logPrefix} Trap policy override on enter: {enterDecision.Reason}");
             }
             
             Log?.LogInfo($"{_logPrefix} Player entering arena {arenaId} at position ({position.x:F0}, {position.y:F0}, {position.z:F0})");
@@ -307,23 +295,16 @@ namespace VAuto.Core.Lifecycle
                 return false;
             }
             
-            // Check trap lifecycle policy via shared resolver
-            if (_trapLifecyclePolicy != null && _trapPolicyEnabled)
+            // Check trap lifecycle policy through shared contract
+            var exitDecision = EvaluateTrapPolicyExit(characterEntity, arenaId, position);
+            if (exitDecision.ForceBuffClearOnExit)
             {
-                var characterId = GetCharacterId(characterEntity);
-                var decision = TrapPolicyResolver.EvaluateExit(new TrapLifecycleContext
+                Log?.LogInfo($"{_logPrefix} Trap policy force buff clear on exit: {exitDecision.Reason}");
+                ExecuteAction(new LifecycleAction { Type = "clearbuffs" }, new LifecycleContext
                 {
-                    CharacterId = characterId,
-                    ZoneId = arenaId,
-                    Position = position,
-                    LifecycleStage = "Exit"
+                    CharacterEntity = characterEntity,
+                    Position = position
                 });
-                
-                if (decision.ForceBuffClearOnExit)
-                {
-                    Log?.LogInfo($"{_logPrefix} Trap policy force buff clear on exit: {decision.Reason}");
-                    // Add buff clear action to exit stage
-                }
             }
             
             Log?.LogInfo($"{_logPrefix} Player exiting arena {arenaId} from position ({position.x:F0}, {position.y:F0}, {position.z:F0})");
@@ -642,6 +623,54 @@ namespace VAuto.Core.Lifecycle
             catch
             {
                 return false;
+            }
+        }
+
+        private TrapLifecycleDecision EvaluateTrapPolicyEnter(Entity characterEntity, string arenaId, float3 position)
+        {
+            if (_trapLifecyclePolicy == null || !_trapPolicyEnabled || !_trapLifecyclePolicy.IsEnabled)
+            {
+                return TrapLifecycleDecision.None("Trap policy disabled");
+            }
+
+            try
+            {
+                return _trapLifecyclePolicy.OnBeforeLifecycleEnter(new TrapLifecycleContext
+                {
+                    CharacterId = GetCharacterId(characterEntity),
+                    ZoneId = arenaId,
+                    Position = position,
+                    LifecycleStage = "Enter"
+                });
+            }
+            catch (Exception ex)
+            {
+                Log?.LogWarning($"{_logPrefix} Trap policy enter evaluation failed: {ex.Message}");
+                return TrapLifecycleDecision.None("Trap policy enter evaluation failed");
+            }
+        }
+
+        private TrapLifecycleDecision EvaluateTrapPolicyExit(Entity characterEntity, string arenaId, float3 position)
+        {
+            if (_trapLifecyclePolicy == null || !_trapPolicyEnabled || !_trapLifecyclePolicy.IsEnabled)
+            {
+                return TrapLifecycleDecision.None("Trap policy disabled");
+            }
+
+            try
+            {
+                return _trapLifecyclePolicy.OnBeforeLifecycleExit(new TrapLifecycleContext
+                {
+                    CharacterId = GetCharacterId(characterEntity),
+                    ZoneId = arenaId,
+                    Position = position,
+                    LifecycleStage = "Exit"
+                });
+            }
+            catch (Exception ex)
+            {
+                Log?.LogWarning($"{_logPrefix} Trap policy exit evaluation failed: {ex.Message}");
+                return TrapLifecycleDecision.None("Trap policy exit evaluation failed");
             }
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using Unity.Mathematics;
 using VampireCommandFramework;
 using ExtraSlots.Systems;
 using ExtraSlots.Models;

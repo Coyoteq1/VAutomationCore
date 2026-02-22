@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Collections;
-using ProjectM;
+using Unity.Mathematics;
 using ExtraSlots.Models;
 using BepInEx;
 
@@ -13,7 +13,7 @@ namespace ExtraSlots.Systems
     /// </summary>
     internal static class Logger
     {
-        internal static readonly BepInEx.Logging.ManualLogSource Log = BepInEx.BepInEx.Logging.Logger.CreateLogSource("ExtraSlots");
+        internal static readonly BepInEx.Logging.ManualLogSource Log = BepInEx.Logging.Logger.CreateLogSource("ExtraSlots");
     }
     /// <summary>
     /// Extra slots inventory system.
@@ -28,7 +28,7 @@ namespace ExtraSlots.Systems
         private readonly Dictionary<ulong, DateTime> _lastReviveTime = new Dictionary<ulong, DateTime>();
         private readonly Dictionary<ulong, DateTime> _lastSlotTime = new Dictionary<ulong, DateTime>();
         private int _maxSlots = 20;
-        private const int MaxExtraWeapons = 3; // Maximum extra weapons
+        private const int MaxExtraWeaponsLimit = 3; // Maximum extra weapons
         private const int ReviveCooldownMinutes = 30;
         private const int SlotCooldownMinutes = 30;
         
@@ -40,7 +40,7 @@ namespace ExtraSlots.Systems
         /// <summary>
         /// Get max extra weapons limit.
         /// </summary>
-        public int MaxExtraWeapons => MaxExtraWeapons;
+        public int MaxExtraWeapons => MaxExtraWeaponsLimit;
         
         /// <summary>
         /// Get current extra weapon count.
@@ -60,7 +60,7 @@ namespace ExtraSlots.Systems
                 return true;
             
             var canRevive = (DateTime.UtcNow - lastTime).TotalMinutes >= ReviveCooldownMinutes;
-            Logger.Log.Debug($"CanRevive({steamId}): {canRevive}");
+            Logger.Log.LogDebug($"CanRevive({steamId}): {canRevive}");
             return canRevive;
         }
         
@@ -82,7 +82,7 @@ namespace ExtraSlots.Systems
         private void RecordRevive(ulong steamId)
         {
             _lastReviveTime[steamId] = DateTime.UtcNow;
-            Logger.Log.Info($"Revive recorded for {steamId}");
+            Logger.Log.LogInfo($"Revive recorded for {steamId}");
         }
         
         /// <summary>
@@ -94,7 +94,7 @@ namespace ExtraSlots.Systems
                 return true;
             
             var canUse = (DateTime.UtcNow - lastTime).TotalMinutes >= SlotCooldownMinutes;
-            Logger.Log.Debug($"CanUseSlot({steamId}): {canUse}");
+            Logger.Log.LogDebug($"CanUseSlot({steamId}): {canUse}");
             return canUse;
         }
         
@@ -117,12 +117,12 @@ namespace ExtraSlots.Systems
         {
             if (!CanUseSlot(steamId))
             {
-                Logger.Log.Debug($"Slot action blocked for {steamId}, cooldown: {GetSlotCooldown(steamId)} min");
+                Logger.Log.LogDebug($"Slot action blocked for {steamId}, cooldown: {GetSlotCooldown(steamId)} min");
                 return (false, GetSlotCooldown(steamId));
             }
             
             _lastSlotTime[steamId] = DateTime.UtcNow;
-            Logger.Log.Info($"Slot action used by {steamId}");
+            Logger.Log.LogInfo($"Slot action used by {steamId}");
             return (true, 0);
         }
         

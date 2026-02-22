@@ -8,6 +8,7 @@ using BepInEx.Unity.IL2CPP;
 using HarmonyLib;
 using VampireCommandFramework;
 using VAuto.Core.Services;
+using VAutomationCore.Core.TrapLifecycle;
 using VAutoTraps;
 
 namespace VAutoTraps
@@ -105,6 +106,9 @@ namespace VAutoTraps
                 ContainerTrapService.Initialize(CoreLog);
                 ChestSpawnService.Initialize(CoreLog);
                 TrapZoneService.Initialize(CoreLog);
+
+                // Register trap lifecycle policy into shared resolver
+                TrapPolicyResolver.RegisterPolicy(new VAutoTrapsLifecyclePolicy(), MyPluginInfo.GUID);
 
                 // Register commands
                 CommandRegistry.RegisterAll();
@@ -291,6 +295,7 @@ namespace VAutoTraps
             try
             {
                 _harmony?.UnpatchSelf();
+                TrapPolicyResolver.UnregisterPolicy(MyPluginInfo.GUID);
                 _hotReloadTimer?.Dispose();
                 _hotReloadTimer = null;
                 Log.LogInfo("[VAutoTraps] Unloaded.");
@@ -300,6 +305,41 @@ namespace VAutoTraps
             {
                 Log.LogError(ex);
                 return false;
+            }
+        }
+
+        private sealed class VAutoTrapsLifecyclePolicy : ITrapLifecyclePolicy
+        {
+            public bool IsEnabled => Plugin.IsEnabled && Plugin.TrapSystemActive;
+
+            public TrapLifecycleDecision OnBeforeLifecycleEnter(TrapLifecycleContext ctx)
+            {
+                if (!Plugin.AllowTrapsInsideZones && TrapZoneService.IsInZone(ctx.Position))
+                {
+                    return new TrapLifecycleDecision
+                    {
+                        OverrideTriggered = true,
+                        ForceBuffClearOnExit = false,
+                        Reason = "Traps-inside-zones disabled: enter override active"
+                    };
+                }
+
+                return TrapLifecycleDecision.None("Enter: no trap override");
+            }
+
+            public TrapLifecycleDecision OnBeforeLifecycleExit(TrapLifecycleContext ctx)
+            {
+                if (!Plugin.AllowTrapsOutsideZones && !TrapZoneService.IsInZone(ctx.Position))
+                {
+                    return new TrapLifecycleDecision
+                    {
+                        OverrideTriggered = true,
+                        ForceBuffClearOnExit = true,
+                        Reason = "Traps-outside-zones disabled: force buff clear on exit"
+                    };
+                }
+
+                return TrapLifecycleDecision.None("Exit: no trap override");
             }
         }
     }

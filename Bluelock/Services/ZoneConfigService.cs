@@ -854,6 +854,95 @@ namespace VAuto.Zone.Services
             return new List<string>();
         }
 
+        /// <summary>
+        /// Registers or updates a zone template mapping and persists the zones config.
+        /// </summary>
+        public static bool SetTemplateForZone(string zoneId, string templateType, string templateName, out string error)
+        {
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(zoneId))
+            {
+                error = "Zone ID is required.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(templateType))
+            {
+                error = "Template type is required.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(templateName))
+            {
+                error = "Template name is required.";
+                return false;
+            }
+
+            var zone = GetZoneById(zoneId);
+            if (zone == null)
+            {
+                error = $"Zone '{zoneId}' not found.";
+                return false;
+            }
+
+            zone.Templates ??= new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            zone.Templates[templateType.Trim()] = templateName.Trim();
+
+            if (!SaveZonesConfig())
+            {
+                error = "Failed to save zones configuration.";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Removes a zone template mapping and persists the zones config.
+        /// </summary>
+        public static bool RemoveTemplateForZone(string zoneId, string templateType, out string error)
+        {
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(zoneId))
+            {
+                error = "Zone ID is required.";
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(templateType))
+            {
+                error = "Template type is required.";
+                return false;
+            }
+
+            var zone = GetZoneById(zoneId);
+            if (zone == null)
+            {
+                error = $"Zone '{zoneId}' not found.";
+                return false;
+            }
+
+            if (zone.Templates == null || zone.Templates.Count == 0)
+            {
+                error = $"Zone '{zoneId}' has no registered templates.";
+                return false;
+            }
+
+            if (!zone.Templates.Remove(templateType.Trim()))
+            {
+                error = $"Template type '{templateType}' not found in zone '{zoneId}'.";
+                return false;
+            }
+
+            if (!SaveZonesConfig())
+            {
+                error = "Failed to save zones configuration.";
+                return false;
+            }
+
+            return true;
+        }
+
         public static bool TryGetTeleportPointForZone(string zoneId, out float x, out float y, out float z)
         {
             x = y = z = 0f;

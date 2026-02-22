@@ -10,19 +10,20 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>artifacts\nuget</PackageOutputPath>
 
     <!-- NuGet package metadata -->
     <PackageId>VAutomationCore</PackageId>
-    <Version>1.0.1-beta.1</Version>
+    <Version>1.0.0</Version>
     <Authors>Coyoteq1</Authors>
     <Company>VAutomation</Company>
     <Description>Core library for V Rising automation mods providing shared utilities, ECS helpers, and configuration management.</Description>
     <PackageTags>vrising;modding;bepinex;il2cpp;ecs;automation</PackageTags>
-    <PackageProjectUrl>https://github.com/Coyoteq1/VAutomationCore</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/Coyoteq1/VAutomationCore</RepositoryUrl>
+    <PackageProjectUrl>https://bio.site/stnexgen.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Coyoteq1</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageReleaseNotes>Initial NuGet prerelease for VAutomationCore. Includes package icon/readme, SourceLink, symbols, and XML API documentation.</PackageReleaseNotes>
     <Copyright>Copyright (c) Coyoteq1 2026</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
@@ -41,6 +42,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="\" />
     <None Include="README.md" Pack="true" PackagePath="\" />
     <None Include="packaging\VAutomationCore\icon.png" Pack="true" PackagePath="\" Visible="false" Link="icon.png" />
   </ItemGroup>
@@ -48,9 +50,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
     <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" IncludeAssets="compile" />
-    <PackageReference Include="RisingV.Shared" Version="0.1.3" />
     <PackageReference Include="VRising.VampireCommandFramework" Version="0.10.4" />
-    <PackageReference Include="VRising.VAMP" Version="1.3.3" />
     <PackageReference Include="Lib.Harmony" Version="2.2.2" />
     <PackageReference Include="Il2CppInterop.Runtime" Version="1.4.6-ci.426" />
   </ItemGroup>
@@ -130,8 +130,9 @@
     <Compile Include="Core\Commands\CommandBase.cs" />
     <Compile Include="Core\Commands\CommandException.cs" />
     <Compile Include="Core\Commands\ChatColor.cs" />
-    <Compile Include="Core\Api\*.cs" />
+    <Compile Include="Core\Api\**\*.cs" />
     <Compile Include="Core\Lifecycle\*.cs" />
+    <Compile Include="Core\TrapLifecycle\*.cs" />
     <Compile Include="Core\Events\*.cs" />
     <Compile Include="Core\AssemblyInfo.cs" />
     <Compile Include="Core\Services\ServiceInitializer.cs" />
@@ -158,6 +159,13 @@
     <Compile Include="MyPluginInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs" />
     <Compile Remove="..\Commands\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Keep physical paths under Core/ for compatibility, but expose them as VAuto/ in project metadata. -->
+    <Compile Update="Core\**\*.cs">
+      <Link>VAuto\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
   </ItemGroup>
 
   <!-- Auto-deploy to BepInEx plugins folder -->
