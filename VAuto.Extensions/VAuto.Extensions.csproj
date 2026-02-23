@@ -6,6 +6,7 @@
     <OutputType>Library</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
     
     <!-- NuGet Package Metadata -->
     <PackageId>VAuto.Extensions</PackageId>
@@ -17,7 +18,7 @@
     <Copyright>Copyright 2024</Copyright>
     <RepositoryUrl>https://github.com/vautomation/vautomationcore</RepositoryUrl>
     <PackageTags>v-rising,modding,bepinex,extensions</PackageTags>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>

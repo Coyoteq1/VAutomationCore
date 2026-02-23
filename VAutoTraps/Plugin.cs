@@ -14,7 +14,7 @@ using VAutoTraps;
 namespace VAutoTraps
 {
     [BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]
-    [BepInDependency("gg.coyote.VAutomationCore", "1.0.0")]
+    [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
     public class Plugin : BasePlugin

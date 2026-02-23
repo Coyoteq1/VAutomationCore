@@ -34,10 +34,10 @@ using VAutomationCore.Core.Logging;
 
 namespace VAuto.Zone
 {
-    [BepInPlugin("gg.coyote.BlueLock", "BlueLock", "1.0.0")]
-    [BepInDependency("gg.coyote.VAutomationCore", "1.0.0")]
+    [BepInPlugin(VAutoZone.MyPluginInfo.GUID, VAutoZone.MyPluginInfo.NAME, VAutoZone.MyPluginInfo.VERSION)]
+    [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
-    [BepInDependency("gg.coyote.lifecycle", "1.0.0")]
+    [BepInDependency("gg.coyote.lifecycle", "1.0.1")]
     [BepInProcess("VRisingServer.exe")]
     public class Plugin : BasePlugin
     {

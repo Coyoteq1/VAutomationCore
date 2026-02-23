@@ -43,7 +43,7 @@ namespace VAuto.Core.Services
             sb.AppendLine();
             sb.AppendLine("[metadata]");
             sb.AppendLine("name = \"VAutoTraps Config\"");
-            sb.AppendLine("version = \"1.0.0\"");
+            sb.AppendLine($"version = \"{VAutoTraps.MyPluginInfo.VERSION}\"");
             sb.AppendLine("updatedAt = \"2026-02-06\"");
             sb.AppendLine();
             sb.AppendLine("[core]");

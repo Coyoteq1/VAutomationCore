@@ -164,6 +164,4 @@ var op = CoreExecution.RunWithRetry(
     retryPolicy: RetryPolicy.Default,
     logger: logger
 );
-```
-
-
+`

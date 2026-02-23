@@ -222,9 +222,9 @@ namespace VAuto.Core.Services
                     PlayerCount = 0,
                     MaxPlayers = 50,
                     Uptime = (long)(DateTime.UtcNow - Process.GetCurrentProcess().StartTime).TotalSeconds,
-                    Version = "1.0.0",
+                    Version = VAutomationCore.Core.MyPluginInfo.VERSION,
                     ZonesActive = 0,
-                    Plugins = new[] { new PluginStatusDto { Name = "VAutoZone", Version = "1.0.0", Enabled = true, Status = "active" } }
+                    Plugins = new[] { new PluginStatusDto { Name = "VAutoZone", Version = VAutomationCore.Core.MyPluginInfo.VERSION, Enabled = true, Status = "active" } }
                 };
                 await SendJsonAsync(context.Response, 200, ApiResponse<StatusDto>.Ok(status));
             }
@@ -300,7 +300,7 @@ namespace VAuto.Core.Services
         #region Config
         private async Task HandleGetConfigAsync(HttpListenerContext context)
         {
-            var config = new ConfigDto { Version = "1.0.0", LastModified = DateTime.UtcNow.ToString("o") };
+            var config = new ConfigDto { Version = VAutomationCore.Core.MyPluginInfo.VERSION, LastModified = DateTime.UtcNow.ToString("o") };
             await SendJsonAsync(context.Response, 200, ApiResponse<ConfigDto>.Ok(config));
         }
         private async Task HandleUpdateConfigAsync(HttpListenerContext context) => await SendJsonAsync(context.Response, 200, ApiResponse<object>.Ok(new { success = true }));

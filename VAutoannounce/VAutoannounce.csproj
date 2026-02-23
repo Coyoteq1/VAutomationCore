@@ -9,6 +9,7 @@
     <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
     <ImplicitUsings>false</ImplicitUsings>
     <Nullable>annotations</Nullable>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
 
   <ItemGroup>

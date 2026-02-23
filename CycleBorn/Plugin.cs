@@ -20,7 +20,7 @@ using VLifecycle.Services.Lifecycle;
 namespace VLifecycle
 {
     [BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]
-    [BepInDependency("gg.coyote.VAutomationCore", "1.0.0")]
+    [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
     public class Plugin : BasePlugin
@@ -372,7 +372,7 @@ namespace VLifecycle
     /// </summary>
     public class UnifiedLifecycleConfig
     {
-        public string Version { get; set; } = "1.0.0";
+        public string Version { get; set; } = "1.0.1";
         public LifecycleSection Lifecycle { get; set; } = new();
         public SandboxSection Sandbox { get; set; } = new();
         public StagesSection Stages { get; set; } = new();

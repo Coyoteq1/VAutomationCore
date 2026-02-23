@@ -8,6 +8,7 @@
     <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
     <ImplicitUsings>false</ImplicitUsings>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
+    <Deterministic>true</Deterministic>
   </PropertyGroup>
 
   <ItemGroup>

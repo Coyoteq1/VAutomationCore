@@ -1,4 +1,4 @@
-using System;
+      using System;
 using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
@@ -144,7 +144,7 @@ namespace VAutomationCore.Examples
         public static bool IsModLoaded(string modId) => true; // Check BepInEx
         
         /// <summary>Get mod version.</summary>
-        public static string GetModVersion(string modId) => "1.0.0";
+        public static string GetModVersion(string modId) => Core.MyPluginInfo.VERSION;
         
         /// <summary>Send command to VCF.</summary>
         public static void SendVCF(string cmd, EntityManager em) => VCFCommands.Exec(em, cmd);
