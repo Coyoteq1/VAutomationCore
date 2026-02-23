@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using ProjectM;
 using ProjectM.Network;
 using Stunlock.Core;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -142,12 +144,11 @@ namespace VAuto.Zone.Services
                     snapshot.BloodQuality = blood.Quality;
                 }
 
-                // Inventory: Future schema supports inventory snapshots via InventorySnapshot list
-                // Current implementation deferred to future enhancement pending inventory API surface changes
-                snapshot.InventoryItems = EmptyInventoryItems;
+                snapshot.InventoryItems = CaptureInventoryItems(em, playerEntity);
+                snapshot.EquipmentItems = CaptureEquipmentItems(em, playerEntity);
 
                 _snapshots[playerEntity] = snapshot;
-                ZoneCore.LogInfo($"[Snapshot] Saved for Entity {playerEntity.Index} at {snapshot.Position} (Inventory items: {snapshot.InventoryItems.Count})");
+                ZoneCore.LogInfo($"[Snapshot] Saved for Entity {playerEntity.Index} at {snapshot.Position} (Inventory items: {snapshot.InventoryItems.Count}, Equipment items: {snapshot.EquipmentItems.Count})");
 
                 return SnapshotResult.Ok();
             }
@@ -203,11 +204,15 @@ namespace VAuto.Zone.Services
             try
             {
                 LogRestoreSystemAvailability();
-
-                // Inventory: Future schema supports inventory snapshots
-                // Restoration deferred to future enhancement pending inventory API surface changes
                 var itemsTracked = snapshot.InventoryItems.Count;
+                var equipmentTracked = snapshot.EquipmentItems.Count;
                 var positionRestored = false;
+
+                // Clear arena-applied loadout before restoring snapshot state.
+                TryClearCurrentLoadout(em, playerEntity, out var clearedInventoryItems, out var clearedEquipmentItems);
+
+                var restoredInventoryEntries = RestoreInventorySnapshots(playerEntity, snapshot.InventoryItems, "inventory");
+                var restoredEquipmentEntries = RestoreInventorySnapshots(playerEntity, snapshot.EquipmentItems, "equipment");
 
                 // Restore position using LocalTransform (newer) or Translation (legacy)
                 if (TryGetComponent(em, playerEntity, out LocalTransform transform))
@@ -247,7 +252,10 @@ namespace VAuto.Zone.Services
                     ZoneCore.LogInfo($"[Snapshot] Blood restored: {blood.BloodType} quality {blood.Quality}");
                 }
 
-                ZoneCore.LogInfo($"[Snapshot] Restored for Entity {playerEntity.Index} at {snapshot.Position} (Position: {positionRestored}, Inventory items tracked: {itemsTracked})");
+                ZoneCore.LogInfo($"[Snapshot] Restored for Entity {playerEntity.Index} at {snapshot.Position} " +
+                                 $"(Position: {positionRestored}, Inventory tracked/restored: {itemsTracked}/{restoredInventoryEntries}, " +
+                                 $"Equipment tracked/restored: {equipmentTracked}/{restoredEquipmentEntries}, " +
+                                 $"Cleared inventory/equipment entities: {clearedInventoryItems}/{clearedEquipmentItems})");
                 return SnapshotResult.Ok();
             }
             catch (Exception ex)
@@ -298,6 +306,475 @@ namespace VAuto.Zone.Services
             }
             component = default;
             return false;
+        }
+
+        private static List<InventorySnapshot> CaptureInventoryItems(EntityManager em, Entity playerEntity)
+        {
+            var snapshots = new Dictionary<int, int>();
+            try
+            {
+                if (!em.Exists(playerEntity) || !em.HasBuffer<InventoryItem>(playerEntity))
+                {
+                    return EmptyInventoryItems;
+                }
+
+                var buffer = em.GetBuffer<InventoryItem>(playerEntity);
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    var entry = buffer[i];
+                    if (!TryGetInventoryItemEntity(entry, out var itemEntity) ||
+                        itemEntity == Entity.Null ||
+                        !em.Exists(itemEntity) ||
+                        !em.HasComponent<PrefabGUID>(itemEntity))
+                    {
+                        continue;
+                    }
+
+                    var guidHash = em.GetComponentData<PrefabGUID>(itemEntity).GuidHash;
+                    if (guidHash == 0)
+                    {
+                        continue;
+                    }
+
+                    var stackSize = TryGetInventoryStackSize(entry);
+                    if (stackSize <= 0)
+                    {
+                        stackSize = 1;
+                    }
+
+                    snapshots[guidHash] = snapshots.TryGetValue(guidHash, out var current)
+                        ? current + stackSize
+                        : stackSize;
+                }
+            }
+            catch (Exception ex)
+            {
+                ZoneCore.LogWarning($"[Snapshot] Inventory capture failed: {ex.Message}");
+            }
+
+            if (snapshots.Count == 0)
+            {
+                return EmptyInventoryItems;
+            }
+
+            return snapshots
+                .Select(pair => new InventorySnapshot(pair.Key, pair.Value))
+                .ToList();
+        }
+
+        private static List<InventorySnapshot> CaptureEquipmentItems(EntityManager em, Entity playerEntity)
+        {
+            var snapshots = new List<InventorySnapshot>();
+            try
+            {
+                if (!em.Exists(playerEntity) || !em.HasComponent<Equipment>(playerEntity))
+                {
+                    return EmptyInventoryItems;
+                }
+
+                var equipment = em.GetComponentData<Equipment>(playerEntity);
+                var equippedEntities = new NativeList<Entity>(Allocator.Temp);
+                try
+                {
+                    equipment.GetAllEquipmentEntities(equippedEntities);
+                    for (var i = 0; i < equippedEntities.Length; i++)
+                    {
+                        var itemEntity = equippedEntities[i];
+                        if (itemEntity == Entity.Null ||
+                            !em.Exists(itemEntity) ||
+                            !em.HasComponent<PrefabGUID>(itemEntity))
+                        {
+                            continue;
+                        }
+
+                        var guidHash = em.GetComponentData<PrefabGUID>(itemEntity).GuidHash;
+                        if (guidHash == 0)
+                        {
+                            continue;
+                        }
+
+                        snapshots.Add(new InventorySnapshot(guidHash, 1));
+                    }
+                }
+                finally
+                {
+                    equippedEntities.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                ZoneCore.LogWarning($"[Snapshot] Equipment capture failed: {ex.Message}");
+            }
+
+            return snapshots.Count > 0 ? snapshots : EmptyInventoryItems;
+        }
+
+        private static bool TryClearCurrentLoadout(EntityManager em, Entity playerEntity, out int clearedInventoryItems, out int clearedEquipmentItems)
+        {
+            clearedInventoryItems = 0;
+            clearedEquipmentItems = 0;
+
+            try
+            {
+                var destroyed = new HashSet<Entity>();
+
+                if (em.Exists(playerEntity) && em.HasBuffer<InventoryItem>(playerEntity))
+                {
+                    var inventoryItems = em.GetBuffer<InventoryItem>(playerEntity);
+                    for (var i = 0; i < inventoryItems.Length; i++)
+                    {
+                        var entry = inventoryItems[i];
+                        if (!TryGetInventoryItemEntity(entry, out var itemEntity) || itemEntity == Entity.Null || !em.Exists(itemEntity))
+                        {
+                            continue;
+                        }
+
+                        if (!destroyed.Add(itemEntity))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            em.DestroyEntity(itemEntity);
+                            clearedInventoryItems++;
+                        }
+                        catch
+                        {
+                            // Best effort only.
+                        }
+                    }
+                }
+
+                if (em.Exists(playerEntity) && em.HasComponent<Equipment>(playerEntity))
+                {
+                    var equipment = em.GetComponentData<Equipment>(playerEntity);
+                    var equippedEntities = new NativeList<Entity>(Allocator.Temp);
+                    try
+                    {
+                        equipment.GetAllEquipmentEntities(equippedEntities);
+                        for (var i = 0; i < equippedEntities.Length; i++)
+                        {
+                            var itemEntity = equippedEntities[i];
+                            if (itemEntity == Entity.Null || !em.Exists(itemEntity))
+                            {
+                                continue;
+                            }
+
+                            if (!destroyed.Add(itemEntity))
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                em.DestroyEntity(itemEntity);
+                                clearedEquipmentItems++;
+                            }
+                            catch
+                            {
+                                // Best effort only.
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        equippedEntities.Dispose();
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ZoneCore.LogWarning($"[Snapshot] Loadout clear failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static int RestoreInventorySnapshots(Entity playerEntity, IReadOnlyList<InventorySnapshot> snapshots, string sourceLabel)
+        {
+            if (snapshots == null || snapshots.Count == 0)
+            {
+                return 0;
+            }
+
+            if (!TryGetAddItemSettings(out var itemSettings, out var settingsError))
+            {
+                ZoneCore.LogWarning($"[Snapshot] Unable to restore {sourceLabel}: {settingsError}");
+                return 0;
+            }
+
+            var restored = 0;
+            for (var i = 0; i < snapshots.Count; i++)
+            {
+                var snapshot = snapshots[i];
+                if (snapshot == null || snapshot.ItemGuid == 0 || snapshot.StackSize <= 0)
+                {
+                    continue;
+                }
+
+                var guid = new PrefabGUID(snapshot.ItemGuid);
+                var amount = Math.Max(1, snapshot.StackSize);
+
+                try
+                {
+                    var addResult = InventoryUtilitiesServer.TryAddItem(itemSettings, playerEntity, guid, amount);
+                    if (IsAddItemResultSuccessful(addResult))
+                    {
+                        restored++;
+                        continue;
+                    }
+
+                    ZoneCore.LogWarning($"[Snapshot] Restore {sourceLabel} entry failed for guid={guid.GuidHash} amount={amount}.");
+                }
+                catch (Exception ex)
+                {
+                    ZoneCore.LogWarning($"[Snapshot] Restore {sourceLabel} entry exception for guid={guid.GuidHash} amount={amount}: {ex.Message}");
+                }
+            }
+
+            return restored;
+        }
+
+        private static bool TryGetAddItemSettings(out AddItemSettings itemSettings, out string error)
+        {
+            itemSettings = default;
+            error = string.Empty;
+
+            try
+            {
+                var world = UnifiedCore.Server;
+                if (world == null || !world.IsCreated)
+                {
+                    error = "Server world unavailable.";
+                    return false;
+                }
+
+                var gameData = world.GetExistingSystemManaged<GameDataSystem>();
+                if (gameData == null)
+                {
+                    error = "GameDataSystem unavailable.";
+                    return false;
+                }
+
+                itemSettings = AddItemSettings.Create(UnifiedCore.EntityManager, gameData.ItemHashLookupMap);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static bool IsAddItemResultSuccessful(object addResult)
+        {
+            if (addResult == null)
+            {
+                return false;
+            }
+
+            var addResultType = addResult.GetType();
+
+            var success = TryReadBoolMember(addResultType, addResult, "Success", "Succeeded", "WasSuccessful");
+            if (success.HasValue)
+            {
+                return success.Value;
+            }
+
+            var addedAmount = TryReadIntMember(addResultType, addResult, "Amount", "AmountAdded", "AddedAmount", "Count");
+            if (addedAmount > 0)
+            {
+                return true;
+            }
+
+            var newEntity = TryReadEntityMember(addResultType, addResult, "NewEntity", "ItemEntity");
+            if (newEntity != Entity.Null)
+            {
+                return true;
+            }
+
+            // Fallback to optimistic success if method call did not throw.
+            return true;
+        }
+
+        private static bool TryGetInventoryItemEntity(InventoryItem entry, out Entity itemEntity)
+        {
+            itemEntity = Entity.Null;
+
+            try
+            {
+                var boxed = (object)entry;
+                var type = boxed.GetType();
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+                foreach (var memberName in new[] { "ItemEntity", "Entity", "Item", "ItemId" })
+                {
+                    var property = type.GetProperty(memberName, flags);
+                    if (property?.GetValue(boxed) is Entity propertyEntity)
+                    {
+                        itemEntity = propertyEntity;
+                        break;
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field?.GetValue(boxed) is Entity fieldEntity)
+                    {
+                        itemEntity = fieldEntity;
+                        break;
+                    }
+                }
+            }
+            catch
+            {
+                // Reflection fallback only.
+            }
+
+            return itemEntity != Entity.Null;
+        }
+
+        private static int TryGetInventoryStackSize(InventoryItem entry)
+        {
+            return Math.Max(1, TryReadIntMember(entry, "Amount", "StackSize", "Stack", "Count", "Quantity"));
+        }
+
+        private static int TryReadIntMember(object value, params string[] memberNames)
+        {
+            if (value == null || memberNames == null || memberNames.Length == 0)
+            {
+                return 0;
+            }
+
+            return TryReadIntMember(value.GetType(), value, memberNames);
+        }
+
+        private static int TryReadIntMember(Type type, object value, params string[] memberNames)
+        {
+            if (type == null || value == null || memberNames == null)
+            {
+                return 0;
+            }
+
+            foreach (var memberName in memberNames)
+            {
+                if (string.IsNullOrWhiteSpace(memberName))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                    var property = type.GetProperty(memberName, flags);
+                    if (property?.GetValue(value) is object raw)
+                    {
+                        if (raw is int i) return i;
+                        if (raw is uint u) return unchecked((int)u);
+                        if (raw is long l) return (int)Math.Clamp(l, int.MinValue, int.MaxValue);
+                        if (raw is ulong ul) return (int)Math.Clamp((long)Math.Min(ul, int.MaxValue), int.MinValue, int.MaxValue);
+                        if (int.TryParse(raw.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+                        {
+                            return parsed;
+                        }
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field?.GetValue(value) is object fieldRaw)
+                    {
+                        if (fieldRaw is int fi) return fi;
+                        if (fieldRaw is uint fu) return unchecked((int)fu);
+                        if (fieldRaw is long fl) return (int)Math.Clamp(fl, int.MinValue, int.MaxValue);
+                        if (fieldRaw is ulong ful) return (int)Math.Clamp((long)Math.Min(ful, int.MaxValue), int.MinValue, int.MaxValue);
+                        if (int.TryParse(fieldRaw.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var fieldParsed))
+                        {
+                            return fieldParsed;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Ignore individual member lookup issues.
+                }
+            }
+
+            return 0;
+        }
+
+        private static bool? TryReadBoolMember(Type type, object value, params string[] memberNames)
+        {
+            if (type == null || value == null || memberNames == null)
+            {
+                return null;
+            }
+
+            foreach (var memberName in memberNames)
+            {
+                if (string.IsNullOrWhiteSpace(memberName))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                    var property = type.GetProperty(memberName, flags);
+                    if (property?.GetValue(value) is bool b)
+                    {
+                        return b;
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field?.GetValue(value) is bool fb)
+                    {
+                        return fb;
+                    }
+                }
+                catch
+                {
+                    // Ignore member lookup failure.
+                }
+            }
+
+            return null;
+        }
+
+        private static Entity TryReadEntityMember(Type type, object value, params string[] memberNames)
+        {
+            if (type == null || value == null || memberNames == null)
+            {
+                return Entity.Null;
+            }
+
+            foreach (var memberName in memberNames)
+            {
+                if (string.IsNullOrWhiteSpace(memberName))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                    var property = type.GetProperty(memberName, flags);
+                    if (property?.GetValue(value) is Entity pe)
+                    {
+                        return pe;
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field?.GetValue(value) is Entity fe)
+                    {
+                        return fe;
+                    }
+                }
+                catch
+                {
+                    // Ignore member lookup failure.
+                }
+            }
+
+            return Entity.Null;
         }
 
 
@@ -400,5 +877,6 @@ namespace VAuto.Zone.Services
         public PrefabGUID BloodType { get; set; }
         public float BloodQuality { get; set; }
         public List<InventorySnapshot> InventoryItems { get; set; } = new List<InventorySnapshot>();
+        public List<InventorySnapshot> EquipmentItems { get; set; } = new List<InventorySnapshot>();
     }
 }

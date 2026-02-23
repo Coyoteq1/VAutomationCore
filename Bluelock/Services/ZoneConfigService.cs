@@ -26,9 +26,9 @@ namespace VAuto.Zone.Services
             new float3(-800f, 0f, -500f),
             new float3(-700f, 0f, -500f)
         };
-        private const int DefaultBorderCarpetPrefabId = 1144832236; // PurpleCarpetsBuildMenuGroup01
+        private const int DefaultBorderCarpetPrefabId = -1191185326; // AB_Militia_LightArrow_SpawnMinions_Summon
         private const int DefaultBorderMarkerPrefabId = 230163020;   // TM_Castle_ObjectDecor_TargetDummy_Vampire01
-        private const string DefaultBorderCarpetPrefabName = "PurpleCarpetsBuildMenuGroup01";
+        private const string DefaultBorderCarpetPrefabName = "AB_Militia_LightArrow_SpawnMinions_Summon";
         private const string DefaultBorderMarkerPrefabName = "TM_Castle_ObjectDecor_TargetDummy_Vampire01";
         private const float DefaultBorderSpacing = 3f;
         private const float DefaultBorderHeightOffset = 0f;
@@ -457,6 +457,12 @@ namespace VAuto.Zone.Services
                             normalized = true;
                         }
 
+                        if (existing.Templates == null || existing.Templates.Count == 0)
+                        {
+                            existing.Templates = new Dictionary<string, string>(template.Templates, StringComparer.OrdinalIgnoreCase);
+                            normalized = true;
+                        }
+
                         // Border config is optional; if missing, zones inherit ZonesConfig.DefaultBorder at runtime.
                         // Only materialize per-zone Border when the zone explicitly sets a legacy border prefab.
                         if (existing.Border == null &&
@@ -676,7 +682,11 @@ namespace VAuto.Zone.Services
                     TeleportX = center.x,
                     TeleportY = center.y,
                     TeleportZ = center.z,
-                    ReturnOnExit = true
+                    ReturnOnExit = true,
+                    Templates = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["arena"] = "arena_default"
+                    }
                 });
             }
 
@@ -688,7 +698,12 @@ namespace VAuto.Zone.Services
             foreach (var zone in GetAllZones())
             {
                 var templateCount = GetBuildTemplatesForZone(zone.Id).Count;
-                ZoneCore.LogInfo($"[ZoneConfigService]   Zone '{zone.Id}' ({zone.DisplayName}): {zone.Shape} at ({zone.CenterX}, {zone.CenterZ}) r={zone.Radius}, Kit={zone.KitToApplyId ?? "none"}, Templates={templateCount}");
+                ZoneCore.LogInfo($"[ZoneConfigService]   Zone '{zone.Id}' ({zone.DisplayName}): {zone.Shape} at ({zone.CenterX}, {zone.CenterZ}) r={zone.Radius}, Kit={zone.KitToApplyId ?? "none"}, Templates={templateCount}, ArenaDamage={zone.IsArenaZone}");
+
+                if (zone.IsArenaZone && templateCount == 0)
+                {
+                    ZoneCore.LogWarning($"[ZoneConfigService]   Zone '{zone.Id}' is ArenaDamage-enabled but has zero templates. Only PvP-style behavior will be present until templates are configured.");
+                }
             }
         }
 

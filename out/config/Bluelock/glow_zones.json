@@ -23,9 +23,9 @@
       }
     },
     {
-      "Id": "arena_pvp_1",
+      "Id": "2",
       "Enabled": true,
-      "Center": { "x": 100, "y": 0, "z": 100 },
+      "Center": { "x": 1133, "y": 0, "z": 1343 },
       "HalfExtents": { "x": 40, "y": 40 },
       "BorderSpacing": 4,
       "CornerOffset": 0,
@@ -45,7 +45,7 @@
     {
       "Id": "arena_pvp_2",
       "Enabled": true,
-      "Center": { "x": -100, "y": 0, "z": -100 },
+      "Center": { "x": -1000, "y": 0, "z": -1000 },
       "HalfExtents": { "x": 35, "y": 35 },
       "BorderSpacing": 3,
       "CornerOffset": 0,

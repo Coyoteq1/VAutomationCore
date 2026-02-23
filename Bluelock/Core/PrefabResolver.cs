@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using BepInEx;
 using Stunlock.Core;
@@ -22,6 +23,8 @@ namespace VAuto.Zone.Core
         private static bool _loaded;
         private static readonly Dictionary<string, PrefabGUID> ByName = new(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, PrefabGUID> ByAlias = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, PrefabGUID> GuidLookupByName = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<int, string> NameLookupByGuid = new();
 
         private static string PrefabsRefPath => Path.Combine(Paths.ConfigPath, "Bluelock", "Prefabsref.json");
         private static string AbilityPrefabsPath => Path.Combine(Paths.ConfigPath, "Bluelock", "ability_prefabs.json");
@@ -43,6 +46,15 @@ namespace VAuto.Zone.Core
 
             if (int.TryParse(lookup, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numeric) && numeric != 0)
             {
+                // Direct numeric lookup remains supported, but if GuidNameLookup.csv knows
+                // this hash and maps it to a canonical name, prefer the canonical resolved GUID.
+                if (NameLookupByGuid.TryGetValue(numeric, out var mappedName) &&
+                    TryResolveCsvMappedName(mappedName, out var mappedGuid))
+                {
+                    guid = mappedGuid;
+                    return true;
+                }
+
                 guid = new PrefabGUID(numeric);
                 return true;
             }
@@ -63,6 +75,12 @@ namespace VAuto.Zone.Core
                 return true;
             }
 
+            // Fallback source for stale/legacy names provided by user-maintained GuidNameLookup.csv.
+            if (GuidLookupByName.TryGetValue(lookup, out guid))
+            {
+                return true;
+            }
+
             return false;
         }
 
@@ -73,6 +91,8 @@ namespace VAuto.Zone.Core
                 _loaded = false;
                 ByName.Clear();
                 ByAlias.Clear();
+                GuidLookupByName.Clear();
+                NameLookupByGuid.Clear();
             }
         }
 
@@ -92,8 +112,233 @@ namespace VAuto.Zone.Core
 
                 LoadPrefabsRef();
                 LoadLegacyAbilityAliases();
+                LoadGuidNameLookup();
                 _loaded = true;
             }
+        }
+
+        private static void LoadGuidNameLookup()
+        {
+            GuidLookupByName.Clear();
+            NameLookupByGuid.Clear();
+
+            var csvPath = ResolveGuidNameLookupPath();
+            if (string.IsNullOrWhiteSpace(csvPath) || !File.Exists(csvPath))
+            {
+                ZoneCore.LogDebug("[PrefabResolver] GuidNameLookup.csv not found; CSV fallback disabled.");
+                return;
+            }
+
+            try
+            {
+                var lines = File.ReadAllLines(csvPath);
+                if (lines.Length == 0)
+                {
+                    return;
+                }
+
+                var loadedCount = 0;
+                for (var i = 1; i < lines.Length; i++)
+                {
+                    if (!TryParseGuidLookupCsvLine(lines[i], out var guidHash, out var name))
+                    {
+                        continue;
+                    }
+
+                    if (guidHash == 0 || string.IsNullOrWhiteSpace(name) ||
+                        string.Equals(name, "<NOT FOUND>", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    // Name -> GUID map used as direct fallback for token resolution.
+                    if (!GuidLookupByName.ContainsKey(name))
+                    {
+                        GuidLookupByName[name] = new PrefabGUID(guidHash);
+                    }
+
+                    // GUID -> Name map used to recover when callers pass outdated/incorrect hash values.
+                    if (!NameLookupByGuid.ContainsKey(guidHash))
+                    {
+                        NameLookupByGuid[guidHash] = name;
+                    }
+
+                    loadedCount++;
+                }
+
+                ZoneCore.LogInfo($"[PrefabResolver] Loaded GuidNameLookup fallback entries: {loadedCount} from '{csvPath}'.");
+            }
+            catch (Exception ex)
+            {
+                ZoneCore.LogWarning($"[PrefabResolver] Failed to load GuidNameLookup.csv: {ex.Message}");
+            }
+        }
+
+        private static string ResolveGuidNameLookupPath()
+        {
+            var candidates = new List<string>();
+
+            static void AddCandidate(List<string> list, string path)
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    return;
+                }
+
+                if (!list.Any(existing => string.Equals(existing, path, StringComparison.OrdinalIgnoreCase)))
+                {
+                    list.Add(path);
+                }
+            }
+
+            try
+            {
+                AddCandidate(candidates, Path.Combine(Directory.GetCurrentDirectory(), "GuidNameLookup.csv"));
+            }
+            catch
+            {
+                // Best effort only.
+            }
+
+            try
+            {
+                AddCandidate(candidates, Path.Combine(AppContext.BaseDirectory, "GuidNameLookup.csv"));
+            }
+            catch
+            {
+                // Best effort only.
+            }
+
+            try
+            {
+                var assemblyDirectory = Path.GetDirectoryName(typeof(PrefabResolver).Assembly.Location);
+                if (!string.IsNullOrWhiteSpace(assemblyDirectory))
+                {
+                    AddCandidate(candidates, Path.Combine(assemblyDirectory, "GuidNameLookup.csv"));
+                    var parent = Directory.GetParent(assemblyDirectory)?.FullName;
+                    if (!string.IsNullOrWhiteSpace(parent))
+                    {
+                        AddCandidate(candidates, Path.Combine(parent, "GuidNameLookup.csv"));
+                    }
+                }
+            }
+            catch
+            {
+                // Best effort only.
+            }
+
+            try
+            {
+                AddCandidate(candidates, Path.Combine(Paths.ConfigPath, "GuidNameLookup.csv"));
+                AddCandidate(candidates, Path.Combine(Paths.ConfigPath, "Bluelock", "GuidNameLookup.csv"));
+            }
+            catch
+            {
+                // Best effort only.
+            }
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static bool TryParseGuidLookupCsvLine(string line, out int guidHash, out string name)
+        {
+            guidHash = 0;
+            name = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                return false;
+            }
+
+            var fields = ParseCsvFields(line);
+            if (fields.Count < 2)
+            {
+                return false;
+            }
+
+            var guidText = fields[0]?.Trim();
+            name = fields[1]?.Trim() ?? string.Empty;
+            if (guidText == null)
+            {
+                return false;
+            }
+
+            return int.TryParse(guidText, NumberStyles.Integer, CultureInfo.InvariantCulture, out guidHash);
+        }
+
+        private static List<string> ParseCsvFields(string line)
+        {
+            var fields = new List<string>();
+            var current = new StringBuilder();
+            var inQuotes = false;
+
+            for (var i = 0; i < line.Length; i++)
+            {
+                var ch = line[i];
+                if (ch == '"')
+                {
+                    if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                        continue;
+                    }
+
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+
+                if (ch == ',' && !inQuotes)
+                {
+                    fields.Add(current.ToString());
+                    current.Clear();
+                    continue;
+                }
+
+                current.Append(ch);
+            }
+
+            fields.Add(current.ToString());
+            return fields;
+        }
+
+        private static bool TryResolveCsvMappedName(string mappedName, out PrefabGUID guid)
+        {
+            guid = PrefabGUID.Empty;
+            if (string.IsNullOrWhiteSpace(mappedName))
+            {
+                return false;
+            }
+
+            if (ByAlias.TryGetValue(mappedName, out guid))
+            {
+                return true;
+            }
+
+            if (ByName.TryGetValue(mappedName, out guid))
+            {
+                return true;
+            }
+
+            if (PrefabsAll.TryGet(mappedName, out guid))
+            {
+                return true;
+            }
+
+            if (GuidLookupByName.TryGetValue(mappedName, out guid))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         private static void LoadPrefabsRef()
@@ -263,6 +508,12 @@ namespace VAuto.Zone.Core
                 Source = "PrefabResolver defaults",
                 Choices = new List<PrefabChoice>
                 {
+                    new()
+                    {
+                        Name = "AB_Militia_LightArrow_SpawnMinions_Summon",
+                        Prefab = "AB_Militia_LightArrow_SpawnMinions_Summon",
+                        PrefabGuid = -1191185326
+                    },
                     new()
                     {
                         Name = "PurpleCarpetsBuildMenuGroup01",

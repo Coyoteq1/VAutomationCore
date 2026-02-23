@@ -34,6 +34,7 @@ namespace VAuto.Zone.Services
             }
 
             var spawned = new List<Entity>();
+            var missingPrefabs = new List<string>();
             var rotationRadians = math.radians(rotationDegrees);
             var cos = math.cos(rotationRadians);
             var sin = math.sin(rotationRadians);
@@ -43,7 +44,7 @@ namespace VAuto.Zone.Services
                 var prefabEntity = ResolvePrefab(em, entry);
                 if (prefabEntity == Entity.Null)
                 {
-                    ZoneCore.LogWarning($"[BuildingService] Template '{templateName}' prefab '{entry.PrefabName ?? string.Empty}' ({entry.PrefabGuid}) unavailable.");
+                    missingPrefabs.Add($"{entry.PrefabName ?? string.Empty} ({entry.PrefabGuid})");
                     continue;
                 }
 
@@ -68,6 +69,18 @@ namespace VAuto.Zone.Services
                 TrySetRotation(em, entity, math.radians(entry.RotationDegrees + rotationDegrees));
 
                 spawned.Add(entity);
+            }
+
+            if (spawned.Count == 0 && missingPrefabs.Count > 0)
+            {
+                result.Success = false;
+                result.Error = $"All template prefabs unavailable ({missingPrefabs.Count}): {string.Join(", ", missingPrefabs)}";
+                return result;
+            }
+
+            if (missingPrefabs.Count > 0)
+            {
+                ZoneCore.LogInfo($"[BuildingService] Template '{templateName}' skipped {missingPrefabs.Count} unavailable prefab(s).");
             }
 
             result.Success = true;

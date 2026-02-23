@@ -171,6 +171,11 @@ namespace VAutomationCore.Configuration
     public class UnifiedLifecycleMapping
     {
         /// <summary>
+        /// Flow ID associated with this zone mapping.
+        /// </summary>
+        public string FlowId { get; set; } = "ZoneDefault";
+
+        /// <summary>
         /// Actions to trigger when player enters this zone.
         /// </summary>
         public List<string> OnEnter { get; set; } = new();
@@ -232,6 +237,32 @@ namespace VAutomationCore.Configuration
         /// Whether to enable legacy action handling
         /// </summary>
         public bool EnableLegacyActions { get; set; } = false;
+
+        /// <summary>
+        /// Must-execute flow steps for this mapping.
+        /// </summary>
+        public List<MustFlowStep> MustFlows { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Required flow step configuration.
+    /// </summary>
+    public class MustFlowStep
+    {
+        /// <summary>
+        /// Action name to execute.
+        /// </summary>
+        public string Action { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Arguments passed to the action.
+        /// </summary>
+        public object[] Args { get; set; } = Array.Empty<object>();
+
+        /// <summary>
+        /// When true, flow execution fails immediately if this step fails.
+        /// </summary>
+        public bool Critical { get; set; } = true;
     }
 
     /// <summary>

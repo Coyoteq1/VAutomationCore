@@ -48,6 +48,23 @@ namespace VAutomationCore.Core.Api
     }
 
     /// <summary>
+    /// A required flow step that can be marked critical.
+    /// </summary>
+    public sealed class MustFlowStep
+    {
+        public string ActionAliasOrName { get; }
+        public object[] Args { get; }
+        public bool Critical { get; }
+
+        public MustFlowStep(string actionAliasOrName, bool critical = true, params object[] args)
+        {
+            ActionAliasOrName = actionAliasOrName ?? string.Empty;
+            Critical = critical;
+            Args = args ?? Array.Empty<object>();
+        }
+    }
+
+    /// <summary>
     /// Named flow definition containing ordered action steps.
     /// </summary>
     public sealed class FlowDefinition
@@ -224,6 +241,15 @@ namespace VAutomationCore.Core.Api
 
         public static FlowExecutionResult Execute(FlowDefinition definition, EntityMap entityMap, bool stopOnFailure = true)
         {
+            return Execute(definition, entityMap, mustFlows: null, stopOnFailure);
+        }
+
+        public static FlowExecutionResult Execute(
+            FlowDefinition definition,
+            EntityMap entityMap,
+            IEnumerable<MustFlowStep>? mustFlows,
+            bool stopOnFailure = true)
+        {
             if (definition == null)
             {
                 return FlowExecutionResult.Fail(0, 0, 0, "Flow definition is null.");
@@ -232,6 +258,12 @@ namespace VAutomationCore.Core.Api
             if (entityMap == null)
             {
                 return FlowExecutionResult.Fail(definition.Steps.Count, 0, 0, "Entity map is null.");
+            }
+
+            var mustFlowResult = ExecuteMustFlows(mustFlows, entityMap);
+            if (!mustFlowResult.Success)
+            {
+                return mustFlowResult;
             }
 
             var executed = 0;
@@ -270,6 +302,62 @@ namespace VAutomationCore.Core.Api
             return failed == 0
                 ? FlowExecutionResult.Ok(definition.Steps.Count, executed)
                 : FlowExecutionResult.Fail(definition.Steps.Count, executed, failed, "Flow completed with failed step(s).");
+        }
+
+        public static FlowExecutionResult ExecuteMustFlows(IEnumerable<MustFlowStep>? mustFlows, EntityMap entityMap)
+        {
+            if (mustFlows == null)
+            {
+                return FlowExecutionResult.Ok(0, 0, 0);
+            }
+
+            var steps = mustFlows as MustFlowStep[] ?? mustFlows.ToArray();
+            if (steps.Length == 0)
+            {
+                return FlowExecutionResult.Ok(0, 0, 0);
+            }
+
+            if (entityMap == null)
+            {
+                return FlowExecutionResult.Fail(steps.Length, 0, 0, "Entity map is null for must-flow execution.");
+            }
+
+            var executed = 0;
+            var failed = 0;
+            for (var i = 0; i < steps.Length; i++)
+            {
+                var step = steps[i];
+                var actionName = ResolveActionName(step.ActionAliasOrName);
+                if (string.IsNullOrWhiteSpace(actionName))
+                {
+                    failed++;
+                    if (step.Critical)
+                    {
+                        return FlowExecutionResult.Fail(steps.Length, executed, failed, $"Must-flow step {i} has no action name.");
+                    }
+
+                    continue;
+                }
+
+                var resolvedArgs = ResolveArgs(step.Args, entityMap);
+                var ok = GameActionService.InvokeAction(actionName, resolvedArgs);
+                if (!ok)
+                {
+                    failed++;
+                    if (step.Critical)
+                    {
+                        return FlowExecutionResult.Fail(steps.Length, executed, failed, $"Critical must-flow step {i} failed: {actionName}");
+                    }
+                }
+                else
+                {
+                    executed++;
+                }
+            }
+
+            return failed == 0
+                ? FlowExecutionResult.Ok(steps.Length, executed)
+                : FlowExecutionResult.Fail(steps.Length, executed, failed, "Must-flow execution completed with failed non-critical step(s).");
         }
 
         private static object[] ResolveArgs(object[] args, EntityMap entityMap)

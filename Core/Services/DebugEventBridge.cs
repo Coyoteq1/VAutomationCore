@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -22,7 +22,12 @@ namespace VAuto.Core.Services
 {
     public static class DebugEventBridge
     {
-        private static readonly string[] ProgressionKeywords = { "Research", "VBlood", "Achievement", "Unlock", "Tech", "Recipe", "Progress" };
+        private static readonly string[] ProgressionKeywords =
+        {
+            "Research", "VBlood", "Achievement", "Unlock", "Tech", "Recipe", "Progress",
+            // Include spell/ability progression components so boss spell unlock state is captured/restored.
+            "Spell", "Ability", "Boss", "Knowledge", "Journal", "Slot", "Power", "School", "Mod"
+        };
         private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true, WriteIndented = true };
         private static readonly ISnapshotCaptureService SnapshotCaptureService = new SnapshotCaptureService();
         private static readonly ISnapshotDiffService SnapshotDiffService = new SnapshotDiffService();
@@ -155,6 +160,10 @@ namespace VAuto.Core.Services
             };
 
             SandboxSnapshotStore.UpsertPendingContext(pending);
+            if (baselineRows.Length == 0)
+            {
+                LogWarning($"Captured sandbox baseline is empty for key='{playerKey}', zone='{zoneId}'. Progression component filter matched 0 components.");
+            }
             LogDebug($"Captured sandbox baseline for key='{playerKey}', zone='{zoneId}', components={baselineRows.Length}, entities={preZoneEntities.Length}.");
         }
 
@@ -204,6 +213,10 @@ namespace VAuto.Core.Services
             var finalizedUtc = DateTime.UtcNow;
             var postSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
             var postRows = SnapshotCaptureService.BuildBaselineRows(postSnapshot, playerKey, characterName, platformId, pending.ZoneId, pending.SnapshotId, finalizedUtc);
+            if (postRows.Length == 0)
+            {
+                LogWarning($"Post-unlock sandbox snapshot is empty for key='{playerKey}', zone='{pending.ZoneId}'. Unlock may run but capture matched 0 components.");
+            }
 
             var deltaRows = new List<DeltaRow>();
             deltaRows.AddRange(SnapshotDiffService.ComputeComponentDelta(pending.ComponentRows, postRows));
@@ -281,6 +294,10 @@ namespace VAuto.Core.Services
 
             ProgressionRestoreService.TryApplyDeltaEntityCleanup(delta, baseline.ZoneId);
             var restoreSnapshot = BuildSnapshotFromBaselineRows(baseline.Rows, baseline.PlatformId, baseline.CapturedUtc);
+            if (restoreSnapshot.Components.Count == 0)
+            {
+                LogWarning($"Restore snapshot has 0 components for playerKey='{playerKey}', zone='{baseline.ZoneId}'. Nothing will be restored.");
+            }
 
             if (!ProgressionRestoreService.RestoreProgressionSnapshot(character, restoreSnapshot))
             {
@@ -379,12 +396,17 @@ namespace VAuto.Core.Services
                 var type = debugSystem.GetType();
 
                 var researchOk = TryInvokeUnlock(type, debugSystem, new[] { "UnlockAllResearch", "TriggerUnlockAllResearch" }, fromCharacter, userEntity);
-                var vbloodOk = TryInvokeUnlock(type, debugSystem, new[] { "UnlockAllVBloods", "TriggerUnlockAllVBlood" }, fromCharacter, userEntity);
+                var vbloodOk = TryInvokeUnlock(type, debugSystem, new[] { "UnlockAllVBloods", "UnlockAllVBlood", "TriggerUnlockAllVBlood" }, fromCharacter, userEntity);
                 var achievementOk = TryInvokeUnlock(type, debugSystem, new[] { "CompleteAllAchievements", "TriggerCompleteAllAchievements" }, fromCharacter, userEntity);
-
-                if (!researchOk || !vbloodOk || !achievementOk)
+                var spellsOk = TryInvokeUnlock(type, debugSystem, new[]
                 {
-                    LogWarning($"ApplyFullUnlock partial failure: research={researchOk}, vblood={vbloodOk}, achievements={achievementOk}.");
+                    "UnlockAllSpells", "UnlockAllAbilities", "TriggerUnlockAllSpells", "TriggerUnlockAllAbilities",
+                    "UnlockAllSpellSchools", "UnlockAllMagic", "UnlockAllPowers", "CompleteAllSpells"
+                }, fromCharacter, userEntity);
+
+                if (!researchOk || !vbloodOk || !achievementOk || !spellsOk)
+                {
+                    LogWarning($"ApplyFullUnlock partial failure: research={researchOk}, vblood={vbloodOk}, achievements={achievementOk}, spells={spellsOk}.");
                 }
                 else
                 {
@@ -404,6 +426,12 @@ namespace VAuto.Core.Services
                 foreach (var method in systemType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.Name == methodName))
                 {
                     var parameters = method.GetParameters();
+                    if (parameters.Length == 0)
+                    {
+                        method.Invoke(instance, Array.Empty<object>());
+                        return true;
+                    }
+
                     if (parameters.Length != 1)
                     {
                         continue;
@@ -458,62 +486,13 @@ namespace VAuto.Core.Services
                 return snapshot;
             }
 
-            if (!TryGetComponentTypeEnumerable(em, userEntity, out var componentTypes, out var disposable))
+            CaptureEntityProgressionComponents(em, userEntity, snapshot);
+
+            // Fallback: some progression data (notably spells/abilities) can live on character entities.
+            // If user entity probing yields nothing, probe character entity as a secondary source.
+            if (snapshot.Components.Count == 0 && em.Exists(character))
             {
-                return snapshot;
-            }
-
-            try
-            {
-                foreach (var componentTypeObj in componentTypes)
-                {
-                    if (!TryResolveManagedType(componentTypeObj, out var managedType) || managedType == null)
-                    {
-                        continue;
-                    }
-
-                    if (!IsProgressionComponentType(managedType))
-                    {
-                        continue;
-                    }
-
-                    if (!TryHasComponent(em, userEntity, managedType))
-                    {
-                        continue;
-                    }
-
-                    if (!TryGetComponentData(em, userEntity, managedType, out var componentValue, out _))
-                    {
-                        continue;
-                    }
-
-                    var typeKey = managedType.AssemblyQualifiedName ?? managedType.FullName ?? managedType.Name;
-                    if (string.IsNullOrWhiteSpace(typeKey))
-                    {
-                        continue;
-                    }
-
-                    string payload;
-                    try
-                    {
-                        payload = JsonSerializer.Serialize(componentValue, managedType, JsonOpts);
-                    }
-                    catch
-                    {
-                        continue;
-                    }
-
-                    snapshot.Components[typeKey] = new SnapshotComponentState
-                    {
-                        Existed = true,
-                        AssemblyQualifiedType = typeKey,
-                        JsonPayload = payload
-                    };
-                }
-            }
-            finally
-            {
-                disposable?.Dispose();
+                CaptureEntityProgressionComponents(em, character, snapshot);
             }
 
             return snapshot;
@@ -1140,6 +1119,67 @@ namespace VAuto.Core.Services
             }
 
             return false;
+        }
+
+        private static void CaptureEntityProgressionComponents(EntityManager em, Entity sourceEntity, SandboxProgressionSnapshot snapshot)
+        {
+            if (!TryGetComponentTypeEnumerable(em, sourceEntity, out var componentTypes, out var disposable))
+            {
+                return;
+            }
+
+            try
+            {
+                foreach (var componentTypeObj in componentTypes)
+                {
+                    if (!TryResolveManagedType(componentTypeObj, out var managedType) || managedType == null)
+                    {
+                        continue;
+                    }
+
+                    if (!IsProgressionComponentType(managedType))
+                    {
+                        continue;
+                    }
+
+                    if (!TryHasComponent(em, sourceEntity, managedType))
+                    {
+                        continue;
+                    }
+
+                    if (!TryGetComponentData(em, sourceEntity, managedType, out var componentValue, out _))
+                    {
+                        continue;
+                    }
+
+                    var typeKey = managedType.AssemblyQualifiedName ?? managedType.FullName ?? managedType.Name;
+                    if (string.IsNullOrWhiteSpace(typeKey))
+                    {
+                        continue;
+                    }
+
+                    string payload;
+                    try
+                    {
+                        payload = JsonSerializer.Serialize(componentValue, managedType, JsonOpts);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    snapshot.Components[typeKey] = new SnapshotComponentState
+                    {
+                        Existed = true,
+                        AssemblyQualifiedType = typeKey,
+                        JsonPayload = payload
+                    };
+                }
+            }
+            finally
+            {
+                disposable?.Dispose();
+            }
         }
 
         private static bool TryGetAllocatorArgument(Type allocatorParamType, out object allocatorArgument)

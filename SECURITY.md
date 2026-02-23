@@ -1,35 +1,40 @@
-# Security Policy
+# Security Incident Playbook
 
-## Supported Versions
+This playbook defines the minimum response for private or sensitive data leaks.
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+## 1) Prevent
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+- Enforce organization-wide 2FA for members, outside collaborators, and billing managers.
+- Apply least privilege for repository permissions, tokens, and GitHub App scopes.
+- Restrict high-risk actions where possible: public visibility changes, forking, deletion/transfer, and uncontrolled repository creation.
+- Enable secret scanning and push protection at organization level, including custom patterns for internal token formats.
+- Protect default branches with required reviews, required checks, and controlled bypass.
 
-## Reporting a Vulnerability
+## 2) Detect
 
-If you discover a security vulnerability, report it privately by emailing:
-**Ahmadtllal1@gmail.com**
+- Monitor secret scanning alerts and route high-severity alerts to a security response channel.
+- Review organization audit logs for suspicious events (permission changes, token creation/use, visibility changes, branch protection bypass).
+- Declare an incident immediately when sensitive data exposure is confirmed or strongly suspected.
 
-Please include:
-- A clear description of the issue
-- Steps to reproduce
+## 3) Mitigate
+
+- Contain quickly: restrict repository access, disable compromised accounts, and remove unauthorized collaborators.
+- Revoke and rotate exposed credentials (PATs, API keys, cloud secrets, signing keys) immediately.
+- Remove sensitive data from Git history using history rewrite tooling; force-push cleaned history and coordinate local clone cleanup.
+- If direct owner coordination is blocked, escalate to GitHub Support and legal channels as required.
+
+## 4) Recovery
+
+- Verify clean state: no active leaked credentials, no unresolved critical alerts, and no unauthorized access paths.
+- Restore normal operations with hardened controls and monitoring in place.
+- Complete post-incident review with timeline, root cause, impact, and corrective actions with owners and due dates.
+- Update training, detection rules, and this playbook based on lessons learned.
+
+## Reporting a Security Issue
+
+Report vulnerabilities privately to **Ahmadtllal1@gmail.com** with:
+
+- Description of the issue
+- Reproduction steps
 - Potential impact
-- Any suggested remediation
-
-### What to expect
-
-- Initial acknowledgment within **3 business days**
-- Status updates at least every **7 business days** while the issue is open
-- Confirmation when a fix is released (or if no fix is planned)
-
-If the vulnerability is accepted, we will work on remediation and coordinate
-disclosure timing with you when appropriate. If the report is determined to be
-out of scope or not reproducible, we will share the reasoning and close the
-report.
+- Suggested remediation (if available)

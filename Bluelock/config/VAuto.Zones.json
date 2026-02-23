@@ -17,6 +17,8 @@
   "zones": [
     {
       "id": "1",
+      "flowId": "A1",
+      "flowFallback": "ZoneDefault",
       "tags": [ "sandbox", "event_tier_1" ],
       "displayName": "Area 1",
       "shape": "Circle",
@@ -24,6 +26,8 @@
       "centerY": 0.0,
       "centerZ": -500.0,
       "radius": 45.0,
+      "entryRadius": 30.0,
+      "exitRadius": 45.0,
       "kitToApplyId": "Kit1",
       "kitId": "Kit1",
       "abilityPresetSlots": [
@@ -33,10 +37,10 @@
         "AB_Vampire_VeilOfBones_AbilityGroup"
       ],
       "glowEffectColorHex": "#FFD700",
-      "glowPrefabId": 0,
-      "glowPrefab": "InkShadow",
-      "glowTilePrefab": "TM_Castle_FloorDecor_Carpet_Base",
-      "glowTilePrefabId": 0,
+      "glowPrefabId": -1191185326,
+      "glowPrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefabId": -1191185326,
       "glowTileSpacing": 3.0,
       "glowTileHeightOffset": 0.3,
       "glowTileRotationDegrees": 0.0,
@@ -52,10 +56,14 @@
       "teleportY": 0.0,
       "teleportZ": -500.0,
       "returnOnExit": true,
-      "templates": {}
+      "templates": {
+        "arena": "arena_default"
+      }
     },
     {
       "id": "2",
+      "flowId": "B1",
+      "flowFallback": "ZoneDefault",
       "tags": [ "sandbox", "event_tier_2" ],
       "displayName": "Area 2",
       "shape": "Circle",
@@ -63,6 +71,8 @@
       "centerY": 0.0,
       "centerZ": -500.0,
       "radius": 45.0,
+      "entryRadius": 30.0,
+      "exitRadius": 45.0,
       "kitToApplyId": "Kit4",
       "kitId": "Kit4",
       "abilityPresetSlots": [
@@ -72,10 +82,10 @@
         "AB_Vampire_VeilOfBones_AbilityGroup"
       ],
       "glowEffectColorHex": "#FFD700",
-      "glowPrefabId": 0,
-      "glowPrefab": "InkShadow",
-      "glowTilePrefab": "TM_Castle_FloorDecor_Carpet_Base",
-      "glowTilePrefabId": 0,
+      "glowPrefabId": -1191185326,
+      "glowPrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefabId": -1191185326,
       "glowTileSpacing": 3.0,
       "glowTileHeightOffset": 0.3,
       "glowTileRotationDegrees": 0.0,
@@ -91,10 +101,14 @@
       "teleportY": 0.0,
       "teleportZ": -500.0,
       "returnOnExit": true,
-      "templates": {}
+      "templates": {
+        "arena": "not"
+      }
     },
     {
       "id": "3",
+      "flowId": "T3",
+      "flowFallback": "ZoneDefault",
       "tags": [ "sandbox", "event_tier_3" ],
       "displayName": "Area 3",
       "shape": "Circle",
@@ -102,6 +116,8 @@
       "centerY": 0.0,
       "centerZ": -500.0,
       "radius": 45.0,
+      "entryRadius": 30.0,
+      "exitRadius": 45.0,
       "kitToApplyId": "Kit5",
       "kitId": "Kit5",
       "abilityPresetSlots": [
@@ -111,10 +127,10 @@
         "AB_Vampire_VeilOfBones_AbilityGroup"
       ],
       "glowEffectColorHex": "#FFD700",
-      "glowPrefabId": 0,
-      "glowPrefab": "InkShadow",
-      "glowTilePrefab": "TM_Castle_FloorDecor_Carpet_Base",
-      "glowTilePrefabId": 0,
+      "glowPrefabId": -1191185326,
+      "glowPrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefabId": -1191185326,
       "glowTileSpacing": 3.0,
       "glowTileHeightOffset": 0.3,
       "glowTileRotationDegrees": 0.0,
@@ -130,10 +146,14 @@
       "teleportY": 0.0,
       "teleportZ": -500.0,
       "returnOnExit": true,
-      "templates": {}
+      "templates": {
+        "arena": "arena_default"
+      }
     },
     {
       "id": "4",
+      "flowId": "ZoneDefault",
+      "flowFallback": "ZoneDefault",
       "tags": [ "sandbox", "event_tier_4" ],
       "displayName": "Area 4",
       "shape": "Circle",
@@ -141,6 +161,8 @@
       "centerY": 0.0,
       "centerZ": -500.0,
       "radius": 45.0,
+      "entryRadius": 30.0,
+      "exitRadius": 45.0,
       "kitToApplyId": "Kit2",
       "kitId": "Kit2",
       "abilityPresetSlots": [
@@ -150,10 +172,10 @@
         "AB_Vampire_VeilOfBones_AbilityGroup"
       ],
       "glowEffectColorHex": "#FFA500",
-      "glowPrefabId": 0,
-      "glowPrefab": "InkShadow",
-      "glowTilePrefab": "TM_Castle_FloorDecor_Carpet_Base",
-      "glowTilePrefabId": 0,
+      "glowPrefabId": -1191185326,
+      "glowPrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefabId": -1191185326,
       "glowTileSpacing": 3.0,
       "glowTileHeightOffset": 0.3,
       "glowTileRotationDegrees": 0.0,
@@ -169,10 +191,14 @@
       "teleportY": 0.0,
       "teleportZ": -500.0,
       "returnOnExit": true,
-      "templates": {}
+      "templates": {
+        "arena": "arena_default"
+      }
     },
     {
       "id": "5",
+      "flowId": "ZoneDefault",
+      "flowFallback": "ZoneDefault",
       "tags": [ "sandbox", "event_tier_5" ],
       "displayName": "Area 5",
       "shape": "Circle",
@@ -180,6 +206,8 @@
       "centerY": 0.0,
       "centerZ": -500.0,
       "radius": 45.0,
+      "entryRadius": 30.0,
+      "exitRadius": 45.0,
       "kitToApplyId": "Kit3",
       "kitId": "Kit3",
       "abilityPresetSlots": [
@@ -189,10 +217,10 @@
         "AB_Vampire_VeilOfBones_AbilityGroup"
       ],
       "glowEffectColorHex": "#FF4500",
-      "glowPrefabId": 0,
-      "glowPrefab": "InkShadow",
-      "glowTilePrefab": "TM_Castle_FloorDecor_Carpet_Base",
-      "glowTilePrefabId": 0,
+      "glowPrefabId": -1191185326,
+      "glowPrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefab": "AB_Militia_LightArrow_SpawnMinions_Summon",
+      "glowTilePrefabId": -1191185326,
       "glowTileSpacing": 3.0,
       "glowTileHeightOffset": 0.3,
       "glowTileRotationDegrees": 0.0,
@@ -208,7 +236,9 @@
       "teleportY": 0.0,
       "teleportZ": -500.0,
       "returnOnExit": true,
-      "templates": {}
+      "templates": {
+        "arena": "arena_default"
+      }
     }
   ]
 }

@@ -15,6 +15,8 @@ namespace VAuto.Zone.Services
     public sealed class ArenaZoneDef
     {
         public string Name { get; set; } = "";
+        public string FlowId { get; set; } = "ZoneDefault";
+        public string FlowFallback { get; set; } = "ZoneDefault";
         public float3 Center { get; set; }
         public float Radius { get; set; }
         public float2 Size { get; set; }
@@ -74,6 +76,16 @@ namespace VAuto.Zone.Services
             if (zoneEl.TryGetProperty("name", out var nameEl) && nameEl.ValueKind == JsonValueKind.String)
             {
                 zone.Name = nameEl.GetString() ?? "";
+            }
+
+            if (zoneEl.TryGetProperty("flowId", out var flowIdEl) && flowIdEl.ValueKind == JsonValueKind.String)
+            {
+                zone.FlowId = string.IsNullOrWhiteSpace(flowIdEl.GetString()) ? "ZoneDefault" : flowIdEl.GetString()!;
+            }
+
+            if (zoneEl.TryGetProperty("flowFallback", out var flowFallbackEl) && flowFallbackEl.ValueKind == JsonValueKind.String)
+            {
+                zone.FlowFallback = string.IsNullOrWhiteSpace(flowFallbackEl.GetString()) ? "ZoneDefault" : flowFallbackEl.GetString()!;
             }
 
             if (!TryGetFloat3(zoneEl, "center", out var center))

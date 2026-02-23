@@ -58,7 +58,7 @@ namespace VAuto.Zone.Commands
         public static void ArenaAdminHelp(ChatCommandContext ctx)
         {
             var message = @"<color=#FFD700>[Arena Admin Commands]</color>
-<color=#00FFFF>.z create [radius] (.z c)</color> - Create new arena zone with auto numeric ID
+<color=#00FFFF>.z create [radius] [flowId] (.z c)</color> - Create new arena zone with auto numeric ID and selected flow
 <color=#00FFFF>.z remove [name] (.z rem)</color> - Remove arena zone by name
 <color=#00FFFF>.z list (.z l)</color> - List all arena zones
 <color=#00FFFF>.z on [name] (.z enable)</color> - Enable arena zone
@@ -81,7 +81,7 @@ namespace VAuto.Zone.Commands
         /// Create a new arena zone at the command user's position.
         /// </summary>
         [Command("create", shortHand: "c", description: "Create new arena zone at your position", adminOnly: true)]
-        public static void ArenaCreate(ChatCommandContext ctx, float radius = 50f)
+        public static void ArenaCreate(ChatCommandContext ctx, float radius = 50f, string flowId = "ZoneDefault")
         {
             try
             {
@@ -115,6 +115,8 @@ namespace VAuto.Zone.Commands
                 var newZone = new ArenaZoneDef
                 {
                     Name = name,
+                    FlowId = string.IsNullOrWhiteSpace(flowId) ? "ZoneDefault" : flowId,
+                    FlowFallback = "ZoneDefault",
                     Center = position,
                     Radius = radius,
                     Shape = ArenaZoneShape.Circle,
@@ -127,7 +129,7 @@ namespace VAuto.Zone.Commands
 
                 if (SaveZones(zones))
                 {
-                    ctx.Reply($"<color=#00FF00>Created zone '{name}' at ({position.x:F0}, {position.y:F0}, {position.z:F0}) with radius {radius}m. Lifecycle enabled: true</color>");
+                    ctx.Reply($"<color=#00FF00>Created zone '{name}' at ({position.x:F0}, {position.y:F0}, {position.z:F0}) with radius {radius}m. Flow={newZone.FlowId}. Lifecycle enabled: true</color>");
                     ZoneCore.LogInfo($"[ArenaAdmin] Created zone '{name}' at {position} with radius {radius}");
                 }
                 else
@@ -882,6 +884,8 @@ namespace VAuto.Zone.Commands
                         var zone = new ArenaZoneDef
                         {
                             Name = idEl.GetString() ?? string.Empty,
+                            FlowId = "ZoneDefault",
+                            FlowFallback = "ZoneDefault",
                             Shape = ArenaZoneShape.Circle,
                             Radius = 50f,
                             LifecycleEnabled = true,
@@ -913,6 +917,17 @@ namespace VAuto.Zone.Commands
                         {
                             zone.HolderName = holderEl.GetString() ?? string.Empty;
                         }
+
+                        if (TryGetStringProperty(zoneEl, out var flowId, "FlowId", "flowId"))
+                        {
+                            zone.FlowId = string.IsNullOrWhiteSpace(flowId) ? "ZoneDefault" : flowId;
+                        }
+
+                        if (TryGetStringProperty(zoneEl, out var flowFallback, "FlowFallback", "flowFallback"))
+                        {
+                            zone.FlowFallback = string.IsNullOrWhiteSpace(flowFallback) ? "ZoneDefault" : flowFallback;
+                        }
+
                         if (TryGetBooleanProperty(zoneEl, out var lifecycleEnabled, "LifecycleEnabled", "lifecycleEnabled"))
                         {
                             zone.LifecycleEnabled = lifecycleEnabled;
@@ -988,6 +1003,8 @@ namespace VAuto.Zone.Commands
                         var zoneDef = new ZoneDefinition
                         {
                             Id = z.Name,
+                            FlowId = string.IsNullOrWhiteSpace(z.FlowId) ? "ZoneDefault" : z.FlowId,
+                            FlowFallback = string.IsNullOrWhiteSpace(z.FlowFallback) ? "ZoneDefault" : z.FlowFallback,
                             DisplayName = z.Name,
                             Shape = z.Shape == ArenaZoneShape.Square ? "Rectangle" : "Circle",
                             CenterX = z.Center.x,
@@ -1026,12 +1043,26 @@ namespace VAuto.Zone.Commands
 
         private static bool TryParseZone(JsonElement zoneEl, out ArenaZoneDef zone, out string error)
         {
-            zone = new ArenaZoneDef();
+            zone = new ArenaZoneDef
+            {
+                FlowId = "ZoneDefault",
+                FlowFallback = "ZoneDefault"
+            };
             error = string.Empty;
 
             if (zoneEl.TryGetProperty("name", out var nameEl) && nameEl.ValueKind == JsonValueKind.String)
             {
                 zone.Name = nameEl.GetString() ?? "";
+            }
+
+            if (TryGetStringProperty(zoneEl, out var flowId, "FlowId", "flowId"))
+            {
+                zone.FlowId = string.IsNullOrWhiteSpace(flowId) ? "ZoneDefault" : flowId;
+            }
+
+            if (TryGetStringProperty(zoneEl, out var flowFallback, "FlowFallback", "flowFallback"))
+            {
+                zone.FlowFallback = string.IsNullOrWhiteSpace(flowFallback) ? "ZoneDefault" : flowFallback;
             }
 
             if (!TryGetFloat3(zoneEl, "center", out var center))
@@ -1265,6 +1296,23 @@ namespace VAuto.Zone.Commands
             }
 
             value = false;
+            return false;
+        }
+
+        private static bool TryGetStringProperty(JsonElement element, out string value, params string[] names)
+        {
+            foreach (var name in names)
+            {
+                if (!element.TryGetProperty(name, out var prop) || prop.ValueKind != JsonValueKind.String)
+                {
+                    continue;
+                }
+
+                value = prop.GetString() ?? string.Empty;
+                return true;
+            }
+
+            value = string.Empty;
             return false;
         }
 

@@ -108,6 +108,7 @@ namespace VAuto.Extensions
         /// Add value if not exists
         /// </summary>
         public static void AddIfNotExists<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue value)
+            where TKey : notnull
         {
             if (!dict.ContainsKey(key))
                 dict.Add(key, value);
@@ -117,6 +118,7 @@ namespace VAuto.Extensions
         /// Get or add value
         /// </summary>
         public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, TValue value)
+            where TKey : notnull
         {
             if (dict.TryGetValue(key, out var existing))
                 return existing;
@@ -128,6 +130,7 @@ namespace VAuto.Extensions
         /// Get or add value using factory
         /// </summary>
         public static TValue GetOrAdd<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, Func<TKey, TValue> factory)
+            where TKey : notnull
         {
             if (dict.TryGetValue(key, out var existing))
                 return existing;

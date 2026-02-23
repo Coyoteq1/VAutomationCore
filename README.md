@@ -63,6 +63,63 @@ public override void Load()
 ## Auth
 - coyoteq1
 
+## Note
+- Admin and console commands are disabled and do not work in this package.
+- This package is a pure library.
+
+## Build and deploy commands
+
+Run all commands from repository root.
+
+Build core library only:
+```bash
+dotnet build VAutomationCore.csproj -c Release /p:UseSharedCompilation=false
+```
+
+Build BlueLock plugin (without building referenced projects):
+```bash
+dotnet build Bluelock/VAutoZone.csproj -c Release /p:BuildProjectReferences=false /p:UseSharedCompilation=false
+```
+
+Build and deploy BlueLock to configured BepInEx plugins path:
+```bash
+dotnet build Bluelock/VAutoZone.csproj -c Release /p:BuildProjectReferences=false /p:UseSharedCompilation=false /p:DeployToServer=true
+```
+
+Build CycleBorn plugin (without building referenced projects):
+```bash
+dotnet build CycleBorn/Vlifecycle.csproj -c Release /p:BuildProjectReferences=false /p:UseSharedCompilation=false
+```
+
+Build and deploy CycleBorn to configured BepInEx plugins path:
+```bash
+dotnet build CycleBorn/Vlifecycle.csproj -c Release /p:BuildProjectReferences=false /p:UseSharedCompilation=false /p:DeployToServer=true
+```
+
+If the Roslyn/MSBuild servers cache stale state, restart them:
+```bash
+dotnet build-server shutdown
+```
+
+## Manifest locations
+
+| Path | Package name | Version | Notes |
+|---|---|---|---|
+| `manifest.json` | `VAutomationCore` | `1.0.1` | Root/core Thunderstore manifest |
+| `Bluelock/manifest.json` | `VAutomationZone` | `1.0.0` | BlueLock source manifest |
+| `CycleBorn/manifest.json` | `CycleBorn` | `1.0.0` | CycleBorn source manifest |
+| `packaging/VAutomationCore/manifest.json` | `VAutomationCore` | `1.0.1` | Packaging manifest used for release artifact |
+| `packaging/VAutomationZone/manifest.json` | `VAutomationZone` | `1.0.1` | Packaging manifest used for release artifact |
+| `packaging/lifecycle/manifest.json` | `lifecycle` | `1.0.1` | Packaging manifest used for lifecycle release artifact |
+
+Source manifests and packaging manifests should be kept version-aligned when publishing.
+
+## Migration Notes
+
+### v1.0.1
+- **Config file renamed**: Configuration file changed from `VAuto.Core.cfg` to `gg.coyote.VAutomationCore.cfg`
+- Users upgrading from v1.0.0 will need to reconfigure their settings (or migrate manually)
+- New flow-based zone configuration system introduced with support for `FlowId`, `EntryRadius`, `ExitRadius`, and `MustFlows`
 
 ## Core API Surface
 
@@ -109,4 +166,4 @@ var op = CoreExecution.RunWithRetry(
 );
 ```
 
-## Configuration 
+

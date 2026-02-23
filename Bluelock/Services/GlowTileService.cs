@@ -11,8 +11,9 @@ using Stunlock.Core;
 
 namespace VAuto.Zone.Services
 {
-    public static class GlowTileService
-    {
+        public static class GlowTileService
+        {
+        private const string DefaultGlowTilePrefabName = "AB_Militia_LightArrow_SpawnMinions_Summon";
         private static readonly Dictionary<string, List<Entity>> SpawnedGlowTiles = new(StringComparer.OrdinalIgnoreCase);
 
         public static void PrepareForZoneActivation(string zoneId, EntityManager em)
@@ -171,7 +172,7 @@ namespace VAuto.Zone.Services
                 error = $"Name '{zone.GlowTilePrefab}' not resolvable";
             }
 
-            return ZoneCore.TryResolvePrefabEntity("PurpleCarpetsBuildMenuGroup01", out _, out var fallbackEntity) && fallbackEntity != Entity.Null
+            return ZoneCore.TryResolvePrefabEntity(DefaultGlowTilePrefabName, out _, out var fallbackEntity) && fallbackEntity != Entity.Null
                 ? fallbackEntity
                 : Entity.Null;
         }

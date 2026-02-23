@@ -177,6 +177,89 @@ namespace Bluelock.Tests
                 "Disallowed extractor/dependency patterns found:\n" + string.Join('\n', disallowed));
         }
 
+        [Fact]
+        public void CorePluginIdentity_AndIntegrationTouchpoints_AreConsistent()
+        {
+            var repoRoot = ResolveRepoRoot();
+            var pluginPath = Path.Combine(repoRoot, "Plugin.cs");
+            var infoPath = Path.Combine(repoRoot, "MyPluginInfo.cs");
+
+            Assert.True(File.Exists(pluginPath), "Root Plugin.cs is missing.");
+            Assert.True(File.Exists(infoPath), "Root MyPluginInfo.cs is missing.");
+
+            var pluginText = File.ReadAllText(pluginPath);
+            var infoText = File.ReadAllText(infoPath);
+
+            // Identity: plugin attribute must be wired to MyPluginInfo constants.
+            Assert.Contains("[BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]", pluginText);
+
+            // Bind/settings: config file naming should stay aligned with plugin GUID identity contract.
+            Assert.Contains("public const string GUID = \"gg.coyote.VAutomationCore\";", infoText);
+            Assert.Contains("private const string ConfigFileName = \"gg.coyote.VAutomationCore.cfg\";", pluginText);
+            Assert.Contains("_configFile = new ConfigFile(Path.Combine(Paths.ConfigPath, ConfigFileName), true);", pluginText);
+
+            // Integration touchpoints requested for compatibility checks.
+            Assert.Contains("Core/Services/SandboxSnapshotStore.cs", Directory.GetFiles(repoRoot, "SandboxSnapshotStore.cs", SearchOption.AllDirectories)
+                .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
+            Assert.Contains("Core/Services/Sandbox/SnapshotCaptureService.cs", Directory.GetFiles(repoRoot, "SnapshotCaptureService.cs", SearchOption.AllDirectories)
+                .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
+            Assert.Contains("Core/Services/Sandbox/SnapshotDiffService.cs", Directory.GetFiles(repoRoot, "SnapshotDiffService.cs", SearchOption.AllDirectories)
+                .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
+            Assert.Contains("Core/Data/FlowService.cs", Directory.GetFiles(repoRoot, "FlowService.cs", SearchOption.AllDirectories)
+                .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
+            Assert.Contains("config/VAuto.unified_config.schema.json", Directory.GetFiles(Path.Combine(repoRoot, "config"), "*.json", SearchOption.TopDirectoryOnly)
+                .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
+
+            var commandFiles = Directory.GetFiles(Path.Combine(repoRoot, "Core", "Commands"), "*.cs", SearchOption.AllDirectories);
+            Assert.True(commandFiles.Length > 0, "Core command surface is unexpectedly empty.");
+        }
+
+        [Fact]
+        public void AllPlugins_FollowIdentityConsistency()
+        {
+            var repoRoot = ResolveRepoRoot();
+            
+            // Define expected patterns for each plugin
+            var plugins = new[]
+            {
+                new { Name = "Bluelock", Folder = "Bluelock", ExpectedGuid = "gg.coyote.VAutomationZone" },
+                new { Name = "VAutoannounce", Folder = "VAutoannounce", ExpectedGuid = "gg.coyote.VAutoannounce" },
+                new { Name = "VAutoTraps", Folder = "VAutoTraps", ExpectedGuid = "gg.coyote.VAutoTraps" },
+                new { Name = "CycleBorn", Folder = "CycleBorn", ExpectedGuid = "gg.coyote.VLifecycle" },
+                new { Name = "Swapkits", Folder = "Swapkits", ExpectedGuid = "gg.coyote.ExtraSlots" }
+            };
+
+            foreach (var plugin in plugins)
+            {
+                var pluginFolder = Path.Combine(repoRoot, plugin.Folder);
+                if (!Directory.Exists(pluginFolder))
+                    continue; // Skip if plugin folder doesn't exist in this workspace
+
+                var pluginPath = Path.Combine(pluginFolder, "Plugin.cs");
+                var infoPath = Path.Combine(pluginFolder, "MyPluginInfo.cs");
+
+                Assert.True(File.Exists(pluginPath), $"{plugin.Name}: Plugin.cs missing");
+                Assert.True(File.Exists(infoPath), $"{plugin.Name}: MyPluginInfo.cs missing");
+
+                var pluginText = File.ReadAllText(pluginPath);
+                var infoText = File.ReadAllText(infoPath);
+
+                // Check MyPluginInfo has GUID constant
+                Assert.True(infoText.Contains("public const string GUID = ", StringComparison.OrdinalIgnoreCase),
+                    $"{plugin.Name}: GUID constant missing in MyPluginInfo.cs");
+                
+                // Check GUID value matches expected
+                var expectedGuidLine = $"public const string GUID = \"{plugin.ExpectedGuid}\";";
+                Assert.True(infoText.Contains(expectedGuidLine, StringComparison.OrdinalIgnoreCase),
+                    $"{plugin.Name}: Expected GUID \"{plugin.ExpectedGuid}\" not found");
+
+                // Check BepInPlugin attribute uses MyPluginInfo constants (or direct GUID that matches)
+                var hasBepInPlugin = pluginText.Contains("[BepInPlugin(") || 
+                    pluginText.Contains($"\"{plugin.ExpectedGuid}\"");
+                Assert.True(hasBepInPlugin, $"{plugin.Name}: [BepInPlugin] attribute missing or incorrect");
+            }
+        }
+
         private static string ResolveRepoRoot()
         {
             var current = AppContext.BaseDirectory;

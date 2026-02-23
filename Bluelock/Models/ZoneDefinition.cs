@@ -62,6 +62,28 @@ namespace VAuto.Zone.Models
         public float Radius { get; set; }
 
         /// <summary>
+        /// Flow ID used to resolve enter/exit behavior (e.g., A1, B1, T3, ZoneDefault).
+        /// </summary>
+        public string FlowId { get; set; } = "ZoneDefault";
+
+        /// <summary>
+        /// Fallback flow when <see cref="FlowId"/> cannot be resolved.
+        /// </summary>
+        public string FlowFallback { get; set; } = "ZoneDefault";
+
+        /// <summary>
+        /// Entry radius used for enter transition checks.
+        /// Defaults to <see cref="Radius"/> when not explicitly configured.
+        /// </summary>
+        public float EntryRadius { get; set; }
+
+        /// <summary>
+        /// Exit radius used for exit transition checks.
+        /// Defaults to EntryRadius/Radius when not explicitly configured.
+        /// </summary>
+        public float ExitRadius { get; set; }
+
+        /// <summary>
         /// Minimum X boundary for rectangular zones.
         /// </summary>
         public float MinX { get; set; }

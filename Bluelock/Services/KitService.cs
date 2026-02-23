@@ -9,7 +9,9 @@ using BepInEx;
 using BepInEx.Logging;
 using ProjectM;
 using ProjectM.Network;
+using ProjectM.Shared;
 using Unity.Entities;
+using Unity.Collections;
 using Stunlock.Core;
 using VAuto.Zone.Core;
 using VAutomationCore.Core;
@@ -118,7 +120,199 @@ namespace VAuto.Zone.Services
 
             LoadKitDefinitions();
             LoadUsageState();
+            EnsureDefaultStateClearHooks();
             _log.LogInfo($"[KitService] Initialized. Kits loaded: {_kits.Count}");
+        }
+
+        private static void EnsureDefaultStateClearHooks()
+        {
+            ClearInventory ??= DefaultClearInventory;
+            ClearEquipment ??= DefaultClearEquipment;
+            ClearBuffs ??= DefaultClearBuffs;
+            ClearAbilities ??= DefaultClearAbilities;
+        }
+
+        private static bool DefaultClearInventory(EntityManager em, Entity playerEntity)
+        {
+            if (playerEntity == Entity.Null || em == default || !em.Exists(playerEntity))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (!em.HasBuffer<InventoryItem>(playerEntity))
+                {
+                    return true;
+                }
+
+                var buffer = em.GetBuffer<InventoryItem>(playerEntity);
+                if (buffer.Length == 0)
+                {
+                    return true;
+                }
+
+                var destroyed = 0;
+                var seen = new HashSet<Entity>();
+                for (var i = 0; i < buffer.Length; i++)
+                {
+                    var itemEntity = TryReadInventoryItemEntity(buffer[i]);
+                    if (itemEntity == Entity.Null || !em.Exists(itemEntity) || !seen.Add(itemEntity))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        em.DestroyEntity(itemEntity);
+                        destroyed++;
+                    }
+                    catch
+                    {
+                        // Best effort.
+                    }
+                }
+
+                _log.LogDebug($"[KitService] DefaultClearInventory destroyed {destroyed} inventory item entities for player {playerEntity.Index}.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug($"[KitService] DefaultClearInventory failed for player {playerEntity.Index}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static bool DefaultClearEquipment(EntityManager em, Entity playerEntity)
+        {
+            if (playerEntity == Entity.Null || em == default || !em.Exists(playerEntity))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (!em.HasComponent<Equipment>(playerEntity))
+                {
+                    return true;
+                }
+
+                var equipment = em.GetComponentData<Equipment>(playerEntity);
+                var equipped = new NativeList<Entity>(Allocator.Temp);
+                var destroyed = 0;
+                try
+                {
+                    equipment.GetAllEquipmentEntities(equipped);
+                    for (var i = 0; i < equipped.Length; i++)
+                    {
+                        var itemEntity = equipped[i];
+                        if (itemEntity == Entity.Null || !em.Exists(itemEntity))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            em.DestroyEntity(itemEntity);
+                            destroyed++;
+                        }
+                        catch
+                        {
+                            // Best effort.
+                        }
+                    }
+                }
+                finally
+                {
+                    equipped.Dispose();
+                }
+
+                _log.LogDebug($"[KitService] DefaultClearEquipment destroyed {destroyed} equipped item entities for player {playerEntity.Index}.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug($"[KitService] DefaultClearEquipment failed for player {playerEntity.Index}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static bool DefaultClearBuffs(EntityManager em, Entity playerEntity)
+        {
+            if (playerEntity == Entity.Null || em == default || !em.Exists(playerEntity))
+            {
+                return false;
+            }
+
+            try
+            {
+                var removed = 0;
+
+                if (em.HasBuffer<BuffBuffer>(playerEntity))
+                {
+                    var buffer = em.GetBuffer<BuffBuffer>(playerEntity);
+                    for (var i = 0; i < buffer.Length; i++)
+                    {
+                        var buffEntity = buffer[i].Entity;
+                        if (buffEntity == Entity.Null || !em.Exists(buffEntity) || !em.HasComponent<PrefabGUID>(buffEntity))
+                        {
+                            continue;
+                        }
+
+                        var buffGuid = em.GetComponentData<PrefabGUID>(buffEntity);
+                        if (buffGuid == PrefabGUID.Empty)
+                        {
+                            continue;
+                        }
+
+                        if (GameActionService.TryRemoveBuff(playerEntity, buffGuid))
+                        {
+                            removed++;
+                        }
+                    }
+                }
+
+                _log.LogDebug($"[KitService] DefaultClearBuffs removed {removed} buffs for player {playerEntity.Index}.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug($"[KitService] DefaultClearBuffs failed for player {playerEntity.Index}: {ex.Message}");
+                return false;
+            }
+        }
+
+        private static bool DefaultClearAbilities(EntityManager em, Entity playerEntity)
+        {
+            if (playerEntity == Entity.Null || em == default || !em.Exists(playerEntity))
+            {
+                return false;
+            }
+
+            try
+            {
+                if (!em.HasComponent<ProjectM.AbilitySlotBuffer>(playerEntity))
+                {
+                    return true;
+                }
+
+                var slots = em.GetBuffer<ProjectM.AbilitySlotBuffer>(playerEntity);
+                for (var i = 0; i < slots.Length; i++)
+                {
+                    var slot = slots[i];
+                    slot.Ability = PrefabGUID.Empty;
+                    slots[i] = slot;
+                }
+
+                AbilityUi.ResetAbilityCooldowns(playerEntity);
+                _log.LogDebug($"[KitService] DefaultClearAbilities cleared {slots.Length} ability slots for player {playerEntity.Index}.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug($"[KitService] DefaultClearAbilities failed for player {playerEntity.Index}: {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
@@ -1544,6 +1738,37 @@ namespace VAuto.Zone.Services
             CallHook("ClearEquipment", ClearEquipment);
             CallHook("ClearBuffs", ClearBuffs);
             CallHook("ClearAbilities", ClearAbilities);
+        }
+
+        private static Entity TryReadInventoryItemEntity(InventoryItem entry)
+        {
+            try
+            {
+                var boxed = (object)entry;
+                var type = boxed.GetType();
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+                foreach (var memberName in new[] { "ItemEntity", "Entity", "Item", "ItemId" })
+                {
+                    var property = type.GetProperty(memberName, flags);
+                    if (property?.GetValue(boxed) is Entity propertyEntity)
+                    {
+                        return propertyEntity;
+                    }
+
+                    var field = type.GetField(memberName, flags);
+                    if (field?.GetValue(boxed) is Entity fieldEntity)
+                    {
+                        return fieldEntity;
+                    }
+                }
+            }
+            catch
+            {
+                // Best-effort reflection fallback.
+            }
+
+            return Entity.Null;
         }
 
         private static bool TryResolvePrefabNameFallback(KitItem item, PrefabGUID currentGuid, out PrefabGUID fallbackGuid)

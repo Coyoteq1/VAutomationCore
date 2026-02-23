@@ -124,7 +124,7 @@ namespace VAuto.Zone
         private static readonly Dictionary<Entity, string> _playerOriginalNames = new();
         private static readonly Dictionary<string, List<Entity>> _zoneBorderEntities = new(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> _zoneGlowAutoSpawnDisabled = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly bool TempDisableAbilityUiDuringZoneTransitions = true;
+        private static readonly bool TempDisableAbilityUiDuringZoneTransitions = false;
         private static readonly Dictionary<ulong, float3> _zoneReturnPositions = new();
         private static readonly Dictionary<ulong, PendingZoneTeleport> _pendingZoneEnterTeleports = new();
         private static readonly Dictionary<string, Dictionary<string, List<Entity>>> _zoneTemplateEntities = new(StringComparer.OrdinalIgnoreCase);
@@ -1029,6 +1029,7 @@ namespace VAuto.Zone
                             // Try known-good fallback markers that are spawnable
                             var fallbackMarkers = new[]
                             {
+                                ("AB_Militia_LightArrow_SpawnMinions_Summon", -1191185326),
                                 ("TM_Castle_ObjectDecor_TargetDummy_Vampire01", 230163020),
                                 ("TM_TargetDummy_01", 10513858),
                                 ("ZoneIcon_Default", 0),
@@ -2664,15 +2665,17 @@ namespace VAuto.Zone
                         var spawn = GlowTileService.TryAutoSpawnGlowTiles(zone, em);
                         if (!spawn.Success)
                         {
+                            ZoneGlowBorderService.QueueRebuild($"glow-spawn-fallback:{zoneId}", bypassCooldown: true);
+                            Logger.LogWarning($"[BlueLock] Glow auto spawn failed for zone '{zoneId}', queued border rebuild fallback: {spawn.Error}");
+
                             if (!string.IsNullOrWhiteSpace(spawn.Error) &&
                                 spawn.Error.IndexOf("not configured or unavailable", StringComparison.OrdinalIgnoreCase) >= 0)
                             {
                                 _zoneGlowAutoSpawnDisabled.Add(zoneId);
-                                Logger.LogWarning($"[BlueLock] Glow auto spawn disabled for zone '{zoneId}' until config reload: {spawn.Error}");
+                                Logger.LogWarning($"[BlueLock] Glow auto spawn disabled for zone '{zoneId}' until config reload (fallback border stays active): {spawn.Error}");
                                 return;
                             }
 
-                            Logger.LogWarning($"[BlueLock] Glow auto spawn failed for zone '{zoneId}': {spawn.Error}");
                             return;
                         }
 

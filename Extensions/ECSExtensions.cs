@@ -1,7 +1,9 @@
 using System;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Entities;
 using Il2CppInterop.Runtime;
+using ProjectM;
 
 namespace VAuto.Extensions
 {
@@ -10,6 +12,86 @@ namespace VAuto.Extensions
     /// </summary>
     public static class ECSExtensions
     {
+        /// <summary>
+        /// Unsafe raw component read (matches KindredExtract signature)
+        /// </summary>
+        public unsafe static T Read<T>(this Entity entity) where T : struct
+        {
+            var ct = new ComponentType(Il2CppType.Of<T>());
+            if (ct.IsZeroSized)
+                return new T();
+            
+            void* rawPointer = UnifiedCore.EntityManager.GetComponentDataRawRO(entity, ct.TypeIndex);
+            return Marshal.PtrToStructure<T>(new IntPtr(rawPointer));
+        }
+
+        /// <summary>
+        /// Unsafe raw component write (matches KindredExtract signature)
+        /// </summary>
+        public unsafe static void Write<T>(this Entity entity, T componentData) where T : struct
+        {
+            var ct = new ComponentType(Il2CppType.Of<T>());
+            byte[] byteArray = StructureToByteArray(componentData);
+            int size = Marshal.SizeOf<T>();
+            
+            fixed (byte* p = byteArray)
+            {
+                UnifiedCore.EntityManager.SetComponentDataRaw(entity, ct.TypeIndex, p, size);
+            }
+        }
+
+        /// <summary>
+        /// Check if entity has component (matches KindredExtract signature)
+        /// </summary>
+        public static bool Has<T>(this Entity entity)
+        {
+            var ct = new ComponentType(Il2CppType.Of<T>());
+            return UnifiedCore.EntityManager.HasComponent(entity, ct);
+        }
+
+        /// <summary>
+        /// Add component to entity (matches KindredExtract signature)
+        /// </summary>
+        public static void Add<T>(this Entity entity)
+        {
+            var ct = new ComponentType(Il2CppType.Of<T>());
+            UnifiedCore.EntityManager.AddComponent(entity, ct);
+        }
+
+        /// <summary>
+        /// Remove component from entity (matches KindredExtract signature)
+        /// </summary>
+        public static void Remove<T>(this Entity entity)
+        {
+            var ct = new ComponentType(Il2CppType.Of<T>());
+            UnifiedCore.EntityManager.RemoveComponent(entity, ct);
+        }
+
+        /// <summary>
+        /// Get prefab name from PrefabGUID (matches KindredExtract signature)
+        /// </summary>
+        public static string LookupName(this PrefabGUID prefabGuid)
+        {
+            var prefabCollectionSystem = UnifiedCore.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
+            return prefabCollectionSystem.PrefabGuidToNameDictionary.TryGetValue(prefabGuid, out var name)
+                ? $"{name} PrefabGuid({prefabGuid.GuidHash})"
+                : "GUID Not Found";
+        }
+
+        /// <summary>
+        /// Helper to marshal struct to byte array
+        /// </summary>
+        public static byte[] StructureToByteArray<T>(T structure) where T : struct
+        {
+            int size = Marshal.SizeOf(structure);
+            byte[] byteArray = new byte[size];
+            IntPtr ptr = Marshal.AllocHGlobal(size);
+            Marshal.StructureToPtr(structure, ptr, true);
+            Marshal.Copy(ptr, byteArray, 0, size);
+            Marshal.FreeHGlobal(ptr);
+            return byteArray;
+        }
+
         /// <summary>
         /// Safe entity read component (IL2CPP compatible)
         /// </summary>
@@ -75,7 +157,7 @@ namespace VAuto.Extensions
             if (includeDisabled) options |= EntityQueryOptions.IncludeDisabled;
 
             var entityQueryBuilder = new EntityQueryBuilder(Allocator.Temp)
-                .AddAll(new(Il2CppType.Of<T>(), ComponentType.AccessMode.ReadWrite));
+                .AddAll(new ComponentType(Il2CppType.Of<T>(), ComponentType.AccessMode.ReadWrite));
 
             var query = em.CreateEntityQuery(ref entityQueryBuilder);
             var entities = query.ToEntityArray(Allocator.Temp);
@@ -94,8 +176,8 @@ namespace VAuto.Extensions
             if (includeDisabled) options |= EntityQueryOptions.IncludeDisabled;
 
             var entityQueryBuilder = new EntityQueryBuilder(Allocator.Temp)
-                .AddAll(new(Il2CppType.Of<T1>(), ComponentType.AccessMode.ReadWrite))
-                .AddAll(new(Il2CppType.Of<T2>(), ComponentType.AccessMode.ReadWrite));
+                .AddAll(new ComponentType(Il2CppType.Of<T1>(), ComponentType.AccessMode.ReadWrite))
+                .AddAll(new ComponentType(Il2CppType.Of<T2>(), ComponentType.AccessMode.ReadWrite));
 
             var query = em.CreateEntityQuery(ref entityQueryBuilder);
             var entities = query.ToEntityArray(Allocator.Temp);

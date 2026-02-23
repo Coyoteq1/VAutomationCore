@@ -17,7 +17,7 @@ namespace VAutomationCore
     [BepInProcess("VRising.exe")]
     public class Plugin : BasePlugin
     {
-        private const string ConfigFileName = "VAuto.Core.cfg";
+        private const string ConfigFileName = "gg.coyote.VAutomationCore.cfg";
         private const string CommandRoots = "coreauth, jobs";
 
         private static ManualLogSource _coreLog;
@@ -68,7 +68,7 @@ namespace VAutomationCore
             {
                 if (_harmony != null)
                 {
-                    _harmony.UnpatchSelf();
+                    _harmony.UnpatchAll(MyPluginInfo.GUID);
                     _harmony = null;
                 }
 

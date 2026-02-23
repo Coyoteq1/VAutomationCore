@@ -155,7 +155,9 @@ namespace VAuto.Core.Services
                 Directory.CreateDirectory(directory);
             }
 
-            using var file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+            // Allow concurrent readers (log viewers / diagnostics) while writing snapshots.
+            // FileShare.None can fail on Windows if another process already opened the file for read.
+            using var file = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
             using var gzip = new GZipStream(file, CompressionLevel.Optimal);
             using var writer = new StreamWriter(gzip, Encoding.UTF8);
 
