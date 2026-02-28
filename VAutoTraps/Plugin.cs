@@ -13,7 +13,7 @@ using VAutoTraps;
 
 namespace VAutoTraps
 {
-    [BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]
+    [BepInPlugin("gg.coyote.VAutomationtrap", "VAutoTraps", "1.0.1")]
     [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]

@@ -6,7 +6,7 @@ It is live in production and actively used by multiple live modules built on thi
 ## NuGet
 - Package: `VAutomationCore`
 - Latest package page: `https://www.nuget.org/packages/VAutomationCore`
-- Latest prerelease page: `https://www.nuget.org/packages/VAutomationCore/1.0.1-beta.1`
+- Latest prerelease page: `https://www.nuget.org/packages/VAutomationCore/1.0.1-beta.3`
 
 Install latest stable:
 ```xml
@@ -15,8 +15,13 @@ Install latest stable:
 
 Install specific prerelease:
 ```xml
-<PackageReference Include="VAutomationCore" Version="1.0.1-beta.1" />
+<PackageReference Include="VAutomationCore" Version="1.0.1-beta.3" />
 ```
+
+## Thunderstore (V Rising)
+- Browse/install packages: `https://thunderstore.io/c/v-rising/`
+- Use Thunderstore Mod Manager or r2modman for server/plugin package installs.
+- Framework docs/commands here remain the authoritative source for current runtime behavior.
 
 ## Focus
 - Register in-game commands with VCF.
@@ -24,6 +29,22 @@ Install specific prerelease:
 - Run ECS jobs from services or chat commands.
 - Build and run flows with action aliases and entity aliases (`EntityMap` + `EntityAliasMapper`), so even other mods that use VCF can automate through flows.
 - Enforce core role auth for jobs: `Developer` can run job flows, `Admin` alone cannot.
+
+## Description
+- `VAutomationCore` is the shared runtime/library layer used by Bluelock, CycleBorn, and related modules.
+- It provides common APIs, auth, flow execution, config services, and ECS helpers.
+
+## Services
+- `ServiceInitializer` for startup registration/validation orchestration.
+- `ConsoleRoleAuthService` for developer/admin auth sessions.
+- `FlowService` for action alias and flow execution.
+- `ConfigService` for JSON/config file management.
+- `GameActionService` for reusable game action helpers.
+
+## User GUIDs
+- Use player platform IDs (`platformId`) for user-scoped operations.
+- Core mapping command: `.jobs alias user <alias> [platformId]`.
+- Keep GUID/platform IDs as exact strings to avoid precision loss.
 
 ## Minimal startup pattern
 ```csharp
@@ -56,9 +77,15 @@ public override void Load()
 
 `Developer` auth is required for `.jobs run`.
 
+## Active command roots (authoritative)
+- Bluelock: `.zone .match .spawn .template .tag .enter .exit .unlockprefab`
+- VAutomationCore: `.coreauth .jobs`
+- CycleBorn: `.lifecycle`
+- Excluded by build: `.arena` (file exists but excluded by `Bluelock/VAutoZone.csproj`)
+
 ## Community
-- Join the V Rising Mods Discord: [https://discord.gg/68JZU5zaq7]
-- Need ownership support? Visit: [https://discord.gg/58bTRRxf8]
+- Join the V Rising Mods Community on Discord: [V Rising Mods Discord](https://discord.gg/68JZU5zaq7)
+- Need ownership support? Visit: [Ownership Support Discord](https://discord.gg/Se4wU3s6md)
 
 ## Auth
 - coyoteq1
@@ -74,6 +101,11 @@ Run all commands from repository root.
 Build core library only:
 ```bash
 dotnet build VAutomationCore.csproj -c Release /p:UseSharedCompilation=false
+```
+
+Build and deploy VAutomationCore to configured BepInEx plugins path:
+```bash
+dotnet build VAutomationCore.csproj -c Release /p:UseSharedCompilation=false /p:DeployToServer=true
 ```
 
 Build BlueLock plugin (without building referenced projects):
@@ -95,6 +127,8 @@ Build and deploy CycleBorn to configured BepInEx plugins path:
 ```bash
 dotnet build CycleBorn/Vlifecycle.csproj -c Release /p:BuildProjectReferences=false /p:UseSharedCompilation=false /p:DeployToServer=true
 ```
+
+When a target DLL is locked by a running server process, auto-deploy writes `*.dll.new` in the plugins folder so build still completes.
 
 If the Roslyn/MSBuild servers cache stale state, restart them:
 ```bash
@@ -165,3 +199,29 @@ var op = CoreExecution.RunWithRetry(
     logger: logger
 );
 ```
+
+## Framework Wiki (HTML)
+
+- `docs/wiki/framework-wiki.html`
+
+## Docs Hosting (GitHub Pages)
+
+- Workflow: `.github/workflows/docs-pages.yml`
+- Repository: `https://github.com/Coyoteq1/D-VAutomationCore-VAutomationCore`
+- Published root: `https://coyoteq1.github.io/D-VAutomationCore-VAutomationCore/`
+- Framework wiki URL: `https://coyoteq1.github.io/D-VAutomationCore-VAutomationCore/wiki/framework-wiki.html`
+- In GitHub repository settings, set Pages source to `GitHub Actions` once.
+
+## Runtime Config Alignment (Current)
+
+- Bluelock runtime mode is configured by `Runtime.ZoneRuntimeMode` (`Legacy`, `Hybrid`, `EcsOnly`).
+- ECS detection scheduling is controlled by `Runtime.EcsDetectionTickSeconds`.
+- High-load warning threshold is controlled by `Runtime.ZoneDetectionOpsWarningThreshold`.
+- Bluelock lifecycle JSON uses `schemaVersion` and `configVersion` (`1.1.0`).
+
+## Operations References
+
+- `docs/ECS-Authoritative-Implementation-Plan.md`
+- `docs/Architecture-Ownership-Map.md`
+- `docs/Incident-Rollback-Playbook.md`
+- `docs/README.md`

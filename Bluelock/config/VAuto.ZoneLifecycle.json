@@ -1,4 +1,6 @@
 {
+    "schemaVersion":  "1.1.0",
+    "configVersion":  "1.1.0",
     "enabled":  true,
     "mappings":  {
                      "1":  {
@@ -38,7 +40,7 @@
                                                "zone_enter_message",
                                                "apply_kit",
                                                "teleport_enter",
-                                               "boss_enter",
+                                               "boss_enter:arena_default",
                                                "integration_events_enter",
                                                "announce_enter"
                                            ],
@@ -46,13 +48,13 @@
                                               "zone_exit_message",
                                               "restore_kit_snapshot",
                                               "restore_abilities",
-                                              "boss_exit",
+                                              "clear_template:boss",
                                               "teleport_return",
                                               "integration_events_exit"
                                           ],
                                "mustFlows":  [
                                                  {
-                                                     "action":  "boss_enter",
+                                                     "action":  "boss_enter:arena_default",
                                                      "critical":  true
                                                  }
                                              ],

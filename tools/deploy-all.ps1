@@ -52,8 +52,12 @@ foreach ($f in $artifacts) {
 Write-Host "[deploy] Copying Bluelock config JSONs to: $configDir" -ForegroundColor Cyan
 $bluelockConfigSrc = Join-Path $root 'Bluelock/config'
 if (Test-Path $bluelockConfigSrc) {
-    Get-ChildItem -Path $bluelockConfigSrc -Filter '*.json' | ForEach-Object {
-        Copy-Item -Force -Path $_.FullName -Destination $configDir
+    Get-ChildItem -Path $bluelockConfigSrc -Recurse -Filter '*.json' | ForEach-Object {
+        $relativePath = $_.FullName.Substring($bluelockConfigSrc.Length).TrimStart('\', '/')
+        $targetPath = Join-Path $configDir $relativePath
+        $targetDir = Split-Path -Parent $targetPath
+        New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+        Copy-Item -Force -Path $_.FullName -Destination $targetPath
     }
 }
 

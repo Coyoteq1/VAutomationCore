@@ -144,8 +144,20 @@ namespace VAuto.Zone.Services
                     snapshot.BloodQuality = blood.Quality;
                 }
 
-                snapshot.InventoryItems = CaptureInventoryItems(em, playerEntity);
-                snapshot.EquipmentItems = CaptureEquipmentItems(em, playerEntity);
+                var inventorySnapshots = new Dictionary<int, int>();
+                var equipmentSnapshots = new Dictionary<int, int>();
+
+                MergeInventorySnapshots(inventorySnapshots, CaptureInventoryItems(em, playerEntity));
+                MergeInventorySnapshots(equipmentSnapshots, CaptureEquipmentItems(em, playerEntity));
+
+                if (TryGetUserEntityFromCharacter(em, playerEntity, out var userEntity))
+                {
+                    MergeInventorySnapshots(inventorySnapshots, CaptureInventoryItems(em, userEntity));
+                    MergeInventorySnapshots(equipmentSnapshots, CaptureEquipmentItems(em, userEntity));
+                }
+
+                snapshot.InventoryItems = ToInventorySnapshotList(inventorySnapshots);
+                snapshot.EquipmentItems = ToInventorySnapshotList(equipmentSnapshots);
 
                 _snapshots[playerEntity] = snapshot;
                 ZoneCore.LogInfo($"[Snapshot] Saved for Entity {playerEntity.Index} at {snapshot.Position} (Inventory items: {snapshot.InventoryItems.Count}, Equipment items: {snapshot.EquipmentItems.Count})");
@@ -209,7 +221,9 @@ namespace VAuto.Zone.Services
                 var positionRestored = false;
 
                 // Clear arena-applied loadout before restoring snapshot state.
-                TryClearCurrentLoadout(em, playerEntity, out var clearedInventoryItems, out var clearedEquipmentItems);
+                Entity secondaryEntity = Entity.Null;
+                _ = TryGetUserEntityFromCharacter(em, playerEntity, out secondaryEntity);
+                TryClearCurrentLoadout(em, playerEntity, secondaryEntity, out var clearedInventoryItems, out var clearedEquipmentItems);
 
                 var restoredInventoryEntries = RestoreInventorySnapshots(playerEntity, snapshot.InventoryItems, "inventory");
                 var restoredEquipmentEntries = RestoreInventorySnapshots(playerEntity, snapshot.EquipmentItems, "equipment");
@@ -409,7 +423,7 @@ namespace VAuto.Zone.Services
             return snapshots.Count > 0 ? snapshots : EmptyInventoryItems;
         }
 
-        private static bool TryClearCurrentLoadout(EntityManager em, Entity playerEntity, out int clearedInventoryItems, out int clearedEquipmentItems)
+        private static bool TryClearCurrentLoadout(EntityManager em, Entity playerEntity, Entity secondaryEntity, out int clearedInventoryItems, out int clearedEquipmentItems)
         {
             clearedInventoryItems = 0;
             clearedEquipmentItems = 0;
@@ -446,9 +460,74 @@ namespace VAuto.Zone.Services
                     }
                 }
 
+                if (secondaryEntity != Entity.Null && em.Exists(secondaryEntity) && em.HasBuffer<InventoryItem>(secondaryEntity))
+                {
+                    var inventoryItems = em.GetBuffer<InventoryItem>(secondaryEntity);
+                    for (var i = 0; i < inventoryItems.Length; i++)
+                    {
+                        var entry = inventoryItems[i];
+                        if (!TryGetInventoryItemEntity(entry, out var itemEntity) || itemEntity == Entity.Null || !em.Exists(itemEntity))
+                        {
+                            continue;
+                        }
+
+                        if (!destroyed.Add(itemEntity))
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            em.DestroyEntity(itemEntity);
+                            clearedInventoryItems++;
+                        }
+                        catch
+                        {
+                            // Best effort only.
+                        }
+                    }
+                }
+
                 if (em.Exists(playerEntity) && em.HasComponent<Equipment>(playerEntity))
                 {
                     var equipment = em.GetComponentData<Equipment>(playerEntity);
+                    var equippedEntities = new NativeList<Entity>(Allocator.Temp);
+                    try
+                    {
+                        equipment.GetAllEquipmentEntities(equippedEntities);
+                        for (var i = 0; i < equippedEntities.Length; i++)
+                        {
+                            var itemEntity = equippedEntities[i];
+                            if (itemEntity == Entity.Null || !em.Exists(itemEntity))
+                            {
+                                continue;
+                            }
+
+                            if (!destroyed.Add(itemEntity))
+                            {
+                                continue;
+                            }
+
+                            try
+                            {
+                                em.DestroyEntity(itemEntity);
+                                clearedEquipmentItems++;
+                            }
+                            catch
+                            {
+                                // Best effort only.
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        equippedEntities.Dispose();
+                    }
+                }
+
+                if (secondaryEntity != Entity.Null && em.Exists(secondaryEntity) && em.HasComponent<Equipment>(secondaryEntity))
+                {
+                    var equipment = em.GetComponentData<Equipment>(secondaryEntity);
                     var equippedEntities = new NativeList<Entity>(Allocator.Temp);
                     try
                     {
@@ -637,6 +716,65 @@ namespace VAuto.Zone.Services
         private static int TryGetInventoryStackSize(InventoryItem entry)
         {
             return Math.Max(1, TryReadIntMember(entry, "Amount", "StackSize", "Stack", "Count", "Quantity"));
+        }
+
+        private static bool TryGetUserEntityFromCharacter(EntityManager em, Entity characterEntity, out Entity userEntity)
+        {
+            userEntity = Entity.Null;
+            try
+            {
+                if (!em.Exists(characterEntity) || !em.HasComponent<PlayerCharacter>(characterEntity))
+                {
+                    return false;
+                }
+
+                var pc = em.GetComponentData<PlayerCharacter>(characterEntity);
+                if (pc.UserEntity == Entity.Null || !em.Exists(pc.UserEntity))
+                {
+                    return false;
+                }
+
+                userEntity = pc.UserEntity;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void MergeInventorySnapshots(IDictionary<int, int> aggregate, IReadOnlyList<InventorySnapshot> snapshots)
+        {
+            if (aggregate == null || snapshots == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < snapshots.Count; i++)
+            {
+                var row = snapshots[i];
+                if (row == null || row.ItemGuid == 0 || row.StackSize <= 0)
+                {
+                    continue;
+                }
+
+                aggregate[row.ItemGuid] = aggregate.TryGetValue(row.ItemGuid, out var existing)
+                    ? existing + row.StackSize
+                    : row.StackSize;
+            }
+        }
+
+        private static List<InventorySnapshot> ToInventorySnapshotList(IDictionary<int, int> aggregate)
+        {
+            if (aggregate == null || aggregate.Count == 0)
+            {
+                return EmptyInventoryItems;
+            }
+
+            return aggregate
+                .Where(kv => kv.Key != 0 && kv.Value > 0)
+                .Select(kv => new InventorySnapshot(kv.Key, kv.Value))
+                .ToList();
         }
 
         private static int TryReadIntMember(object value, params string[] memberNames)

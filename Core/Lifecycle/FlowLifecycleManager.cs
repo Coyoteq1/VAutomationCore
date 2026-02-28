@@ -16,34 +16,57 @@ namespace VAutomationCore.Core.Lifecycle
 
         public void ExecuteEnterFlow(string flowId, Entity player)
         {
-            if (string.IsNullOrEmpty(flowId)) return;
+            _ = TryExecuteEnterFlow(flowId, player);
+        }
+
+        public void ExecuteExitFlow(string flowId, Entity player)
+        {
+            _ = TryExecuteExitFlow(flowId, player);
+        }
+
+        public LifecycleExecutionResult TryExecuteEnterFlow(string flowId, Entity player)
+        {
+            if (string.IsNullOrEmpty(flowId))
+            {
+                return LifecycleExecutionResult.Ok("Enter flow skipped: empty flowId.");
+            }
             var flowKey = flowId.Trim();
             if (!FlowService.TryGetFlow(flowKey, out var definition))
             {
                 Log.Warning("Flow not found: " + flowKey);
-                return;
+                return LifecycleExecutionResult.Fail(LifecycleExecutionFailureCode.MissingFlow, "Enter flow not found: " + flowKey);
             }
 
             var entityMap = new EntityMap();
             entityMap.Map("player", player);
             var result = FlowService.Execute(definition, entityMap, stopOnFailure: false);
             Log.Info("Enter flow executed: " + flowKey + " Result: " + result.Success);
+            return result.Success
+                ? LifecycleExecutionResult.Ok("Enter flow executed: " + flowKey)
+                : LifecycleExecutionResult.Fail(LifecycleExecutionFailureCode.RuntimeActionFailure, result.ErrorMessage ?? "Enter flow execution failed.");
         }
 
-        public void ExecuteExitFlow(string flowId, Entity player)
+        public LifecycleExecutionResult TryExecuteExitFlow(string flowId, Entity player)
         {
-            if (string.IsNullOrEmpty(flowId)) return;
+            if (string.IsNullOrEmpty(flowId))
+            {
+                return LifecycleExecutionResult.Ok("Exit flow skipped: empty flowId.");
+            }
+
             var flowKey = flowId.Trim();
             if (!FlowService.TryGetFlow(flowKey, out var definition))
             {
                 Log.Warning("Flow not found: " + flowKey);
-                return;
+                return LifecycleExecutionResult.Fail(LifecycleExecutionFailureCode.MissingFlow, "Exit flow not found: " + flowKey);
             }
 
             var entityMap = new EntityMap();
             entityMap.Map("player", player);
             var result = FlowService.Execute(definition, entityMap, stopOnFailure: false);
             Log.Info("Exit flow executed: " + flowKey + " Result: " + result.Success);
+            return result.Success
+                ? LifecycleExecutionResult.Ok("Exit flow executed: " + flowKey)
+                : LifecycleExecutionResult.Fail(LifecycleExecutionFailureCode.RuntimeActionFailure, result.ErrorMessage ?? "Exit flow execution failed.");
         }
     }
 }

@@ -92,51 +92,13 @@ namespace VAuto.Zone.Services
 
         /// <summary>Where the zone ability configuration lives.</summary>
         private static readonly string _configPath = ResolveAbilityConfigPath();
-        private static readonly string _abilityPrefabConfigPath = ResolveAbilityPrefabConfigPath();
         public static string ConfigPath => _configPath;
 
         private static string ResolveAbilityConfigPath()
         {
             var rootDir = Path.Combine(Paths.ConfigPath, "Bluelock");
             Directory.CreateDirectory(rootDir);
-
-            var rootPath = Path.Combine(rootDir, "ability_zones.json");
-            var legacyPath = Path.Combine(rootDir, "config", "ability_zones.json");
-            try
-            {
-                if (!File.Exists(rootPath) && File.Exists(legacyPath))
-                {
-                    File.Copy(legacyPath, rootPath, overwrite: false);
-                }
-            }
-            catch
-            {
-                // Best-effort migration.
-            }
-
-            return rootPath;
-        }
-
-        private static string ResolveAbilityPrefabConfigPath()
-        {
-            var rootDir = Path.Combine(Paths.ConfigPath, "Bluelock");
-            Directory.CreateDirectory(rootDir);
-
-            var rootPath = Path.Combine(rootDir, "ability_prefabs.json");
-            var legacyPath = Path.Combine(rootDir, "config", "ability_prefabs.json");
-            try
-            {
-                if (!File.Exists(rootPath) && File.Exists(legacyPath))
-                {
-                    File.Copy(legacyPath, rootPath, overwrite: false);
-                }
-            }
-            catch
-            {
-                // Best-effort migration.
-            }
-
-            return rootPath;
+            return Path.Combine(rootDir, "ability_zones.json");
         }
 
         // -----------------------------
@@ -178,7 +140,6 @@ namespace VAuto.Zone.Services
                 if (GetSteamId == null)
                     LogWarn("[Initialize] GetSteamId not set. AbilityUi will be inert until wired.");
 
-                LoadAbilityPrefabAliases();
                 LoadZoneConfigs();
                 _initialized = true;
 
@@ -203,7 +164,6 @@ namespace VAuto.Zone.Services
                 return;
             }
 
-            LoadAbilityPrefabAliases();
             LoadZoneConfigs();
             LogInfo?.Invoke($"Reloaded. Loaded {_zoneConfigs.Count} zone config(s).");
         }
@@ -796,6 +756,7 @@ namespace VAuto.Zone.Services
         private static void LoadZoneConfigs()
         {
             _zoneConfigs.Clear();
+            _abilityAliases.Clear();
 
             try
             {
@@ -813,6 +774,16 @@ namespace VAuto.Zone.Services
                 if (createdDefault)
                 {
                     LogInfo?.Invoke($"Config not found/invalid. Created default file at '{_configPath}'.");
+                }
+
+                foreach (var entry in root.Aliases ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase))
+                {
+                    if (string.IsNullOrWhiteSpace(entry.Key) || string.IsNullOrWhiteSpace(entry.Value))
+                    {
+                        continue;
+                    }
+
+                    _abilityAliases[entry.Key.Trim()] = entry.Value.Trim();
                 }
 
                 foreach (var z in root.Zones ?? Enumerable.Empty<ZoneAbilityConfigJson>())
@@ -930,44 +901,6 @@ namespace VAuto.Zone.Services
             };
         }
 
-        private static void LoadAbilityPrefabAliases()
-        {
-            _abilityAliases.Clear();
-
-            try
-            {
-                TypedJsonConfigManager.TryLoadOrCreate(
-                    _abilityPrefabConfigPath,
-                    CreateDefaultAbilityPrefabAliasesConfig,
-                    out AbilityPrefabAliasesConfig aliasesConfig,
-                    out var createdDefault,
-                    CreateAbilityConfigSerializerOptions(writeIndented: true),
-                    ValidateAbilityPrefabAliasesConfig,
-                    LogInfo,
-                    LogWarn,
-                    LogError);
-
-                foreach (var entry in aliasesConfig.Aliases)
-                {
-                    if (string.IsNullOrWhiteSpace(entry.Key) || string.IsNullOrWhiteSpace(entry.Value))
-                    {
-                        continue;
-                    }
-
-                    _abilityAliases[entry.Key.Trim()] = entry.Value.Trim();
-                }
-
-                if (createdDefault)
-                {
-                    LogInfo?.Invoke($"Created default ability prefab alias config at '{_abilityPrefabConfigPath}'.");
-                }
-            }
-            catch (Exception ex)
-            {
-                LogError?.Invoke($"Failed to load ability prefab alias config '{_abilityPrefabConfigPath}': {ex.Message}");
-            }
-        }
-
         private static string NormalizeAbilityToken(string raw)
         {
             var token = (raw ?? string.Empty).Trim();
@@ -1000,6 +933,14 @@ namespace VAuto.Zone.Services
         {
             return new AbilityZonesConfig
             {
+                Aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Spell_VeilOfBlood"] = "AB_Vampire_VeilOfBlood_Group",
+                    ["Spell_VeilOfChaos"] = "AB_Vampire_VeilOfChaos_Group",
+                    ["Spell_VeilOfFrost"] = "AB_Vampire_VeilOfFrost_Group",
+                    ["Spell_VeilOfBones"] = "AB_Vampire_VeilOfBones_AbilityGroup",
+                    ["AB_BloodRite_AbilityGroup"] = "AB_Blood_BloodRite_AbilityGroup"
+                },
                 Zones = new List<ZoneAbilityConfigJson>
                 {
                     new ZoneAbilityConfigJson
@@ -1024,21 +965,6 @@ namespace VAuto.Zone.Services
             };
         }
 
-        private static AbilityPrefabAliasesConfig CreateDefaultAbilityPrefabAliasesConfig()
-        {
-            return new AbilityPrefabAliasesConfig
-            {
-                Aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    ["Spell_VeilOfBlood"] = "AB_Vampire_VeilOfBlood_Group",
-                    ["Spell_VeilOfChaos"] = "AB_Vampire_VeilOfChaos_Group",
-                    ["Spell_VeilOfFrost"] = "AB_Vampire_VeilOfFrost_Group",
-                    ["Spell_VeilOfBones"] = "AB_Vampire_VeilOfBones_AbilityGroup",
-                    ["AB_BloodRite_AbilityGroup"] = "AB_Blood_BloodRite_AbilityGroup"
-                }
-            };
-        }
-
         private static (bool IsValid, string Error) ValidateAbilityZonesConfig(AbilityZonesConfig config)
         {
             if (config == null)
@@ -1049,21 +975,6 @@ namespace VAuto.Zone.Services
             if (config.Zones == null)
             {
                 return (false, "Ability config zones list is null");
-            }
-
-            return (true, string.Empty);
-        }
-
-        private static (bool IsValid, string Error) ValidateAbilityPrefabAliasesConfig(AbilityPrefabAliasesConfig config)
-        {
-            if (config == null)
-            {
-                return (false, "Ability prefab alias config is null");
-            }
-
-            if (config.Aliases == null)
-            {
-                return (false, "Ability prefab alias map is null");
             }
 
             return (true, string.Empty);
@@ -1145,10 +1056,6 @@ namespace VAuto.Zone.Services
         private sealed class AbilityZonesConfig
         {
             public List<ZoneAbilityConfigJson> Zones { get; set; } = new();
-        }
-
-        private sealed class AbilityPrefabAliasesConfig
-        {
             public Dictionary<string, string> Aliases { get; set; } = new(StringComparer.OrdinalIgnoreCase);
         }
 

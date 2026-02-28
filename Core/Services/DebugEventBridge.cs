@@ -28,7 +28,7 @@ namespace VAuto.Core.Services
             // Include spell/ability progression components so boss spell unlock state is captured/restored.
             "Spell", "Ability", "Boss", "Knowledge", "Journal", "Slot", "Power", "School", "Mod"
         };
-        private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true, WriteIndented = true };
+        private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true, WriteIndented = true, IncludeFields = true };
         private static readonly ISnapshotCaptureService SnapshotCaptureService = new SnapshotCaptureService();
         private static readonly ISnapshotDiffService SnapshotDiffService = new SnapshotDiffService();
         private static readonly ISnapshotPersistenceService SnapshotPersistenceService = new SnapshotPersistenceService();
@@ -41,8 +41,8 @@ namespace VAuto.Core.Services
         private const string BaselineCsvFileName = "sandbox_progression_baseline.csv.gz";
         private const string DeltaCsvFileName = "sandbox_progression_delta.csv.gz";
         private const string ProgressionJournalJsonlFileName = "sandbox_progression_journal.jsonl";
-        private const string LegacyJsonFileName = "sandbox_progression_snapshots.json";
         private const string BlueLockAssemblyName = "BlueLock";
+        private const string BufferTypePrefix = "buffer:";
 
         private static readonly HashSet<ulong> _unlockAppliedThisSession = new();
         private static readonly object _snapshotFileLock = new();
@@ -59,6 +59,15 @@ namespace VAuto.Core.Services
             .FirstOrDefault(m => m.Name == "AddComponent" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
         private static readonly MethodInfo? RemoveComponentGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .FirstOrDefault(m => m.Name == "RemoveComponent" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo[] HasBufferGenericMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "HasBuffer" && m.IsGenericMethodDefinition && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(Entity))
+            .ToArray();
+        private static readonly MethodInfo[] GetBufferGenericMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "GetBuffer" && m.IsGenericMethodDefinition && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(Entity))
+            .ToArray();
+        private static readonly MethodInfo[] AddBufferGenericMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "AddBuffer" && m.IsGenericMethodDefinition && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(Entity))
+            .ToArray();
         private static readonly MethodInfo[] GetComponentTypesMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(m => m.Name == "GetComponentTypes" && !m.IsGenericMethod)
             .ToArray();
@@ -395,14 +404,35 @@ namespace VAuto.Core.Services
                 var fromCharacter = new FromCharacter { User = userEntity, Character = character };
                 var type = debugSystem.GetType();
 
-                var researchOk = TryInvokeUnlock(type, debugSystem, new[] { "UnlockAllResearch", "TriggerUnlockAllResearch" }, fromCharacter, userEntity);
-                var vbloodOk = TryInvokeUnlock(type, debugSystem, new[] { "UnlockAllVBloods", "UnlockAllVBlood", "TriggerUnlockAllVBlood" }, fromCharacter, userEntity);
-                var achievementOk = TryInvokeUnlock(type, debugSystem, new[] { "CompleteAllAchievements", "TriggerCompleteAllAchievements" }, fromCharacter, userEntity);
+                var researchOk = TryInvokeUnlock(
+                    type,
+                    debugSystem,
+                    new[] { "UnlockAllResearch", "TriggerUnlockAllResearch" },
+                    fromCharacter,
+                    userEntity,
+                    new[] { "Research", "Tech" });
+                var vbloodOk = TryInvokeUnlock(
+                    type,
+                    debugSystem,
+                    new[] { "UnlockAllVBloods", "UnlockAllVBlood", "TriggerUnlockAllVBlood" },
+                    fromCharacter,
+                    userEntity,
+                    new[] { "VBlood", "Blood" });
+                var achievementOk = TryInvokeUnlock(
+                    type,
+                    debugSystem,
+                    new[] { "CompleteAllAchievements", "TriggerCompleteAllAchievements" },
+                    fromCharacter,
+                    userEntity,
+                    new[] { "Achievement" });
                 var spellsOk = TryInvokeUnlock(type, debugSystem, new[]
                 {
                     "UnlockAllSpells", "UnlockAllAbilities", "TriggerUnlockAllSpells", "TriggerUnlockAllAbilities",
                     "UnlockAllSpellSchools", "UnlockAllMagic", "UnlockAllPowers", "CompleteAllSpells"
-                }, fromCharacter, userEntity);
+                },
+                fromCharacter,
+                userEntity,
+                new[] { "Spell", "Ability", "Magic", "Power", "School" });
 
                 if (!researchOk || !vbloodOk || !achievementOk || !spellsOk)
                 {
@@ -419,43 +449,95 @@ namespace VAuto.Core.Services
             }
         }
 
-        private static bool TryInvokeUnlock(Type systemType, object instance, string[] methodNames, FromCharacter fromCharacter, Entity userEntity)
+        private static bool TryInvokeUnlock(
+            Type systemType,
+            object instance,
+            string[] methodNames,
+            FromCharacter fromCharacter,
+            Entity userEntity,
+            string[]? heuristicTokens = null)
         {
+            var methods = systemType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
             foreach (var methodName in methodNames)
             {
-                foreach (var method in systemType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(m => m.Name == methodName))
+                foreach (var method in methods.Where(m => string.Equals(m.Name, methodName, StringComparison.Ordinal)))
                 {
-                    var parameters = method.GetParameters();
-                    if (parameters.Length == 0)
+                    if (TryInvokeUnlockMethod(method, instance, fromCharacter, userEntity))
                     {
-                        method.Invoke(instance, Array.Empty<object>());
                         return true;
                     }
-
-                    if (parameters.Length != 1)
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        if (parameters[0].ParameterType == typeof(FromCharacter))
-                        {
-                            method.Invoke(instance, new object[] { fromCharacter });
-                            return true;
-                        }
-
-                        if (parameters[0].ParameterType == typeof(Entity))
-                        {
-                            method.Invoke(instance, new object[] { userEntity });
-                            return true;
-                        }
-                    }
-                    catch
-                    {
-                        // Try next overload.
-                    }
                 }
+            }
+
+            if (heuristicTokens == null || heuristicTokens.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var method in methods.OrderBy(m => m.Name, StringComparer.Ordinal))
+            {
+                var name = method.Name;
+                if (!(name.IndexOf("Unlock", StringComparison.OrdinalIgnoreCase) >= 0
+                      || name.IndexOf("Complete", StringComparison.OrdinalIgnoreCase) >= 0
+                      || name.IndexOf("Grant", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    continue;
+                }
+
+                if (!heuristicTokens.Any(token => name.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    continue;
+                }
+
+                if (TryInvokeUnlockMethod(method, instance, fromCharacter, userEntity))
+                {
+                    LogDebug($"ApplyFullUnlock fallback invoked '{method.Name}'.");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryInvokeUnlockMethod(MethodInfo method, object instance, FromCharacter fromCharacter, Entity userEntity)
+        {
+            var parameters = method.GetParameters();
+            if (parameters.Length == 0)
+            {
+                try
+                {
+                    method.Invoke(instance, Array.Empty<object>());
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            if (parameters.Length != 1)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (parameters[0].ParameterType == typeof(FromCharacter))
+                {
+                    method.Invoke(instance, new object[] { fromCharacter });
+                    return true;
+                }
+
+                if (parameters[0].ParameterType == typeof(Entity))
+                {
+                    method.Invoke(instance, new object[] { userEntity });
+                    return true;
+                }
+            }
+            catch
+            {
+                // Try next overload.
             }
 
             return false;
@@ -512,7 +594,37 @@ namespace VAuto.Core.Services
             }
 
             var ok = true;
-            var snapshotTypes = new HashSet<string>(snapshot.Components.Keys, StringComparer.Ordinal);
+            var snapshotTypeKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in snapshot.Components.Values)
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (TryResolveSnapshotType(entry.AssemblyQualifiedType, out var resolvedSnapshotType, out _))
+                {
+                    var aqn = resolvedSnapshotType.AssemblyQualifiedName ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(aqn))
+                    {
+                        snapshotTypeKeys.Add(aqn);
+                    }
+
+                    var fullName = resolvedSnapshotType.FullName ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(fullName))
+                    {
+                        snapshotTypeKeys.Add(fullName);
+                    }
+                }
+                else
+                {
+                    var normalized = NormalizeSnapshotTypeToken(entry.AssemblyQualifiedType);
+                    if (!string.IsNullOrWhiteSpace(normalized))
+                    {
+                        snapshotTypeKeys.Add(normalized);
+                    }
+                }
+            }
 
             if (TryGetComponentTypeEnumerable(em, userEntity, out var currentTypes, out var currentTypesDisposable))
             {
@@ -531,7 +643,8 @@ namespace VAuto.Core.Services
                         }
 
                         var typeKey = managedType.AssemblyQualifiedName ?? managedType.FullName ?? managedType.Name;
-                        if (snapshotTypes.Contains(typeKey))
+                        var fullName = managedType.FullName ?? string.Empty;
+                        if (snapshotTypeKeys.Contains(typeKey) || (!string.IsNullOrWhiteSpace(fullName) && snapshotTypeKeys.Contains(fullName)))
                         {
                             continue;
                         }
@@ -556,8 +669,7 @@ namespace VAuto.Core.Services
                     continue;
                 }
 
-                var resolvedType = ResolveTypeByName(state.AssemblyQualifiedType);
-                if (resolvedType == null || !IsProgressionComponentType(resolvedType))
+                if (!TryResolveSnapshotType(state.AssemblyQualifiedType, out var resolvedType, out var isBuffer) || !IsProgressionComponentType(resolvedType))
                 {
                     continue;
                 }
@@ -569,6 +681,15 @@ namespace VAuto.Core.Services
                         if (TryHasComponent(em, userEntity, resolvedType))
                         {
                             ok &= TryRemoveComponent(em, userEntity, resolvedType, out _);
+                        }
+                        continue;
+                    }
+
+                    if (isBuffer)
+                    {
+                        if (!TryRestoreBufferSnapshot(em, userEntity, resolvedType, state.JsonPayload))
+                        {
+                            ok = false;
                         }
                         continue;
                     }
@@ -1137,8 +1258,41 @@ namespace VAuto.Core.Services
                         continue;
                     }
 
-                    if (!IsProgressionComponentType(managedType))
+                    var isBuffer = IsBufferType(managedType);
+                    if (!isBuffer && !IsProgressionComponentType(managedType))
                     {
+                        continue;
+                    }
+
+                    if (isBuffer)
+                    {
+                        if (!IsProgressionComponentType(managedType))
+                        {
+                            continue;
+                        }
+
+                        if (!TryHasBuffer(em, sourceEntity, managedType))
+                        {
+                            continue;
+                        }
+
+                        if (!TrySerializeBuffer(em, sourceEntity, managedType, out var bufferPayload))
+                        {
+                            continue;
+                        }
+
+                        var bufferTypeKey = BuildBufferTypeKey(managedType);
+                        if (string.IsNullOrWhiteSpace(bufferTypeKey))
+                        {
+                            continue;
+                        }
+
+                        snapshot.Components[bufferTypeKey] = new SnapshotComponentState
+                        {
+                            Existed = true,
+                            AssemblyQualifiedType = bufferTypeKey,
+                            JsonPayload = bufferPayload
+                        };
                         continue;
                     }
 
@@ -1198,6 +1352,40 @@ namespace VAuto.Core.Services
                 return true;
             }
 
+            // Unity versions may use AllocatorManager.AllocatorHandle (struct) instead of Allocator enum.
+            if (allocatorParamType.IsValueType &&
+                string.Equals(allocatorParamType.FullName, "Unity.Collections.AllocatorManager+AllocatorHandle", StringComparison.Ordinal))
+            {
+                try
+                {
+                    var tempField = allocatorParamType.GetField("Temp", BindingFlags.Public | BindingFlags.Static);
+                    if (tempField != null)
+                    {
+                        var value = tempField.GetValue(null);
+                        if (value != null)
+                        {
+                            allocatorArgument = value;
+                            return true;
+                        }
+                    }
+
+                    var tempProp = allocatorParamType.GetProperty("Temp", BindingFlags.Public | BindingFlags.Static);
+                    if (tempProp != null)
+                    {
+                        var value = tempProp.GetValue(null);
+                        if (value != null)
+                        {
+                            allocatorArgument = value;
+                            return true;
+                        }
+                    }
+                }
+                catch
+                {
+                    // fallback below
+                }
+            }
+
             return false;
         }
 
@@ -1210,6 +1398,188 @@ namespace VAuto.Core.Services
             }
 
             enumerable = Array.Empty<object>();
+            return false;
+        }
+
+        private static bool TryResolveSnapshotType(string? encodedType, out Type? type, out bool isBuffer)
+        {
+            isBuffer = false;
+            type = null;
+
+            if (string.IsNullOrWhiteSpace(encodedType))
+            {
+                return false;
+            }
+
+            var raw = encodedType.Trim();
+            if (raw.StartsWith(BufferTypePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                isBuffer = true;
+                raw = raw.Substring(BufferTypePrefix.Length);
+            }
+
+            type = ResolveTypeByName(raw);
+            if (type != null)
+            {
+                return true;
+            }
+
+            // Fall back to short name search across loaded assemblies.
+            var shortName = raw.Split(',')[0].Trim();
+            type = ResolveTypeByName(shortName);
+            return type != null;
+        }
+
+        private static string NormalizeSnapshotTypeToken(string? encodedType)
+        {
+            return (encodedType ?? string.Empty).Trim();
+        }
+
+        private static string BuildBufferTypeKey(Type bufferElementType)
+        {
+            var aqn = bufferElementType.AssemblyQualifiedName ?? bufferElementType.FullName ?? bufferElementType.Name;
+            return string.IsNullOrWhiteSpace(aqn) ? string.Empty : $"{BufferTypePrefix}{aqn}";
+        }
+
+        private static bool IsBufferType(Type managedType)
+        {
+            try
+            {
+                return typeof(IBufferElementData).IsAssignableFrom(managedType);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryHasBuffer(EntityManager em, Entity entity, Type bufferType)
+        {
+            foreach (var method in HasBufferGenericMethods)
+            {
+                try
+                {
+                    var result = method.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                    if (result is bool has && has)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // try next
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TrySerializeBuffer(EntityManager em, Entity entity, Type bufferType, out string payload)
+        {
+            payload = string.Empty;
+
+            foreach (var method in GetBufferGenericMethods)
+            {
+                try
+                {
+                    var bufferObj = method.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                    if (bufferObj == null)
+                    {
+                        continue;
+                    }
+
+                    var bufferEnumerable = bufferObj as IEnumerable;
+                    if (bufferEnumerable == null)
+                    {
+                        continue;
+                    }
+
+                    var listType = typeof(List<>).MakeGenericType(bufferType);
+                    var list = (IList)Activator.CreateInstance(listType)!;
+                    foreach (var item in bufferEnumerable)
+                    {
+                        list.Add(item);
+                    }
+
+                    payload = JsonSerializer.Serialize(list, listType, JsonOpts);
+                    return true;
+                }
+                catch
+                {
+                    // try next overload
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryRestoreBufferSnapshot(EntityManager em, Entity entity, Type bufferType, string jsonPayload)
+        {
+            try
+            {
+                // Ensure buffer exists.
+                if (!TryHasBuffer(em, entity, bufferType))
+                {
+                    foreach (var add in AddBufferGenericMethods)
+                    {
+                        try
+                        {
+                            add.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                            break;
+                        }
+                        catch
+                        {
+                            // try next
+                        }
+                    }
+                }
+
+                foreach (var getter in GetBufferGenericMethods)
+                {
+                    try
+                    {
+                        var bufferObj = getter.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                        if (bufferObj == null)
+                        {
+                            continue;
+                        }
+
+                        var bufferTypeRuntime = bufferObj.GetType();
+                        var clear = bufferTypeRuntime.GetMethod("Clear", BindingFlags.Public | BindingFlags.Instance);
+                        clear?.Invoke(bufferObj, null);
+
+                        if (string.IsNullOrWhiteSpace(jsonPayload))
+                        {
+                            return true;
+                        }
+
+                        var listType = typeof(List<>).MakeGenericType(bufferType);
+                        var items = JsonSerializer.Deserialize(jsonPayload, listType, JsonOpts) as IEnumerable;
+                        if (items == null)
+                        {
+                            return false;
+                        }
+
+                        var addMethod = bufferTypeRuntime.GetMethod("Add", BindingFlags.Public | BindingFlags.Instance, null, new[] { bufferType }, null)
+                                        ?? bufferTypeRuntime.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add");
+                        foreach (var item in items)
+                        {
+                            addMethod?.Invoke(bufferObj, new[] { item });
+                        }
+
+                        return true;
+                    }
+                    catch
+                    {
+                        // try next getter
+                    }
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
             return false;
         }
 
@@ -1461,7 +1831,6 @@ namespace VAuto.Core.Services
 
                 var baselinePath = Path.Combine(snapshotDirectory, BaselineCsvFileName);
                 var deltaPath = Path.Combine(snapshotDirectory, DeltaCsvFileName);
-                var legacyPath = ResolveLegacyJsonPath(snapshotDirectory);
 
                 try
                 {
@@ -1477,17 +1846,6 @@ namespace VAuto.Core.Services
                         return;
                     }
 
-                    if (File.Exists(legacyPath))
-                    {
-                        var json = File.ReadAllText(legacyPath);
-                        var envelope = JsonSerializer.Deserialize<SnapshotEnvelope>(json, JsonOpts);
-                        var migrated = ConvertLegacyEnvelopeToBaselines(envelope);
-                        if (migrated.Length > 0)
-                        {
-                            SandboxSnapshotStore.ImportActiveSnapshots(migrated, Array.Empty<SandboxDeltaSnapshot>(), markDirty: true);
-                            LogInfo($"Migrated {migrated.Length} legacy sandbox snapshots to in-memory baseline format.");
-                        }
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -1656,16 +2014,6 @@ namespace VAuto.Core.Services
             return normalized;
         }
 
-        private static string ResolveLegacyJsonPath(string snapshotDirectory)
-        {
-            if (!string.IsNullOrWhiteSpace(_snapshotPath) &&
-                string.Equals(Path.GetExtension(_snapshotPath), ".json", StringComparison.OrdinalIgnoreCase))
-            {
-                return _snapshotPath;
-            }
-
-            return Path.Combine(snapshotDirectory, LegacyJsonFileName);
-        }
 
         private static SandboxBaselineSnapshot[] BuildBaselineSnapshotsFromRows(IEnumerable<BaselineRow> rows)
         {
@@ -1727,46 +2075,6 @@ namespace VAuto.Core.Services
             return SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
         }
 
-        private static SandboxBaselineSnapshot[] ConvertLegacyEnvelopeToBaselines(SnapshotEnvelope? envelope)
-        {
-            if (envelope?.Players == null || envelope.Players.Count == 0)
-            {
-                return Array.Empty<SandboxBaselineSnapshot>();
-            }
-
-            var snapshots = new List<SandboxBaselineSnapshot>();
-            foreach (var pair in envelope.Players)
-            {
-                if (pair.Value == null)
-                {
-                    continue;
-                }
-
-                var platformId = pair.Value.PlatformId;
-                if (platformId == 0 && !ulong.TryParse(pair.Key, NumberStyles.Integer, CultureInfo.InvariantCulture, out platformId))
-                {
-                    continue;
-                }
-
-                var capturedUtc = pair.Value.CapturedUtc == default ? DateTime.UtcNow : pair.Value.CapturedUtc;
-                var characterName = NormalizeCharacterName(string.Empty, platformId);
-                var playerKey = SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
-                var snapshotId = BuildSnapshotIdCore(platformId, characterName, capturedUtc);
-                var rows = BuildBaselineRowsCore(pair.Value, playerKey, characterName, platformId, string.Empty, snapshotId, capturedUtc);
-                snapshots.Add(new SandboxBaselineSnapshot
-                {
-                    PlayerKey = playerKey,
-                    CharacterName = characterName,
-                    PlatformId = platformId,
-                    ZoneId = string.Empty,
-                    SnapshotId = snapshotId,
-                    CapturedUtc = capturedUtc,
-                    Rows = rows
-                });
-            }
-
-            return snapshots.ToArray();
-        }
 
         private static void DeleteIfExists(string path)
         {
@@ -1815,11 +2123,6 @@ namespace VAuto.Core.Services
             }
         }
 
-        private sealed class SnapshotEnvelope
-        {
-            public int Version { get; set; } = 1;
-            public Dictionary<string, SandboxProgressionSnapshot> Players { get; set; } = new(StringComparer.Ordinal);
-        }
     }
 
     internal sealed class SandboxProgressionSnapshot

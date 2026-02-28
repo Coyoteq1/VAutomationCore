@@ -15,12 +15,13 @@ using VAutomationCore;
 using VAutomationCore.Core.Logging;
 using VAutomationCore.Core.ECS;
 
-namespace VAuto.Commands.Core
+namespace VAuto.Zone.Commands
 {
     /// <summary>
     /// Commands for unlocking VBlood Tech_Collection prefabs directly.
     /// Allows testing unlocks by parsing VBloodUnlockTechBuffer from VBlood boss entities.
     /// </summary>
+    [CommandGroup("vblood", "vb")]
     public static class VBloodUnlockCommands
     {
         private static readonly string LogPrefix = "[VBloodUnlock]";

@@ -2,7 +2,7 @@ using Unity.Entities;
 
 namespace VAutomationCore.Core.ECS.Components
 {
-    public struct ZoneTransitionEvent : IComponentData
+    public struct ZoneTransitionEvent
     {
         public Entity Player;
         public int OldZoneHash;

@@ -27,6 +27,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Commands\Core\ArenaEcsCommands.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="BepInEx.Unity.IL2CPP">
       <HintPath>$(VAutoServerInteropPath)BepInEx.Unity.IL2CPP.dll</HintPath>
       <Private>false</Private>
@@ -86,25 +90,4 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="Core\PrefabGuidConverter.cs" />
-    <Compile Remove="Services\Interfaces\IService.cs" />
-    <Compile Remove="Plugin (2).cs" />
-    <Compile Remove="Systems\**\*.cs" />
-    <Compile Remove="Commands\Core\ArenaEcsCommands.cs" />
-  </ItemGroup>
-
-  <!-- Auto-deploy to BepInEx plugins folder -->
-  <PropertyGroup>
-    <BepInExPluginsPath>D:\DedicatedServerLauncher\VRisingServer\BepInEx\plugins</BepInExPluginsPath>
-    <BepInExConfigPath>D:\DedicatedServerLauncher\VRisingServer\BepInEx\config</BepInExConfigPath>
-    <DeployToServer Condition="'$(DeployToServer)' == ''">false</DeployToServer>
-  </PropertyGroup>
-<Target Name="CopyToBepInEx" AfterTargets="Build" Condition="'$(DeployToServer)' == 'true'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)" SkipUnchangedFiles="true" />
-    <MakeDir Directories="$(BepInExConfigPath)\Bluelock" />
-    <Message Text="Copied $(TargetPath) to $(BepInExPluginsPath)" Importance="high" />
-  </Target>
-
 </Project>
-

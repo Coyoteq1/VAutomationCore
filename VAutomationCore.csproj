@@ -15,7 +15,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>VAutomationCore</PackageId>
-    <Version>1.0.1-beta.2</Version>
+    <Version>1.0.1-beta.3</Version>
     <Authors>Coyoteq1</Authors>
     <Company>VAutomation</Company>
     <Description>Core library for V Rising automation mods providing shared utilities, ECS helpers, and configuration management.</Description>
@@ -24,7 +24,7 @@
     <RepositoryUrl>https://github.com/Coyoteq1</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReleaseNotes>Refresh package README and documentation links. Includes package icon/readme, SourceLink, symbols, and XML API documentation.</PackageReleaseNotes>
+    <PackageReleaseNotes>Update docs/wiki hosting links, support/community references, and package documentation alignment. Includes package icon/readme, SourceLink, symbols, and XML API documentation.</PackageReleaseNotes>
     <Copyright>Copyright (c) Coyoteq1 2026</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
@@ -125,14 +125,20 @@
     <Compile Include="Core\Config\ConfigService.cs" />
     <Compile Include="Core\Config\JsonConverters.cs" />
     <Compile Include="Core\Config\TypedJsonConfigManager.cs" />
+    <Compile Include="Core\Config\IConfigMigration.cs" />
+    <Compile Include="Core\Config\IZoneConfigValidator.cs" />
+    <Compile Include="Core\Config\MigrationReport.cs" />
     <Compile Include="Core\ECS\EntityQueryHelper.cs" />
     <Compile Include="Core\ECS\EntityExtensions.cs" />
     <Compile Include="Core\ECS\PrefabGUIDExtensions.cs" />
     <Compile Include="Core\ECS\ZoneHashUtility.cs" />
-    <!-- <Compile Include="Core\ECS\Components\ZoneComponent.cs" /> -->
+    <Compile Include="Core\ECS\ZoneDetectionOrdering.cs" />
+    <Compile Include="Core\ECS\ZoneStateMapper.cs" />
+    <Compile Include="Core\ECS\Components\*.cs" />
     <Compile Include="Core\Commands\CommandBase.cs" />
     <Compile Include="Core\Commands\CommandException.cs" />
     <Compile Include="Core\Commands\ChatColor.cs" />
+    <Compile Include="Core\Contracts\*.cs" />
     <Compile Include="Core\Api\**\*.cs" />
     <Compile Include="Core\Lifecycle\*.cs" />
     <Compile Include="Core\TrapLifecycle\*.cs" />
@@ -161,7 +167,6 @@
     <Compile Include="Json\VAutoJsonOptions.cs" />
     <Compile Include="MyPluginInfo.cs" />
     <Compile Include="Properties\Resources.Designer.cs" />
-    <Compile Remove="..\Commands\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -171,16 +176,5 @@
     </Compile>
   </ItemGroup>
 
-  <!-- Auto-deploy to BepInEx plugins folder -->
-  <PropertyGroup>
-    <BepInExPluginsPath>D:\DedicatedServerLauncher\VRisingServer\BepInEx\plugins</BepInExPluginsPath>
-    <DeployToServer Condition="'$(DeployToServer)' == ''">false</DeployToServer>
-  </PropertyGroup>
-
-  <Target Name="CopyToBepInEx" AfterTargets="Build" Condition="'$(DeployToServer)' == 'true'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)" SkipUnchangedFiles="true" />
-    <Message Text="Copied $(TargetPath) to $(BepInExPluginsPath)" Importance="high" />
-  </Target>
-
-
 </Project>
+

@@ -118,6 +118,66 @@ namespace VAuto.Zone.Services
             return result;
         }
 
+        public bool TrySpawnTemplateEntryNeutral(
+            TemplateEntityEntry entry,
+            EntityManager em,
+            float3 origin,
+            float rotationDegrees,
+            int level,
+            out Entity spawnedEntity,
+            out string error)
+        {
+            spawnedEntity = Entity.Null;
+            error = string.Empty;
+
+            if (entry == null)
+            {
+                error = "Template entry is null.";
+                return false;
+            }
+
+            if (em == default || em.World == null || !em.World.IsCreated)
+            {
+                error = "EntityManager world not ready.";
+                return false;
+            }
+
+            var prefabEntity = ResolvePrefab(em, entry);
+            if (prefabEntity == Entity.Null)
+            {
+                error = $"Template prefab unavailable: {entry.PrefabName ?? string.Empty} ({entry.PrefabGuid})";
+                return false;
+            }
+
+            var totalDegrees = entry.RotationDegrees + rotationDegrees;
+            var rotationRadians = math.radians(rotationDegrees);
+            var offset = entry.Offset;
+            if (math.abs(rotationRadians) > float.Epsilon)
+            {
+                var cos = math.cos(rotationRadians);
+                var sin = math.sin(rotationRadians);
+                offset = new float3(
+                    offset.x * cos - offset.z * sin,
+                    offset.y,
+                    offset.x * sin + offset.z * cos);
+            }
+
+            var spawnPos = origin + offset;
+            var entity = em.Instantiate(prefabEntity);
+            if (entity == Entity.Null || !em.Exists(entity))
+            {
+                error = $"Instantiation failed for prefab {prefabEntity.Index}:{prefabEntity.Version}.";
+                return false;
+            }
+
+            TrySetTranslation(em, entity, spawnPos);
+            TrySetRotation(em, entity, math.radians(totalDegrees));
+            MakeNeutral(entity, em);
+            TrySetUnitLevel(entity, level, em);
+            spawnedEntity = entity;
+            return true;
+        }
+
         private static void MakeNeutral(Entity entity, EntityManager em)
         {
             if (entity == Entity.Null || em == default)
@@ -226,6 +286,28 @@ namespace VAuto.Zone.Services
             {
                 em.AddComponent<Rotation>(entity);
                 em.SetComponentData(entity, new Rotation { Value = rotation });
+            }
+        }
+
+        private static void TrySetUnitLevel(Entity entity, int level, EntityManager em)
+        {
+            try
+            {
+                if (!em.Exists(entity) || level <= 0)
+                {
+                    return;
+                }
+
+                if (em.HasComponent<UnitLevel>(entity))
+                {
+                    var unitLevel = em.GetComponentData<UnitLevel>(entity);
+                    unitLevel.Level._Value = level;
+                    em.SetComponentData(entity, unitLevel);
+                }
+            }
+            catch
+            {
+                // Best-effort for prefabs without UnitLevel.
             }
         }
     }

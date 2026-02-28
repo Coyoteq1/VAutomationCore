@@ -60,8 +60,6 @@
 
   <ItemGroup>
     <!-- VRCore.cs restored - needed for lifecycle initialization -->
-    <Compile Remove="Core\PrefabGuidConverter.cs" />
-    <Compile Remove="Services\Interfaces\IService.cs" />
     <!-- Exclude in-game only code from headless compilation -->
     <Compile Remove="Commands\**\*.cs" />
     <Compile Remove="Services\Lifecycle\Handlers\**\*.cs" />
@@ -82,16 +80,5 @@
   <ItemGroup>
     <Compile Include="Commands\LifecycleHeadlessCommands.cs" />
   </ItemGroup>
-
-  <!-- Auto-deploy to BepInEx plugins folder -->
-  <PropertyGroup>
-    <BepInExPluginsPath>D:\DedicatedServerLauncher\VRisingServer\BepInEx\plugins</BepInExPluginsPath>
-    <DeployToServer Condition="'$(DeployToServer)' == ''">false</DeployToServer>
-  </PropertyGroup>
-
-  <Target Name="CopyToBepInEx" AfterTargets="Build" Condition="'$(DeployToServer)' == 'true'">
-    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)" SkipUnchangedFiles="true" />
-    <Message Text="Copied $(TargetPath) to $(BepInExPluginsPath)" Importance="high" />
-  </Target>
 
 </Project>

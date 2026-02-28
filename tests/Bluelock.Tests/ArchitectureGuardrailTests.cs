@@ -107,6 +107,8 @@ namespace Bluelock.Tests
 
             var allowedRootZips = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
+                "LICENSE.zip",
+                "VAutomationCore.zip",
                 "VAutomationCore-1.0.1.zip",
                 "VAutomationZone-1.0.1.zip"
             };
@@ -121,6 +123,7 @@ namespace Bluelock.Tests
                 "GlobalUsings.cs",
                 "IService.cs",
                 "MyPluginInfo.cs",
+                "PlayerAPI.cs",
                 "Plugin.cs",
                 "PrefabGuidConverter.cs",
                 "VAutoLogger.cs"
@@ -190,8 +193,8 @@ namespace Bluelock.Tests
             var pluginText = File.ReadAllText(pluginPath);
             var infoText = File.ReadAllText(infoPath);
 
-            // Identity: plugin attribute must be wired to MyPluginInfo constants.
-            Assert.Contains("[BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]", pluginText);
+            // Identity: root plugin attribute must use explicit identity constants.
+            Assert.Contains("[BepInPlugin(\"gg.coyote.VAutomationCore\", \"VAutomationCore\", \"1.0.1\")]", pluginText);
 
             // Bind/settings: config file naming should stay aligned with plugin GUID identity contract.
             Assert.Contains("public const string GUID = \"gg.coyote.VAutomationCore\";", infoText);
@@ -205,7 +208,7 @@ namespace Bluelock.Tests
                 .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
             Assert.Contains("Core/Services/Sandbox/SnapshotDiffService.cs", Directory.GetFiles(repoRoot, "SnapshotDiffService.cs", SearchOption.AllDirectories)
                 .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
-            Assert.Contains("Core/Data/FlowService.cs", Directory.GetFiles(repoRoot, "FlowService.cs", SearchOption.AllDirectories)
+            Assert.Contains("Core/Api/FlowService.cs", Directory.GetFiles(repoRoot, "FlowService.cs", SearchOption.AllDirectories)
                 .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
             Assert.Contains("config/VAuto.unified_config.schema.json", Directory.GetFiles(Path.Combine(repoRoot, "config"), "*.json", SearchOption.TopDirectoryOnly)
                 .Select(f => Path.GetRelativePath(repoRoot, f).Replace('\\', '/')));
@@ -222,10 +225,10 @@ namespace Bluelock.Tests
             // Define expected patterns for each plugin
             var plugins = new[]
             {
-                new { Name = "Bluelock", Folder = "Bluelock", ExpectedGuid = "gg.coyote.VAutomationZone" },
+                new { Name = "Bluelock", Folder = "Bluelock", ExpectedGuid = "gg.coyote.BlueLock" },
                 new { Name = "VAutoannounce", Folder = "VAutoannounce", ExpectedGuid = "gg.coyote.VAutoannounce" },
-                new { Name = "VAutoTraps", Folder = "VAutoTraps", ExpectedGuid = "gg.coyote.VAutoTraps" },
-                new { Name = "CycleBorn", Folder = "CycleBorn", ExpectedGuid = "gg.coyote.VLifecycle" },
+                new { Name = "VAutoTraps", Folder = "VAutoTraps", ExpectedGuid = "gg.coyote.VAutomationtrap" },
+                new { Name = "CycleBorn", Folder = "CycleBorn", ExpectedGuid = "gg.coyote.lifecycle" },
                 new { Name = "Swapkits", Folder = "Swapkits", ExpectedGuid = "gg.coyote.ExtraSlots" }
             };
 

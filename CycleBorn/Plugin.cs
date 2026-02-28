@@ -19,7 +19,7 @@ using VLifecycle.Services.Lifecycle;
 
 namespace VLifecycle
 {
-    [BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]
+    [BepInPlugin("gg.coyote.lifecycle", "lifecycle", "1.0.1")]
     [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
@@ -127,6 +127,11 @@ namespace VLifecycle
 
                 RunMigration();
                 LoadJsonConfiguration();
+                var optionalTomlPath = Path.Combine(Paths.ConfigPath, "CycleBorn", "pvp_item.toml");
+                if (File.Exists(optionalTomlPath))
+                {
+                    Log.LogInfo($"[VLifecycle] Optional TOML detected at {optionalTomlPath}. Runtime canonical config remains JSON ({_configPath}).");
+                }
                 var legacyCfgPath = Path.Combine(Paths.ConfigPath, "VLifecycle.cfg");
                 if (File.Exists(legacyCfgPath))
                 {
@@ -199,22 +204,43 @@ namespace VLifecycle
         {
             try
             {
-                if (File.Exists(_configPath))
-                {
-                    var jsonContent = File.ReadAllText(_configPath);
-                    _jsonConfig = JsonSerializer.Deserialize<UnifiedLifecycleConfig>(jsonContent, new JsonSerializerOptions
+                TypedJsonConfigManager.TryLoadOrCreate(
+                    _configPath,
+                    () => new UnifiedLifecycleConfig(),
+                    out _jsonConfig,
+                    out var createdDefault,
+                    new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true,
                         ReadCommentHandling = JsonCommentHandling.Skip,
-                        AllowTrailingCommas = true
-                    });
-                    Log.LogInfo($"[VLifecycle] Loaded unified JSON configuration from {_configPath}");
+                        AllowTrailingCommas = true,
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                        WriteIndented = true
+                    },
+                    ValidateUnifiedLifecycleConfig,
+                    message => Log.LogInfo($"[VLifecycle] {message}"),
+                    message => Log.LogWarning($"[VLifecycle] {message}"),
+                    message => Log.LogError($"[VLifecycle] {message}"));
+
+                _jsonConfig ??= new UnifiedLifecycleConfig();
+                if (string.IsNullOrWhiteSpace(_jsonConfig.Version))
+                {
+                    _jsonConfig.Version = UnifiedLifecycleConfig.CurrentConfigVersion;
+                    SaveJsonConfiguration();
+                }
+                if (string.IsNullOrWhiteSpace(_jsonConfig.SchemaVersion))
+                {
+                    _jsonConfig.SchemaVersion = UnifiedLifecycleConfig.CurrentConfigVersion;
+                    SaveJsonConfiguration();
+                }
+
+                if (createdDefault)
+                {
+                    Log.LogInfo($"[VLifecycle] Created new unified JSON configuration at {_configPath}");
                 }
                 else
                 {
-                    _jsonConfig = new UnifiedLifecycleConfig();
-                    SaveJsonConfiguration();
-                    Log.LogInfo($"[VLifecycle] Created new unified JSON configuration at {_configPath}");
+                    Log.LogInfo($"[VLifecycle] Loaded unified JSON configuration from {_configPath}");
                 }
             }
             catch (Exception ex)
@@ -226,20 +252,36 @@ namespace VLifecycle
 
         private void SaveJsonConfiguration()
         {
-            try
-            {
-                var jsonContent = JsonSerializer.Serialize(_jsonConfig, new JsonSerializerOptions
+            TypedJsonConfigManager.TrySave(
+                _configPath,
+                _jsonConfig,
+                new JsonSerializerOptions
                 {
                     WriteIndented = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
-                File.WriteAllText(_configPath, jsonContent);
-                Log.LogInfo($"[VLifecycle] Saved unified JSON configuration to {_configPath}");
-            }
-            catch (Exception ex)
+                },
+                message => Log.LogInfo($"[VLifecycle] {message}"),
+                message => Log.LogError($"[VLifecycle] {message}"));
+        }
+
+        private static (bool IsValid, string Error) ValidateUnifiedLifecycleConfig(UnifiedLifecycleConfig config)
+        {
+            if (config == null)
             {
-                Log.LogError($"[VLifecycle] Failed to save JSON configuration: {ex.Message}");
+                return (false, "Config is null.");
             }
+
+            if (config.Lifecycle == null)
+            {
+                return (false, "Lifecycle section is required.");
+            }
+
+            if (config.Sandbox == null)
+            {
+                return (false, "Sandbox section is required.");
+            }
+
+            return (true, string.Empty);
         }
 
         private void StartHotReloadMonitoring()
@@ -372,7 +414,9 @@ namespace VLifecycle
     /// </summary>
     public class UnifiedLifecycleConfig
     {
-        public string Version { get; set; } = "1.0.1";
+        public const string CurrentConfigVersion = "1.1.0";
+        public string SchemaVersion { get; set; } = CurrentConfigVersion;
+        public string Version { get; set; } = CurrentConfigVersion;
         public LifecycleSection Lifecycle { get; set; } = new();
         public SandboxSection Sandbox { get; set; } = new();
         public StagesSection Stages { get; set; } = new();
@@ -588,7 +632,7 @@ namespace VLifecycle
     {
         private static readonly ManualLogSource _log = BepInEx.Logging.Logger.CreateLogSource("VLifecycle.Migration");
         
-        public static void RunMigration(string configPath, string legacyPath)
+        public static void RunMigration(string configPath, string legacyPath, bool dryRun = false)
         {
             try
             {
@@ -650,6 +694,8 @@ namespace VLifecycle
                 unifiedConfig.Sandbox.AutoApplyUnlocks = legacyConfig.AutoApplyUnlocks;
                 unifiedConfig.Sandbox.SuppressVBloodFeed = legacyConfig.SuppressVBloodFeed;
                 unifiedConfig.Sandbox.DespawnDelaySeconds = legacyConfig.DespawnDelaySeconds;
+                unifiedConfig.Version = UnifiedLifecycleConfig.CurrentConfigVersion;
+                unifiedConfig.SchemaVersion = UnifiedLifecycleConfig.CurrentConfigVersion;
 
                 // Save unified config
                 var newJson = JsonSerializer.Serialize(unifiedConfig, new JsonSerializerOptions
@@ -657,6 +703,28 @@ namespace VLifecycle
                     WriteIndented = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
+
+                var report = new MigrationReport
+                {
+                    MigrationName = nameof(LifecycleConfigMigration)
+                };
+                report.Changes.Add("Applied legacy sandbox defaults into unified lifecycle config.");
+                report.Changes.Add($"Set version to {UnifiedLifecycleConfig.CurrentConfigVersion}.");
+                _log.LogInfo($"[Migration] Dry-run report: {string.Join(" | ", report.Changes)}");
+
+                if (dryRun)
+                {
+                    _log.LogInfo("[Migration] Dry-run enabled, no files were written.");
+                    return;
+                }
+
+                if (File.Exists(configPath))
+                {
+                    var backupPath = $"{configPath}.bak.{DateTime.UtcNow:yyyyMMddHHmmss}";
+                    File.Copy(configPath, backupPath, overwrite: false);
+                    _log.LogInfo($"[Migration] Backup created: {backupPath}");
+                }
+
                 File.WriteAllText(configPath, newJson);
 
                 _log.LogInfo($"[Migration] New config written to: {configPath}");

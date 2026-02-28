@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VAutomation Framework Wiki</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #475569;
+      --line: #dbe3ef;
+      --accent: #0f766e;
+      --code: #0b1220;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef3fb 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+    .hero, .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    h1, h2, h3 { margin: 0 0 10px; }
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.2rem; color: var(--accent); }
+    p, li { color: var(--muted); }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    code {
+      background: #eef2ff;
+      border: 1px solid #cfd8ff;
+      border-radius: 6px;
+      padding: 1px 6px;
+      color: var(--code);
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+    }
+    a { color: #0b5fff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>VAutomation Framework Wiki</h1>
+      <p>Operational reference for <code>VAutomationCore</code>, <code>Bluelock</code>, and <code>CycleBorn</code> with ECS runtime mode, config governance, and maintenance guardrails.</p>
+    </section>
+
+    <section class="card">
+      <h2>Project Boundaries</h2>
+      <div class="grid">
+        <div>
+          <h3>VAutomationCore</h3>
+          <ul>
+            <li>Shared services and API contracts</li>
+            <li>ECS utilities and lifecycle contracts</li>
+            <li>Config infrastructure and typed loading</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Bluelock</h3>
+          <ul>
+            <li>Zone runtime entrypoint and command surface</li>
+            <li>ECS bootstrap, detection, and transition routing</li>
+            <li>Zone JSON/config validation and migration hooks</li>
+          </ul>
+        </div>
+        <div>
+          <h3>CycleBorn</h3>
+          <ul>
+            <li>Lifecycle orchestration and stage execution</li>
+            <li>Unified lifecycle config loading/migration</li>
+            <li>Runtime behavior toggles and snapshots</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Install Channels</h2>
+      <ul>
+        <li>Thunderstore (V Rising): <a href="https://thunderstore.io/c/v-rising/">https://thunderstore.io/c/v-rising/</a></li>
+        <li>NuGet package: <a href="https://www.nuget.org/packages/VAutomationCore">https://www.nuget.org/packages/VAutomationCore</a></li>
+        <li>NuGet prerelease: <a href="https://www.nuget.org/packages/VAutomationCore/1.0.1-beta.3">https://www.nuget.org/packages/VAutomationCore/1.0.1-beta.3</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Runtime Mode Model</h2>
+      <p>Bluelock runtime behavior is selected by <code>Runtime.ZoneRuntimeMode</code>:</p>
+      <ul>
+        <li><code>Legacy</code>: legacy pipeline only</li>
+        <li><code>Hybrid</code>: ECS detection/router plus legacy compatibility path</li>
+        <li><code>EcsOnly</code>: ECS pipeline only</li>
+      </ul>
+      <p>The selected mode is locked at bootstrap and treated as immutable until restart.</p>
+    </section>
+
+    <section class="card">
+      <h2>Config Sources</h2>
+      <ul>
+        <li><code>Bluelock/config/VAuto.Zones.json</code> (zone data, flow IDs, radii, priorities)</li>
+        <li><code>Bluelock/config/VAuto.ZoneLifecycle.json</code> (mapping actions, flow metadata, schema/version)</li>
+        <li><code>Bluelock/config/flows/*.json</code> (flow definitions)</li>
+        <li><code>config/VAuto.unified_config.schema.json</code> (schema contract)</li>
+      </ul>
+      <p>Validation entrypoint: <code>Bluelock/Services/ProcessConfigService.ValidateAllConfigs(...)</code></p>
+    </section>
+
+    <section class="card">
+      <h2>Maintenance and Cleanup Discipline</h2>
+      <ul>
+        <li>Use test guardrails to prevent compile/include drift and event ownership regressions.</li>
+        <li>Deprecate first, delete later; only remove legacy paths after a full release cycle with rollback available.</li>
+        <li>Track cleanup actions in release notes and PR guardrail sections.</li>
+      </ul>
+      <p>Use the rollback playbook before any destructive cleanup on live servers.</p>
+    </section>
+
+    <section class="card">
+      <h2>Community and Auth</h2>
+      <ul>
+        <li>V Rising Mods Discord: <a href="https://discord.gg/68JZU5zaq7">https://discord.gg/68JZU5zaq7</a></li>
+        <li>Ownership support Discord: <a href="https://discord.gg/Se4wU3s6md">https://discord.gg/Se4wU3s6md</a></li>
+        <li>Auth/Maintainer: <code>coyoteq1</code></li>
+        <li>Contributors: <a href="https://github.com/Coyoteq1/D-VAutomationCore-VAutomationCore/graphs/contributors">https://github.com/Coyoteq1/D-VAutomationCore-VAutomationCore/graphs/contributors</a></li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Deep Links</h2>
+      <ul>
+        <li><a href="../ECS-Authoritative-Implementation-Plan.md">ECS Authoritative Implementation Plan</a></li>
+        <li><a href="../Architecture-Ownership-Map.md">Architecture Ownership Map</a></li>
+        <li><a href="../Incident-Rollback-Playbook.md">Incident Rollback Playbook</a></li>
+        <li><a href="../Lifecycle-Config-Reference.md">Lifecycle Config Reference</a></li>
+        <li><a href="../README.md">Docs Index</a></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -3,7 +3,7 @@ namespace VAutoZone
     //do not change this
     public static class MyPluginInfo
     {   
-        public const string GUID = "gg.coyote.VAutomationZone";
+        public const string GUID = "gg.coyote.BlueLock";
         public const string NAME = "VAutomation Zone";
         public const string VERSION = "1.0.1";
 
@@ -12,7 +12,7 @@ namespace VAutoZone
             public const string Name = "VAutomation Zone";
             public const string Version = "1.0.1";
             public const bool EnableHarmony = true;
-            public const string HarmonyId = "gg.coyote.VAutomationZone";
+            public const string HarmonyId = "gg.coyote.BlueLock";
         }
     }
 }

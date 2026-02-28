@@ -89,6 +89,23 @@ namespace VAuto.Zone.Services
             // Keep active boss alive while zone is active; do not despawn on each player exit.
         }
 
+        public static bool TrySpawnManifest(string manifestName, string zoneId, EntityManager em, out string message)
+        {
+            message = string.Empty;
+
+            var queued = StaggeredManifestationService.QueueTemplate(zoneId, "boss", manifestName, em);
+            if (!queued.Success)
+            {
+                message = string.IsNullOrWhiteSpace(queued.Error)
+                    ? $"Failed to queue manifest '{manifestName}' for zone '{zoneId}'."
+                    : queued.Error;
+                return false;
+            }
+
+            message = $"Queued boss manifest '{manifestName}' for zone '{zoneId}' (status={queued.Status}).";
+            return true;
+        }
+
         public static bool IsZoneBossAlive(string zoneId)
         {
             if (string.IsNullOrWhiteSpace(zoneId))

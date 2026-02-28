@@ -238,13 +238,14 @@ namespace VAuto.Zone.Services
                 return 0;
             }
 
+            var destroyed = StaggeredManifestationService.Cancel(zoneId, templateType, em);
+
             if (!ZoneTemplateRegistry.TryGetEntities(zoneId, templateType, out var entities))
             {
-                return 0;
+                return destroyed;
             }
 
             var toDestroy = entities.ToList();
-            var destroyed = 0;
             foreach (var entity in toDestroy)
             {
                 if (em.Exists(entity))

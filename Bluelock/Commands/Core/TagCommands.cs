@@ -9,7 +9,7 @@ using VampireCommandFramework;
 using VAuto.Zone.Services;
 using VAuto.Zone.Core;
 
-namespace VAuto.Commands.Core;
+namespace VAuto.Zone.Commands;
 
 /// <summary>
 /// Commands for managing player zone tags.

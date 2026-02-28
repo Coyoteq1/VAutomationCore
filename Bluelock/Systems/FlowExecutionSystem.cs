@@ -1,66 +1,50 @@
-﻿using Unity.Collections;
 using Unity.Entities;
 using VAuto.Zone.Services;
-using VAutomationCore.Core.ECS;
-using VAutomationCore.Core.ECS.Components;
 using VAutomationCore.Core.Lifecycle;
 
 namespace VAuto.Zone.Systems
 {
-    public class FlowExecutionSystem : SystemBase
+    /// <summary>
+    /// Flow transition handler invoked by <see cref="ZoneTransitionRouterSystem"/>.
+    /// This is intentionally not an ECS system to ensure ZoneTransitionEvent has a single consumer.
+    /// </summary>
+    public static class FlowExecutionSystem
     {
         private static IFlowLifecycle _flowLifecycle;
-        private EntityQuery _transitionQuery;
 
         public static void SetFlowLifecycle(IFlowLifecycle lifecycle)
         {
             _flowLifecycle = lifecycle;
         }
 
-        protected override void OnCreate()
+        public static LifecycleExecutionResult ApplyTransition(ZoneTransitionEnvelope transition)
         {
-            _transitionQuery = GetEntityQuery(ComponentType.ReadOnly<ZoneTransitionEvent>());
-            RequireForUpdate<ZoneTransitionEvent>();
-        }
-
-        protected override void OnUpdate()
-        {
-            if (_flowLifecycle == null) return;
-
-            var em = EntityManager;
-            var events = _transitionQuery.ToEntityArray(Allocator.Temp);
-
-            try
+            if (_flowLifecycle == null)
             {
-                foreach (var evtEntity in events)
+                return LifecycleExecutionResult.Fail(
+                    LifecycleExecutionFailureCode.DependencyUnavailable,
+                    "Flow lifecycle manager is not registered.");
+            }
+
+            if (transition.NewZoneHash != 0)
+            {
+                var enterZone = ZoneConfigService.GetZoneById(transition.NewZoneId);
+                if (enterZone != null)
                 {
-                    var evt = em.GetComponentData<ZoneTransitionEvent>(evtEntity);
-
-                    if (evt.NewZoneHash != 0)
-                    {
-                        var zoneId = ZoneHashUtility.GetZoneId(evt.NewZoneHash);
-                        var zone = ZoneConfigService.GetZoneById(zoneId);
-                        if (zone != null)
-                        {
-                            _flowLifecycle.ExecuteEnterFlow(zone.FlowId, evt.Player);
-                        }
-                    }
-
-                    if (evt.OldZoneHash != 0)
-                    {
-                        var zoneId = ZoneHashUtility.GetZoneId(evt.OldZoneHash);
-                        var zone = ZoneConfigService.GetZoneById(zoneId);
-                        if (zone != null)
-                        {
-                            _flowLifecycle.ExecuteExitFlow(zone.FlowId, evt.Player);
-                        }
-                    }
+                    _flowLifecycle.ExecuteEnterFlow(enterZone.FlowId, transition.Player);
                 }
             }
-            finally
+
+            if (transition.OldZoneHash != 0)
             {
-                events.Dispose();
+                var exitZone = ZoneConfigService.GetZoneById(transition.OldZoneId);
+                if (exitZone != null)
+                {
+                    _flowLifecycle.ExecuteExitFlow(exitZone.FlowId, transition.Player);
+                }
             }
+
+            return LifecycleExecutionResult.Ok();
         }
     }
 }

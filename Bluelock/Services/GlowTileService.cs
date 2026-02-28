@@ -162,6 +162,16 @@ namespace VAuto.Zone.Services
                 return Entity.Null;
             }
 
+            if (zone.GlowTilePrefabId != 0)
+            {
+                var byId = new PrefabGUID(zone.GlowTilePrefabId);
+                if (ZoneCore.TryGetPrefabEntity(byId, out var prefabById) && prefabById != Entity.Null)
+                {
+                    return prefabById;
+                }
+                error = $"Prefab id '{zone.GlowTilePrefabId}' not resolvable";
+            }
+
             if (!string.IsNullOrWhiteSpace(zone.GlowTilePrefab))
             {
                 if (ZoneCore.TryResolvePrefabEntity(zone.GlowTilePrefab, out _, out var prefab) && prefab != Entity.Null)

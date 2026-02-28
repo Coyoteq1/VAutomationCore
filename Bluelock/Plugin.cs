@@ -34,7 +34,7 @@ using VAutomationCore.Core.Logging;
 
 namespace VAuto.Zone
 {
-    [BepInPlugin(VAutoZone.MyPluginInfo.GUID, VAutoZone.MyPluginInfo.NAME, VAutoZone.MyPluginInfo.VERSION)]
+    [BepInPlugin("gg.coyote.BlueLock", "VAutomation Zone", "1.0.1")]
     [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInDependency("gg.coyote.lifecycle", "1.0.1")]
@@ -71,6 +71,7 @@ namespace VAuto.Zone
         public static ConfigEntry<bool> GlowSystemShowDebugInfo;
         public static ConfigEntry<bool> GlowSystemAutoRotateEnabled;
         public static ConfigEntry<int> GlowSystemAutoRotateIntervalMinutes;
+        public static ConfigEntry<string> GlowSystemDefaultBuffGuids;
         
         // Arena Territory
         public static ConfigEntry<bool> ArenaTerritoryEnabled;
@@ -89,6 +90,7 @@ namespace VAuto.Zone
         public static ConfigEntry<bool> KitBroadcastEquips;
         public static ConfigEntry<string> KitDefaultName;
         public static ConfigEntry<string> KitDefinitionsPath;
+        public static ConfigEntry<string> KitDefaultGlowBuffGuids;
 
         // Sandbox Progression
         public static ConfigEntry<bool> SandboxProgressionEnabled;
@@ -100,6 +102,14 @@ namespace VAuto.Zone
         // Debug
         public static ConfigEntry<bool> DebugMode;
         public static ConfigEntry<bool> HotReloadEnabled;
+        public static ConfigEntry<bool> ConfigAutoParseFlowFolder;
+        public static ConfigEntry<bool> ConfigAutoParseDatabaseFolder;
+        public static ConfigEntry<bool> ConfigRequireZoneFlowFiles;
+
+        // Runtime mode
+        public static ConfigEntry<ZoneRuntimeMode> RuntimeMode;
+        public static ConfigEntry<float> EcsDetectionTickSeconds;
+        public static ConfigEntry<int> ZoneDetectionOpsWarningThreshold;
         #endregion
 
         #region JSON Configuration
@@ -112,7 +122,6 @@ namespace VAuto.Zone
         private static DateTime _lastKitsConfigCheck;
         private static DateTime _lastAbilityConfigCheck;
         private static DateTime _lastPrefabsRefCheck;
-        private static DateTime _lastAbilityAliasCheck;
         private static System.Timers.Timer _hotReloadTimer;
         #endregion
 
@@ -283,6 +292,10 @@ namespace VAuto.Zone
         private static ArenaLifecycleManager _arenaLifecycleManager;
         private static EntityQuery _autoZonePlayerQuery;
         private static bool _autoZonePlayerQueryInitialized;
+        private static ZoneRuntimeMode _bootRuntimeMode = ZoneRuntimeMode.Legacy;
+        private static bool _bootRuntimeModeLocked;
+        private static bool _ecsInitializationDeferred;
+        private static bool _runtimeServicesInitialized;
 
         public Plugin()
         {
@@ -303,13 +316,6 @@ namespace VAuto.Zone
 
                 // Load JSON configuration
                 LoadJsonConfiguration();
-
-                // Validate all configurations
-                var configValidation = ProcessConfigService.ValidateAllConfigs(Path.GetDirectoryName(_zonesConfigPath) ?? Paths.ConfigPath);
-                if (!configValidation.Success)
-                {
-                    Logger.LogWarning("[BlueLock] Configuration validation completed with errors - review log above");
-                }
 
                 // Check if enabled
                 if (GeneralEnabled != null && !GeneralEnabled.Value)
@@ -338,7 +344,7 @@ namespace VAuto.Zone
                 _arenaLifecycleManager = new ArenaLifecycleManager(CoreLog);
                 VAutomationCore.Services.ZoneEventBridge.Initialize();
                 _arenaLifecycleManager.Initialize();
-                
+
                 // Initialize all services using ServiceInitializer
                 var servicesInitialized = ServiceInitializer.InitializeAll(CoreLog);
                 if (!servicesInitialized)
@@ -346,40 +352,24 @@ namespace VAuto.Zone
                     Logger.LogWarning("[BlueLock] Some services failed to initialize");
                 }
 
-                // Initialize arena territory
-                try
+                EnsureRuntimeServicesInitialized();
+
+                // Validate configs after ZoneConfigService had a chance to create defaults.
+                var configValidation = ProcessConfigService.ValidateAllConfigs(Path.GetDirectoryName(_zonesConfigPath) ?? Paths.ConfigPath);
+                LogConfigValidationResult(configValidation, "startup");
+                var requestedMode = RuntimeMode?.Value ?? ZoneRuntimeMode.Legacy;
+                _bootRuntimeMode = configValidation.Success ? requestedMode : ZoneRuntimeMode.Legacy;
+                if (!configValidation.Success && requestedMode != ZoneRuntimeMode.Legacy)
                 {
-                    // ArenaTerritory.InitializeArenaGrid(); // Excluded from headless builds
-                    Logger.LogInfo("Arena territory (headless stub)");
-                    
-                    // Initialize KitService
-                    KitService.Initialize();
-                    Logger.LogInfo("KitService initialized");
-                    
-                    // Initialize ZoneConfigService
-                    ZoneConfigService.Initialize();
-                    Logger.LogInfo("ZoneConfigService initialized");
-
-                    // Initialize Zone boss spawner service
-                    ZoneBossSpawnerService.Initialize();
-                    Logger.LogInfo("ZoneBossSpawnerService initialized");
-
-                    // Initialize ability UI enter/exit binding service
-                    ConfigureAbilityUi();
-                    AbilityUi.Initialize();
-                    Logger.LogInfo("AbilityUi initialized");
-                    ZonePlayerTagService.Initialize(
-                        msg => Logger.LogInfo($"[ZonePlayerTagService] {msg}"),
-                        msg => Logger.LogWarning($"[ZonePlayerTagService] {msg}"));
-                    Logger.LogInfo("ZonePlayerTagService initialized");
-
-                    // Queue border build to run on server update thread when world is ready.
-                    ZoneGlowBorderService.QueueRebuild("startup");
+                    Logger.LogWarning("[BlueLock] Config validation failed at startup; boot runtime mode forced to Legacy.");
                 }
-                catch (Exception ex)
+                _bootRuntimeModeLocked = true;
+                if (requestedMode != _bootRuntimeMode)
                 {
-                    Logger.LogWarning($"Territory init failed: {ex.Message}");
+                    Logger.LogWarning($"[BlueLock] Requested runtime mode '{requestedMode}' differs from effective boot mode '{_bootRuntimeMode}'.");
                 }
+
+                InitializeZoneRuntimeSystems();
 
                 // NOTE: ZoneEventBridge, ZoneLifecycleObserver, ArenaTerritory, ArenaGlowBorderService
                 // are excluded from headless builds. These services require Unity runtime.
@@ -418,7 +408,7 @@ namespace VAuto.Zone
             {
                 Logger.LogInfo($"[BlueLock]   Config(JSON Kits): {KitsConfigPathValue}");
             }
-            Logger.LogInfo("[BlueLock]   Command Roots: zone, arena, enter, exit");
+            Logger.LogInfo("[BlueLock]   Command Roots: zone, match, spawn, template, tag, enter, exit, unlockprefab");
         }
 
         private static void ConfigureAbilityUi()
@@ -497,6 +487,7 @@ namespace VAuto.Zone
             GlowSystemShowDebugInfo = configFile.Bind("GlowSystem", "ShowDebugInfo", false, "Show debug information for glow zones");
             GlowSystemAutoRotateEnabled = configFile.Bind("GlowSystem", "AutoRotateEnabled", true, "Auto-rotate border glow buffs (main-thread only)");
             GlowSystemAutoRotateIntervalMinutes = configFile.Bind("GlowSystem", "AutoRotateIntervalMinutes", 5, "Minutes between border glow rotations");
+            GlowSystemDefaultBuffGuids = configFile.Bind("GlowSystem", "DefaultBuffGuids", "4345235,54252435,65245252", "Comma-separated fallback glow buff GUID hashes.");
 
             // Arena Territory
             ArenaTerritoryEnabled = configFile.Bind("ArenaTerritory", "Enabled", true, "Enable arena territory management");
@@ -515,41 +506,35 @@ namespace VAuto.Zone
             KitBroadcastEquips = configFile.Bind("Kit Settings", "BroadcastEquips", false, "Broadcast kit equip messages to all players");
             KitDefaultName = configFile.Bind("Kit Settings", "DefaultKit", "startkit", "Default kit name to use when zone has no specific kit");
             KitDefinitionsPath = configFile.Bind("Kit Settings", "DefinitionsPath", _kitsConfigPath, "Path to kit definitions JSON file");
+            KitDefaultGlowBuffGuids = configFile.Bind("Kit Settings", "DefaultGlowBuffGuids", "4345235,54252435,65245252", "Comma-separated default glow buff GUID hashes associated with kit flow.");
 
             // Sandbox Progression
             SandboxProgressionEnabled = configFile.Bind("Sandbox Progression", "Enabled", true, "Enable sandbox progression backup/unlock/restore flow.");
             SandboxProgressionDefaultZoneUnlockEnabled = configFile.Bind("Sandbox Progression", "DefaultZoneUnlockEnabled", true, "Default sandbox progression unlock behavior when a zone does not define SandboxUnlockEnabled.");
             SandboxProgressionPersistSnapshots = configFile.Bind("Sandbox Progression", "PersistSnapshots", true, "Persist sandbox progression snapshots to disk for restore after restart.");
-            SandboxProgressionSnapshotFilePath = configFile.Bind("Sandbox Progression", "SnapshotFilePath", Path.Combine(Paths.ConfigPath, "Bluelock", "state", "sandbox_progression_snapshots.json"), "Path to sandbox progression snapshot state file.");
+            SandboxProgressionSnapshotFilePath = configFile.Bind("Sandbox Progression", "SnapshotFilePath", Path.Combine(Paths.ConfigPath, "Bluelock", "state", "sandbox_progression"), "Path to sandbox progression snapshot state file.");
             SandboxProgressionVerboseLogs = configFile.Bind("Sandbox Progression", "VerboseLogs", false, "Enable verbose sandbox progression logs.");
 
             // Debug
             DebugMode = configFile.Bind("Debug", "DebugMode", false, "Enable debug mode");
             HotReloadEnabled = configFile.Bind("Debug", "HotReload", true, "Enable hot-reload of configuration");
+
+            // Config Parsing
+            ConfigAutoParseFlowFolder = configFile.Bind("Config Parsing", "AutoParseFlowFolder", true, "Auto-parse every JSON file in Bluelock/flows during validation.");
+            ConfigAutoParseDatabaseFolder = configFile.Bind("Config Parsing", "AutoParseDatabaseFolder", true, "Auto-parse every JSON file in Bluelock/database during validation.");
+            ConfigRequireZoneFlowFiles = configFile.Bind("Config Parsing", "RequireZoneFlowFiles", false, "When true, each zone FlowId must resolve to a file in Bluelock/flows.");
+
+            // Runtime mode
+            RuntimeMode = configFile.Bind("Runtime", "ZoneRuntimeMode", ZoneRuntimeMode.Legacy, "Zone execution mode: Legacy | Hybrid | EcsOnly");
+            EcsDetectionTickSeconds = configFile.Bind("Runtime", "EcsDetectionTickSeconds", 0.2f, "Fixed ECS zone detection tick interval in seconds.");
+            ZoneDetectionOpsWarningThreshold = configFile.Bind("Runtime", "ZoneDetectionOpsWarningThreshold", 10000, "Warn when ECS detection players*zones exceeds this threshold.");
         }
 
         private static string ResolveBluelockConfigPath(string fileName)
         {
             var rootDir = Path.Combine(Paths.ConfigPath, "Bluelock");
             Directory.CreateDirectory(rootDir);
-
-            var rootPath = Path.Combine(rootDir, fileName);
-            var legacyPath = Path.Combine(rootDir, "config", fileName);
-
-            try
-            {
-                if (!File.Exists(rootPath) && File.Exists(legacyPath))
-                {
-                    File.Copy(legacyPath, rootPath, overwrite: false);
-                    Logger.LogInfo($"[BlueLock] Migrated config '{fileName}' from legacy folder to '{rootPath}'.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogWarning($"[BlueLock] Config migration check failed for '{fileName}': {ex.Message}");
-            }
-
-            return rootPath;
+            return Path.Combine(rootDir, fileName);
         }
 
         private static void ConfigureSandboxProgressionBridge()
@@ -568,27 +553,151 @@ namespace VAuto.Zone
             }
         }
 
+        private static void InitializeZoneRuntimeSystems()
+        {
+            try
+            {
+                var options = GetZoneRuntimeModeOptions();
+                
+                // Use ZoneCore.Server which safely returns null if world not ready
+                var serverWorld = VAuto.Zone.Core.ZoneCore.Server;
+                if (serverWorld == null || !serverWorld.IsCreated)
+                {
+                    Logger.LogWarning("[BlueLock] Server world not ready during Load(); deferring ECS initialization.");
+                    _ecsInitializationDeferred = true; // Mark for deferred initialization
+                    return; // Will be initialized when world becomes available
+                }
+                
+                _ecsInitializationDeferred = false; // Clear deferred flag if successful
+                _ = serverWorld.GetOrCreateSystemManaged<VAuto.Zone.Systems.ZoneBootstrapSystem>();
+
+                if (options.EcsZoneDetectionEnabled)
+                {
+                    _ = serverWorld.GetOrCreateSystemManaged<VAuto.Zone.Systems.ZoneDetectionSystem>();
+                }
+
+                if (options.EcsFlowExecutionEnabled || options.EcsTemplateLifecycleEnabled)
+                {
+                    _ = serverWorld.GetOrCreateSystemManaged<VAuto.Zone.Systems.ZoneTransitionRouterSystem>();
+                }
+
+                var flowLifecycleManager = new FlowLifecycleManager();
+                VAuto.Zone.Systems.FlowExecutionSystem.SetFlowLifecycle(flowLifecycleManager);
+
+                if (options.RuntimeMode == ZoneRuntimeMode.EcsOnly)
+                {
+                    var hasRouter = options.EcsFlowExecutionEnabled || options.EcsTemplateLifecycleEnabled;
+                    if (!hasRouter)
+                    {
+                        throw new InvalidOperationException("EcsOnly mode requires router-capable ECS pipeline.");
+                    }
+                }
+
+                Logger.LogInfo(
+                    $"[BlueLock] Runtime mode: {options.RuntimeMode} (legacy={options.LegacyZonePipelineEnabled}, ecsDetect={options.EcsZoneDetectionEnabled}, ecsFlow={options.EcsFlowExecutionEnabled}, ecsTemplate={options.EcsTemplateLifecycleEnabled})");
+                EnsureRuntimeServicesInitialized();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"[BlueLock] Failed to initialize runtime zone systems: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// Retry deferred ECS initialization. Called when Server world becomes available.
+        /// </summary>
+        internal static void RetryDeferredEcsInitialization()
+        {
+            if (_ecsInitializationDeferred)
+            {
+                Logger.LogInfo("[BlueLock] Retrying deferred ECS initialization...");
+                _ecsInitializationDeferred = false;
+                InitializeZoneRuntimeSystems();
+            }
+
+            if (!_runtimeServicesInitialized)
+            {
+                EnsureRuntimeServicesInitialized();
+            }
+        }
+
+        private static void EnsureRuntimeServicesInitialized()
+        {
+            if (_runtimeServicesInitialized)
+            {
+                return;
+            }
+
+            try
+            {
+                var serverWorld = VAuto.Zone.Core.ZoneCore.Server;
+                if (serverWorld == null || !serverWorld.IsCreated)
+                {
+                    return;
+                }
+
+                // ArenaTerritory.InitializeArenaGrid(); // Excluded from headless builds
+                Logger.LogInfo("Arena territory (headless stub)");
+
+                KitService.Initialize();
+                Logger.LogInfo("KitService initialized");
+
+                ZoneConfigService.Initialize();
+                Logger.LogInfo("ZoneConfigService initialized");
+
+                ZoneBossSpawnerService.Initialize();
+                Logger.LogInfo("ZoneBossSpawnerService initialized");
+
+                StaggeredManifestationService.Initialize();
+                Logger.LogInfo("StaggeredManifestationService initialized");
+
+                ConfigureAbilityUi();
+                AbilityUi.Initialize();
+                Logger.LogInfo("AbilityUi initialized");
+
+                ZonePlayerTagService.Initialize(
+                    msg => Logger.LogInfo($"[ZonePlayerTagService] {msg}"),
+                    msg => Logger.LogWarning($"[ZonePlayerTagService] {msg}"));
+                Logger.LogInfo("ZonePlayerTagService initialized");
+
+                ZoneGlowBorderService.QueueRebuild("startup");
+                _runtimeServicesInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"Territory init failed: {ex.Message}");
+            }
+        }
+
         private void LoadJsonConfiguration()
         {
             try
             {
-                if (File.Exists(_configPath))
-                {
-                    var jsonContent = File.ReadAllText(_configPath);
-                    _jsonConfig = JsonSerializer.Deserialize<ZoneJsonConfig>(jsonContent, new JsonSerializerOptions
+                TypedJsonConfigManager.TryLoadOrCreate(
+                    _configPath,
+                    () => new ZoneJsonConfig(),
+                    out _jsonConfig,
+                    out var createdDefault,
+                    new JsonSerializerOptions
                     {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                         PropertyNameCaseInsensitive = true,
                         ReadCommentHandling = JsonCommentHandling.Skip,
-                        AllowTrailingCommas = true
-                    });
-                    Logger.LogInfo($"[BlueLock] Loaded JSON configuration from {_configPath}");
-                }
-                else
+                        AllowTrailingCommas = true,
+                        WriteIndented = true
+                    },
+                    ValidateZoneLifecycleJsonConfig,
+                    message => Logger.LogInfo($"[BlueLock] {message}"),
+                    message => Logger.LogWarning($"[BlueLock] {message}"),
+                    message => Logger.LogError($"[BlueLock] {message}"));
+
+                _jsonConfig ??= new ZoneJsonConfig();
+                ApplyZoneLifecycleMigrations(_jsonConfig);
+                if (createdDefault)
                 {
-                    _jsonConfig = new ZoneJsonConfig();
-                    SaveJsonConfiguration();
-                    Logger.LogInfo($"[BlueLock] Created new JSON configuration at {_configPath}");
+                    Logger.LogInfo($"[BlueLock] Created default zone lifecycle config at {_configPath}");
                 }
+                Logger.LogInfo($"[BlueLock] Loaded JSON configuration from {_configPath}");
             }
             catch (Exception ex)
             {
@@ -599,19 +708,66 @@ namespace VAuto.Zone
 
         private void SaveJsonConfiguration()
         {
-            try
-            {
-                var jsonContent = JsonSerializer.Serialize(_jsonConfig, new JsonSerializerOptions
+            TypedJsonConfigManager.TrySave(
+                _configPath,
+                _jsonConfig,
+                new JsonSerializerOptions
                 {
                     WriteIndented = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
-                File.WriteAllText(_configPath, jsonContent);
-                Logger.LogInfo($"[BlueLock] Saved JSON configuration to {_configPath}");
-            }
-            catch (Exception ex)
+                },
+                message => Logger.LogInfo($"[BlueLock] {message}"),
+                message => Logger.LogError($"[BlueLock] {message}"));
+        }
+
+        private static (bool IsValid, string Error) ValidateZoneLifecycleJsonConfig(ZoneJsonConfig config)
+        {
+            if (config == null)
             {
-                Logger.LogError($"[BlueLock] Failed to save JSON configuration: {ex.Message}");
+                return (false, "Config is null.");
+            }
+
+            if (config.CheckIntervalMs < 25)
+            {
+                return (false, "CheckIntervalMs must be >= 25.");
+            }
+
+            if (config.Mappings == null || config.Mappings.Count == 0)
+            {
+                return (false, "Mappings must contain at least one entry.");
+            }
+
+            return (true, string.Empty);
+        }
+
+        private void ApplyZoneLifecycleMigrations(ZoneJsonConfig config)
+        {
+            if (config == null)
+            {
+                return;
+            }
+
+            var migration = new ZoneLifecycleConfigVersionMigration();
+            var report = migration.DryRun(config);
+            if (report.HasChanges)
+            {
+                config = migration.Apply(config);
+                _jsonConfig = config;
+                Logger.LogInfo($"[BlueLock] Migration '{migration.Name}' applied: {string.Join("; ", report.Changes)}");
+                SaveJsonConfiguration();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(config.SchemaVersion))
+            {
+                config.SchemaVersion = ZoneJsonConfig.CurrentConfigVersion;
+                SaveJsonConfiguration();
+                return;
+            }
+
+            if (!string.Equals(config.ConfigVersion, ZoneJsonConfig.CurrentConfigVersion, StringComparison.Ordinal))
+            {
+                Logger.LogWarning($"[BlueLock] Zone lifecycle config version '{config.ConfigVersion}' differs from runtime '{ZoneJsonConfig.CurrentConfigVersion}'. Running compatibility mode.");
             }
         }
 
@@ -624,7 +780,6 @@ namespace VAuto.Zone
                 : DateTime.MinValue;
             _lastAbilityConfigCheck = File.Exists(AbilityUi.ConfigPath) ? File.GetLastWriteTime(AbilityUi.ConfigPath) : DateTime.MinValue;
             _lastPrefabsRefCheck = File.Exists(PrefabResolver.PrefabsRefConfigPath) ? File.GetLastWriteTime(PrefabResolver.PrefabsRefConfigPath) : DateTime.MinValue;
-            _lastAbilityAliasCheck = File.Exists(PrefabResolver.AbilityAliasConfigPath) ? File.GetLastWriteTime(PrefabResolver.AbilityAliasConfigPath) : DateTime.MinValue;
             _hotReloadTimer = new System.Timers.Timer(5000);
             _hotReloadTimer.Elapsed += (_, _) => CheckForConfigChanges();
             _hotReloadTimer.Start();
@@ -645,6 +800,16 @@ namespace VAuto.Zone
                         
                         // Validate reloaded configurations
                         var configValidation = ProcessConfigService.ValidateAllConfigs(Path.GetDirectoryName(_zonesConfigPath) ?? Paths.ConfigPath);
+                        LogConfigValidationResult(configValidation, "hot-reload");
+                        var requestedMode = RuntimeMode?.Value ?? ZoneRuntimeMode.Legacy;
+                        if (requestedMode != _bootRuntimeMode)
+                        {
+                            Logger.LogWarning($"[BlueLock] Runtime mode hot-reload change ignored. requested={requestedMode}, bootMode={_bootRuntimeMode}.");
+                        }
+                        if (!configValidation.Success)
+                        {
+                            Logger.LogWarning($"[BlueLock] Config validation failed during hot-reload; effective runtime mode remains '{_bootRuntimeMode}'.");
+                        }
                         
                         Logger.LogInfo("[BlueLock] Configuration hot-reloaded successfully");
                     }
@@ -707,18 +872,6 @@ namespace VAuto.Zone
                     }
                 }
 
-                var abilityAliasPath = PrefabResolver.AbilityAliasConfigPath;
-                if (File.Exists(abilityAliasPath))
-                {
-                    var abilityAliasLast = File.GetLastWriteTime(abilityAliasPath);
-                    if (abilityAliasLast > _lastAbilityAliasCheck)
-                    {
-                        _lastAbilityAliasCheck = abilityAliasLast;
-                        PrefabResolver.Reload();
-                        AbilityUi.Reload();
-                        Logger.LogInfo("[BlueLock] Ability alias catalog hot-reloaded.");
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -726,8 +879,35 @@ namespace VAuto.Zone
             }
         }
 
+        private static void LogConfigValidationResult(ProcessConfigService.ValidationResult validation, string context)
+        {
+            if (validation == null)
+            {
+                Logger.LogWarning($"[BlueLock] Config validation returned null during {context}.");
+                return;
+            }
+
+            foreach (var warning in validation.Warnings)
+            {
+                Logger.LogWarning($"[BlueLock][ConfigValidation][{context}] {warning}");
+            }
+
+            foreach (var error in validation.Errors)
+            {
+                Logger.LogError($"[BlueLock][ConfigValidation][{context}] {error}");
+            }
+
+            if (!validation.Success)
+            {
+                Logger.LogWarning($"[BlueLock] Configuration validation completed with {validation.Errors.Count} error(s) during {context}.");
+            }
+        }
+
         #region Public Configuration Accessors
         public static bool IsEnabled => GeneralEnabled?.Value ?? true;
+        public static ZoneRuntimeMode RuntimeModeValue => _bootRuntimeModeLocked ? _bootRuntimeMode : (RuntimeMode?.Value ?? ZoneRuntimeMode.Legacy);
+        public static float EcsDetectionTickSecondsValue => Math.Max(0.05f, EcsDetectionTickSeconds?.Value ?? 0.2f);
+        public static int ZoneDetectionOpsWarningThresholdValue => ZoneDetectionOpsWarningThreshold?.Value ?? 10000;
         public static int CheckIntervalMs => ZoneDetectionCheckIntervalMs?.Value ?? 100;
         public static float PositionChangeThreshold => ZoneDetectionPositionThreshold?.Value ?? 1.0f;
         public static double ZoneEnterTransitionConfirmSecondsValue => Math.Max(0.05d, ZoneDetectionEnterConfirmSeconds?.Value ?? DefaultZoneEnterTransitionConfirmSeconds);
@@ -740,6 +920,7 @@ namespace VAuto.Zone
         public static bool GlowSystemShowDebugInfoValue => GlowSystemShowDebugInfo?.Value ?? false;
         public static bool GlowSystemAutoRotateEnabledValue => GlowSystemAutoRotateEnabled?.Value ?? true;
         public static int GlowSystemAutoRotateIntervalMinutesValue => GlowSystemAutoRotateIntervalMinutes?.Value ?? 5;
+        public static string GlowSystemDefaultBuffGuidsValue => GlowSystemDefaultBuffGuids?.Value ?? "4345235,54252435,65245252";
         public static bool ArenaTerritoryEnabledValue => ArenaTerritoryEnabled?.Value ?? true;
         public static bool ArenaTerritoryShowGridValue => ArenaTerritoryShowGrid?.Value ?? false;
         public static float ArenaTerritoryGridCellSizeValue => ArenaTerritoryGridCellSize?.Value ?? 100.0f;
@@ -757,10 +938,16 @@ namespace VAuto.Zone
         public static bool SandboxProgressionPersistSnapshotsValue => SandboxProgressionPersistSnapshots?.Value ?? true;
         public static string SandboxProgressionSnapshotFilePathValue
             => string.IsNullOrWhiteSpace(SandboxProgressionSnapshotFilePath?.Value)
-                ? Path.Combine(Paths.ConfigPath, "Bluelock", "state", "sandbox_progression_snapshots.json")
+                ? Path.Combine(Paths.ConfigPath, "Bluelock", "state", "sandbox_progression")
                 : SandboxProgressionSnapshotFilePath.Value;
         public static bool SandboxProgressionVerboseLogsValue => SandboxProgressionVerboseLogs?.Value ?? false;
         public static bool DebugModeEnabled => DebugMode?.Value ?? false;
+
+        public static ZoneRuntimeModeOptions GetZoneRuntimeModeOptions()
+        {
+            return ZoneRuntimeModeOptions.FromMode(RuntimeModeValue);
+        }
+
         public static int ActiveGlowEntityCount
         {
             get
@@ -1526,6 +1713,12 @@ namespace VAuto.Zone
         {
             try
             {
+                var runtime = GetZoneRuntimeModeOptions();
+                if (!runtime.LegacyZonePipelineEnabled || runtime.EcsZoneDetectionEnabled)
+                {
+                    return;
+                }
+
                 TickAutoGlowRotation();
                 ProcessPendingZoneBorderRebuild();
 
@@ -2501,15 +2694,16 @@ namespace VAuto.Zone
 
         private static string NormalizeLifecycleActionToken(string rawToken, bool isEnter)
         {
-            if (string.IsNullOrWhiteSpace(rawToken))
+            if (!LifecycleActionToken.TryParse(rawToken, out var baseToken, out var parameter))
             {
                 return string.Empty;
             }
 
-            var token = rawToken.Trim().ToLowerInvariant().Replace('-', '_');
+            var token = baseToken;
+            string normalized;
             if (isEnter)
             {
-                return token switch
+                normalized = token switch
                 {
                     "store" => "snapshot_save",
                     "snapshot" => "snapshot_save",
@@ -2527,23 +2721,35 @@ namespace VAuto.Zone
                     _ => token
                 };
             }
-
-            return token switch
+            else
             {
-                "restore" => "restore_kit_snapshot",
-                "message" => "zone_exit_message",
-                "abilities" => "restore_abilities",
-                "ability" => "restore_abilities",
-                "glow" => "glow_reset",
-                "teleport" => "teleport_return",
-                "integration" => "integration_events_exit",
-                "announce" => "announce_exit",
-                _ => token
-            };
+                normalized = token switch
+                {
+                    "restore" => "restore_kit_snapshot",
+                    "message" => "zone_exit_message",
+                    "abilities" => "restore_abilities",
+                    "ability" => "restore_abilities",
+                    "glow" => "glow_reset",
+                    "teleport" => "teleport_return",
+                    "integration" => "integration_events_exit",
+                    "announce" => "announce_exit",
+                    _ => token
+                };
+            }
+
+            return string.IsNullOrWhiteSpace(parameter)
+                ? normalized
+                : $"{normalized}:{parameter}";
         }
 
-        private static void ExecuteEnterLifecycleAction(string action, Entity player, string zoneId, EntityManager em)
+        private static void ExecuteEnterLifecycleAction(string actionToken, Entity player, string zoneId, EntityManager em)
         {
+            if (!LifecycleActionToken.TryParse(actionToken, out var action, out var parameter))
+            {
+                Logger.LogWarning($"[BlueLock] Empty enter lifecycle action for zone '{zoneId}'.");
+                return;
+            }
+
             switch (action)
             {
                 case "capture_return_position":
@@ -2627,7 +2833,14 @@ namespace VAuto.Zone
                     TryRunZoneEnterStep("HandleZoneTeleportEnter", () => HandleZoneTeleportEnter(player, zoneId, em));
                     break;
                 case "apply_templates":
-                    TryRunZoneEnterStep("ApplyZoneTemplatesOnEnter", () => ApplyZoneTemplatesOnEnter(player, zoneId, em));
+                    if (!string.IsNullOrWhiteSpace(parameter))
+                    {
+                        TryRunZoneEnterStep("TrySpawnTemplateManifest", () => TrySpawnTemplateManifest(parameter, zoneId, "boss", em));
+                    }
+                    else
+                    {
+                        TryRunZoneEnterStep("ApplyZoneTemplatesOnEnter", () => ApplyZoneTemplatesOnEnter(player, zoneId, em));
+                    }
                     break;
                 case "apply_abilities":
                     if (TempDisableAbilityUiDuringZoneTransitions)
@@ -2692,6 +2905,12 @@ namespace VAuto.Zone
                     });
                     break;
                 case "boss_enter":
+                    if (!string.IsNullOrWhiteSpace(parameter))
+                    {
+                        TryRunZoneEnterStep("TrySpawnTemplateManifest", () => TrySpawnTemplateManifest(parameter, zoneId, "boss", em));
+                        break;
+                    }
+
                     TryRunZoneEnterStep("ZoneBossSpawnerService.TryHandlePlayerEnter", () =>
                     {
                         if (ZoneBossSpawnerService.TryHandlePlayerEnter(player, zoneId, out var bossSpawnMessage))
@@ -2718,13 +2937,19 @@ namespace VAuto.Zone
                     TryRunZoneEnterStep("TryInvokeAnnouncementZoneEnter", () => TryInvokeAnnouncementZoneEnter(player, zoneId, em));
                     break;
                 default:
-                    Logger.LogWarning($"[BlueLock] Unknown enter lifecycle action '{action}' for zone '{zoneId}'.");
+                    Logger.LogWarning($"[BlueLock] Unknown enter lifecycle action '{actionToken}' for zone '{zoneId}'.");
                     break;
             }
         }
 
-        private static void ExecuteExitLifecycleAction(string action, Entity player, string zoneId, EntityManager em)
+        private static void ExecuteExitLifecycleAction(string actionToken, Entity player, string zoneId, EntityManager em)
         {
+            if (!LifecycleActionToken.TryParse(actionToken, out var action, out var parameter))
+            {
+                Logger.LogWarning($"[BlueLock] Empty exit lifecycle action for zone '{zoneId}'.");
+                return;
+            }
+
             switch (action)
             {
                 case "zone_exit_message":
@@ -2748,8 +2973,15 @@ namespace VAuto.Zone
                     }
                     break;
                 case "boss_exit":
+                    TryRunZoneExitStep("TryClearZoneTemplate(boss)", () => TryClearZoneTemplate(zoneId, "boss", em));
                     TryRunZoneExitStep("ZoneBossSpawnerService.HandlePlayerExit", () => ZoneBossSpawnerService.HandlePlayerExit(player, zoneId));
                     break;
+                case "clear_template":
+                {
+                    var templateType = string.IsNullOrWhiteSpace(parameter) ? "boss" : parameter;
+                    TryRunZoneExitStep("TryClearZoneTemplate", () => TryClearZoneTemplate(zoneId, templateType, em));
+                    break;
+                }
                 case "teleport_return":
                     TryRunZoneExitStep("HandleZoneTeleportExit", () => HandleZoneTeleportExit(player, zoneId, em));
                     break;
@@ -2787,8 +3019,46 @@ namespace VAuto.Zone
                     // Reserved for explicit exit announcements (not currently implemented in AnnouncementService).
                     break;
                 default:
-                    Logger.LogWarning($"[BlueLock] Unknown exit lifecycle action '{action}' for zone '{zoneId}'.");
+                    Logger.LogWarning($"[BlueLock] Unknown exit lifecycle action '{actionToken}' for zone '{zoneId}'.");
                     break;
+            }
+        }
+
+        private static void TrySpawnTemplateManifest(string manifestName, string zoneId, string templateType, EntityManager em)
+        {
+            if (string.IsNullOrWhiteSpace(manifestName))
+            {
+                Logger.LogWarning($"[BlueLock] Manifest spawn skipped: empty manifest name for zone '{zoneId}'.");
+                return;
+            }
+
+            if (!TemplateRepository.TryLoadTemplate(manifestName, out _))
+            {
+                Logger.LogWarning($"[BlueLock] Template '{manifestName}' not found for zone '{zoneId}'.");
+                return;
+            }
+
+            var result = StaggeredManifestationService.QueueTemplate(
+                zoneId,
+                string.IsNullOrWhiteSpace(templateType) ? "boss" : templateType,
+                manifestName,
+                em);
+
+            if (!result.Success)
+            {
+                Logger.LogWarning($"[BlueLock] Failed to queue manifest '{manifestName}' in zone '{zoneId}': {result.Error}");
+                return;
+            }
+
+            Logger.LogInfo($"[BlueLock] Manifest queued: zone='{zoneId}' type='{result.TemplateType}' template='{manifestName}' status='{result.Status}'.");
+        }
+
+        private static void TryClearZoneTemplate(string zoneId, string templateType, EntityManager em)
+        {
+            var total = ZoneTemplateService.ClearZoneTemplateType(zoneId, templateType, em);
+            if (total > 0)
+            {
+                Logger.LogInfo($"[BlueLock] Cleared {total} entities of type '{templateType}' from zone '{zoneId}'.");
             }
         }
 
@@ -3810,6 +4080,9 @@ namespace VAuto.Zone
     #region JSON Configuration Classes
     public class ZoneJsonConfig
     {
+        public const string CurrentConfigVersion = "1.1.0";
+        public string SchemaVersion { get; set; } = CurrentConfigVersion;
+        public string ConfigVersion { get; set; } = CurrentConfigVersion;
         public bool Enabled { get; set; } = true;
         public int CheckIntervalMs { get; set; } = 100;
         public float PositionChangeThreshold { get; set; } = 1.0f;
@@ -3848,10 +4121,18 @@ namespace VAuto.Zone
 
     public class ZoneMapping
     {
+        public string FlowId { get; set; } = "ZoneDefault";
         public string[] OnEnter { get; set; } = new string[] { "store" };
         public string[] OnExit { get; set; } = new string[] { "message" };
+        public ZoneMustFlow[] MustFlows { get; set; } = Array.Empty<ZoneMustFlow>();
         public bool UseGlobalDefaults { get; set; } = false;
         public string MapIconChangePrefab { get; set; } = "";
+    }
+
+    public class ZoneMustFlow
+    {
+        public string Action { get; set; } = string.Empty;
+        public bool Critical { get; set; } = true;
     }
     #endregion
 
@@ -3930,6 +4211,9 @@ namespace VAuto.Zone
         [HarmonyPrefix]
         public static bool InitializeNewSpawnChainSystem_OnUpdate_Prefix()
         {
+            // Retry deferred ECS initialization when world becomes available.
+            Plugin.RetryDeferredEcsInitialization();
+            
             if (SkipInitializeNewSpawnChainOnce)
             {
                 SkipInitializeNewSpawnChainOnce = false;
@@ -3987,6 +4271,7 @@ namespace VAuto.Zone
         public static void ServerBootstrap_OnUpdate_Postfix()
         {
             Plugin.ProcessAutoZoneDetection();
+            StaggeredManifestationService.ProcessPending(UnifiedCore.EntityManager);
             AbilityUi.ProcessPendingSlotApplies();
             Plugin.ProcessPendingZoneTeleports();
         }

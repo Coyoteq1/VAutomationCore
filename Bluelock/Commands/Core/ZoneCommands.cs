@@ -17,6 +17,7 @@ using VAuto.Zone.Models;
 using VAuto.Zone.Services;
 using VAutomationCore.Core.Config;
 using VAutomationCore.Core.Services;
+using VAutomationCore.Core.Lifecycle;
 
 namespace VAuto.Zone.Commands
 {
@@ -73,8 +74,40 @@ namespace VAuto.Zone.Commands
 <color=#00FFFF>.z arena [name] [on/off]</color> - Toggle arena damage mode
 <color=#00FFFF>.z holder [name] [playerName|clear]</color> - Set/clear holder immunity
 <color=#00FFFF>.z kit verify [zoneId]</color> - Verify kit resolution for a zone (no items granted)
-<color=#00FFFF>.z kit verifykit [kitId]</color> - Verify kit resolution by kit id (no items granted)";
+<color=#00FFFF>.z kit verifykit [kitId]</color> - Verify kit resolution by kit id (no items granted)
+<color=#00FFFF>.z mode [.mode]</color> - Show/change ECS runtime mode (Legacy|Hybrid|EcsOnly)";
             ctx.Reply(message);
+        }
+
+        /// <summary>
+        /// Show or change the ECS runtime mode.
+        /// </summary>
+        [Command("mode", shortHand: "m", description: "Show or change ECS runtime mode (Legacy|Hybrid|EcsOnly)", adminOnly: true)]
+        public static void RuntimeModeCommand(ChatCommandContext ctx, string mode = "")
+        {
+            var currentMode = Plugin.RuntimeModeValue;
+            
+            if (string.IsNullOrWhiteSpace(mode))
+            {
+                var options = Plugin.GetZoneRuntimeModeOptions();
+                ctx.Reply($"<color=#FFD700>[Runtime Mode]</color>\n" +
+                    $"Current: <color=#00FF00>{currentMode}</color>\n" +
+                    $"Legacy Pipeline: {(options.LegacyZonePipelineEnabled ? "Enabled" : "Disabled")}\n" +
+                    $"ECS Detection: {(options.EcsZoneDetectionEnabled ? "Enabled" : "Disabled")}\n" +
+                    $"ECS Flow Execution: {(options.EcsFlowExecutionEnabled ? "Enabled" : "Disabled")}\n" +
+                    $"ECS Template Lifecycle: {(options.EcsTemplateLifecycleEnabled ? "Enabled" : "Disabled")}\n\n" +
+                    "<color=#AAAAAA>Use '.z mode &lt;Legacy|Hybrid|EcsOnly&gt;' to change (requires server restart)</color>");
+                return;
+            }
+            
+            if (!Enum.TryParse<ZoneRuntimeMode>(mode, true, out var newMode))
+            {
+                ctx.Reply($"<color=#FF0000>Error: Invalid mode '{mode}'. Valid options: Legacy, Hybrid, EcsOnly</color>");
+                return;
+            }
+            
+            ctx.Reply($"<color=#FFFF00>Runtime mode change requested to '{newMode}'. " +
+                "This requires a server restart to take effect. Update 'ZoneRuntimeMode' in Bluelock.cfg.</color>");
         }
 
         /// <summary>

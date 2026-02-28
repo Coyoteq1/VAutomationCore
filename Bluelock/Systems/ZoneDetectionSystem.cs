@@ -1,52 +1,94 @@
-using Unity.Burst;
+using System;
+using System.Collections.Generic;
+using ProjectM;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using VAutomationCore.Core.ECS;
 using VAutomationCore.Core.ECS.Components;
 
 namespace VAuto.Zone.Systems
 {
-    [BurstCompile]
     public partial class ZoneDetectionSystem : SystemBase
     {
         private EntityQuery _playerQuery;
         private EntityQuery _zoneQuery;
+        private int _updateCounter;
+        private float _nextDetectionTickTime;
 
-        protected override void OnCreate()
+        private struct ZoneCandidate
         {
-            _playerQuery = GetEntityQuery(ComponentType.ReadOnly<LocalTransform>());
+            public Entity Entity;
+            public ZoneComponent Zone;
+        }
+
+        public override void OnCreate()
+        {
+            _playerQuery = GetEntityQuery(
+                ComponentType.ReadOnly<LocalToWorld>(),
+                ComponentType.ReadOnly<PlayerCharacter>());
             _zoneQuery = GetEntityQuery(ComponentType.ReadOnly<ZoneComponent>());
             RequireForUpdate<ZoneComponent>();
         }
 
-        protected override void OnUpdate()
+        public override void OnUpdate()
         {
+            var now = UnityEngine.Time.realtimeSinceStartup;
+            if (now < _nextDetectionTickTime)
+            {
+                return;
+            }
+            _nextDetectionTickTime = now + Plugin.EcsDetectionTickSecondsValue;
+
             var em = EntityManager;
             var players = _playerQuery.ToEntityArray(Allocator.Temp);
             var zones = _zoneQuery.ToEntityArray(Allocator.Temp);
 
             try
             {
+                var sortedZones = new List<ZoneCandidate>(zones.Length);
+                for (var i = 0; i < zones.Length; i++)
+                {
+                    var zoneEntity = zones[i];
+                    sortedZones.Add(new ZoneCandidate
+                    {
+                        Entity = zoneEntity,
+                        Zone = em.GetComponentData<ZoneComponent>(zoneEntity)
+                    });
+                }
+
+                sortedZones.Sort((a, b) => ZoneDetectionOrdering.Compare(a.Zone, b.Zone));
+
+                var opCount = players.Length * sortedZones.Count;
+                _updateCounter++;
+
+                var threshold = Plugin.ZoneDetectionOpsWarningThresholdValue;
+                if (Plugin.ZoneDetectionDebug && _updateCounter % 50 == 0)
+                {
+                    Plugin.Logger.LogInfo($"[BlueLock][ECS] ZoneDetection players={players.Length} zones={sortedZones.Count} ops~={opCount} tick={Plugin.EcsDetectionTickSecondsValue:F2}s");
+                }
+
+                if (threshold > 0 && opCount > threshold)
+                {
+                    Plugin.Logger.LogWarning($"[BlueLock][ECS] ZoneDetection workload high: ops~={opCount} (threshold={threshold}).");
+                }
+
                 foreach (var player in players)
                 {
-                    if (!em.HasComponent<LocalToWorld>(player)) continue;
-
                     var pos = em.GetComponentData<LocalToWorld>(player).Position;
-                    var state = em.HasComponent<PlayerZoneState>(player)
-                        ? em.GetComponentData<PlayerZoneState>(player)
-                        : new PlayerZoneState { CurrentZoneHash = 0 };
+                    var state = em.HasComponent<EcsPlayerZoneState>(player)
+                        ? em.GetComponentData<EcsPlayerZoneState>(player)
+                        : new EcsPlayerZoneState { CurrentZoneHash = 0 };
 
-                    int newZone = 0;
+                    var newZone = 0;
 
-                    for (int i = 0; i < zones.Length; i++)
+                    for (var i = 0; i < sortedZones.Count; i++)
                     {
-                        var zoneEntity = zones[i];
-                        var zone = em.GetComponentData<ZoneComponent>(zoneEntity);
+                        var zone = sortedZones[i].Zone;
+                        var distSq = math.distancesq(pos, zone.Center);
 
-                        float distSq = math.distancesq(pos, zone.Center);
-
-                        bool inside = state.CurrentZoneHash == zone.ZoneHash
+                        var inside = state.CurrentZoneHash == zone.ZoneHash
                             ? distSq <= zone.ExitRadiusSq
                             : distSq <= zone.EntryRadiusSq;
 
@@ -59,9 +101,24 @@ namespace VAuto.Zone.Systems
 
                     if (newZone != state.CurrentZoneHash)
                     {
-                        EmitZoneTransition(em, player, state.CurrentZoneHash, newZone);
+                        var oldZoneHash = state.CurrentZoneHash;
+                        EmitZoneTransition(em, player, oldZoneHash, newZone);
                         state.CurrentZoneHash = newZone;
-                        em.SetComponentData(player, state);
+
+                        if (em.HasComponent<EcsPlayerZoneState>(player))
+                        {
+                            em.SetComponentData(player, state);
+                        }
+                        else
+                        {
+                            em.AddComponentData(player, state);
+                        }
+
+                        if (Plugin.ZoneDetectionDebug)
+                        {
+                            var correlationId = $"{player.Index}:{DateTime.UtcNow.Ticks}";
+                            Plugin.Logger.LogInfo($"[ZoneTransition][detect] cid={correlationId} player={player.Index} oldHash={oldZoneHash} newHash={newZone}");
+                        }
                     }
                 }
             }
@@ -72,7 +129,7 @@ namespace VAuto.Zone.Systems
             }
         }
 
-        private void EmitZoneTransition(EntityManager em, Entity player, int oldZone, int newZone)
+        private static void EmitZoneTransition(EntityManager em, Entity player, int oldZone, int newZone)
         {
             var e = em.CreateEntity();
             em.AddComponentData(e, new ZoneTransitionEvent

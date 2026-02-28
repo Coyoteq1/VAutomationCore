@@ -1,8 +1,6 @@
-using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
-using VAuto.Zone.Models;
+using VAuto.Zone.Core;
 using VAuto.Zone.Services;
 using VAutomationCore.Core.ECS;
 using VAutomationCore.Core.ECS.Components;
@@ -13,12 +11,11 @@ namespace VAuto.Zone.Systems
     {
         private bool _initialized;
 
-        protected override void OnCreate()
+        public override void OnCreate()
         {
-            RequireForUpdate<ZoneBootstrapSystem>();
         }
 
-        protected override void OnUpdate()
+        public override void OnUpdate()
         {
             if (_initialized) return;
             _initialized = true;
@@ -30,7 +27,6 @@ namespace VAuto.Zone.Systems
             foreach (var zone in zones)
             {
                 var zoneHash = ZoneHashUtility.GetZoneHash(zone.Id);
-                var flowHash = ZoneHashUtility.GetZoneHash(zone.FlowId);
 
                 ZoneHashUtility.CacheZoneCenter(zoneHash, new float3(zone.CenterX, zone.CenterY, zone.CenterZ));
 
@@ -41,12 +37,12 @@ namespace VAuto.Zone.Systems
                 em.AddComponentData(entity, new ZoneComponent
                 {
                     ZoneHash = zoneHash,
+                    Priority = zone.Priority,
                     Center = new float3(zone.CenterX, zone.CenterY, zone.CenterZ),
                     EntryRadius = entryRadius,
                     ExitRadius = exitRadius,
                     EntryRadiusSq = entryRadius * entryRadius,
-                    ExitRadiusSq = exitRadius * exitRadius,
-                    FlowIdHash = flowHash
+                    ExitRadiusSq = exitRadius * exitRadius
                 });
             }
 

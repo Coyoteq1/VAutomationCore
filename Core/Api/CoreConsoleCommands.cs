@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.Entities;
 using VampireCommandFramework;
+using VAuto.Core.Services;
 using VAutomationCore.Core;
 
 namespace VAutomationCore.Core.Api
@@ -39,6 +40,8 @@ namespace VAutomationCore.Core.Api
             ctx.Reply("  .coreauth login dev <password>");
             ctx.Reply("  .coreauth status");
             ctx.Reply("  .coreauth logout");
+            ctx.Reply("  .coreauth profile");
+            ctx.Reply("  .coreauth action <enter|exit|isin|start> [zoneId] [enableUnlock]");
         }
 
         [Command("login admin", shortHand: "la", description: "Authenticate as Admin role", adminOnly: false)]
@@ -91,6 +94,77 @@ namespace VAutomationCore.Core.Api
             ConsoleRoleAuthService.Revoke(subjectId);
             JobFlowSessionStore.Remove(subjectId);
             ctx.Reply("[CoreAuth] Session revoked.");
+        }
+
+        [Command("profile", shortHand: "p", description: "Show sandbox profile status for current player", adminOnly: false)]
+        public static void Profile(ChatCommandContext ctx)
+        {
+            if (!RequireAdminOrConsole(ctx))
+            {
+                return;
+            }
+
+            var subjectId = ResolveSubjectId(ctx);
+            var active = ConsoleRoleAuthService.IsAuthorized(
+                subjectId,
+                ConsoleRoleAuthService.ConsoleRole.None,
+                out var remaining,
+                out var role);
+
+            var (activeBaselines, pendingContexts, activeDeltas, dirty) = DebugEventBridge.GetSnapshotCounts();
+            var (zoneId, rowCount, capturedUtc) = DebugEventBridge.GetBaselineInfo(subjectId);
+            var hasBaseline = DebugEventBridge.HasActiveBaseline(subjectId);
+
+            var roleText = active && role != ConsoleRoleAuthService.ConsoleRole.None
+                ? $"{role} ({Math.Max(0d, remaining.TotalSeconds):F0}s)"
+                : "None";
+            var baselineText = hasBaseline
+                ? $"yes zone='{zoneId ?? "?"}' rows={rowCount} at={capturedUtc:O}"
+                : "no";
+
+            ctx.Reply($"[CoreAuth] Profile subject={subjectId} role={roleText} baseline={baselineText} snapshots(active={activeBaselines}, pending={pendingContexts}, deltas={activeDeltas}, dirty={dirty})");
+        }
+
+        [Command("action", shortHand: "a", description: "Run DebugEventBridge action for current player entity", adminOnly: false)]
+        public static void Action(ChatCommandContext ctx, string mode, string zoneId = "manual", bool enableUnlock = true)
+        {
+            if (!RequireAdminOrConsole(ctx))
+            {
+                return;
+            }
+
+            if (!TryGetSenderCharacterEntity(ctx, out var senderCharacter) || senderCharacter == Entity.Null)
+            {
+                ctx.Reply("[CoreAuth] Character entity unavailable. Run from player chat context.");
+                return;
+            }
+
+            var token = (mode ?? string.Empty).Trim().ToLowerInvariant();
+            var zid = string.IsNullOrWhiteSpace(zoneId) ? "manual" : zoneId.Trim();
+
+            switch (token)
+            {
+                case "enter":
+                    DebugEventBridge.OnPlayerEnter(senderCharacter, zid, enableUnlock);
+                    ctx.Reply($"[CoreAuth] DebugEvent action enter applied (zone='{zid}', unlock={enableUnlock}).");
+                    return;
+                case "exit":
+                    DebugEventBridge.OnPlayerExit(senderCharacter, zid, enableUnlock);
+                    ctx.Reply($"[CoreAuth] DebugEvent action exit applied (zone='{zid}', unlock={enableUnlock}).");
+                    return;
+                case "isin":
+                case "in":
+                    DebugEventBridge.OnPlayerIsInZone(senderCharacter, zid, enableUnlock);
+                    ctx.Reply($"[CoreAuth] DebugEvent action isin applied (zone='{zid}', unlock={enableUnlock}).");
+                    return;
+                case "start":
+                    DebugEventBridge.OnZoneEnterStart(senderCharacter, zid, enableUnlock);
+                    ctx.Reply($"[CoreAuth] DebugEvent action start applied (zone='{zid}', unlock={enableUnlock}).");
+                    return;
+                default:
+                    ctx.Reply("[CoreAuth] Usage: .coreauth action <enter|exit|isin|start> [zoneId] [enableUnlock]");
+                    return;
+            }
         }
 
         private static void Login(ChatCommandContext ctx, string password, ConsoleRoleAuthService.ConsoleRole role)

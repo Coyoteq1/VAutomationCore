@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using VAutomationCore.Core.ECS;
 using Unity.Entities;
 using VAutomationCore.Core.Events;
 using VAutomationCore.Models;
@@ -139,6 +140,18 @@ namespace VAutomationCore.Services
             }
         }
 
+        public static Core.ECS.Components.EcsPlayerZoneState GetPlayerZoneComponentState(Entity player)
+        {
+            var modelState = GetPlayerZoneState(player);
+            return ZoneStateMapper.ToComponent(modelState, Core.ECS.ZoneHashUtility.GetZoneHash);
+        }
+
+        public static void UpdateFromComponentState(Entity player, Core.ECS.Components.EcsPlayerZoneState state)
+        {
+            var model = ZoneStateMapper.ToModel(state, Core.ECS.ZoneHashUtility.GetZoneId);
+            UpdatePlayerZoneState(player, model);
+        }
+
         private static void EnsureInitialized()
         {
             if (_initialized)
@@ -170,3 +183,4 @@ namespace VAutomationCore.Services
         }
     }
 }
+

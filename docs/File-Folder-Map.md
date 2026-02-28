@@ -41,8 +41,8 @@ Quick map of important code and docs paths.
   - main usage doc (entry point)
 - `docs/Lifecycle-Snapshot-Usage.md`:
   - lifecycle snapshot flow and troubleshooting
-- `docs/Command-Cheat-Sheet.md`:
-  - operator/developer commands
+- `docs/api/Command-API.md`:
+  - operator/developer command reference
 - `docs/Lifecycle-Config-Reference.md`:
   - lifecycle config schema and keys
 - `docs/api/*.md`:

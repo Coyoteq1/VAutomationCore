@@ -92,14 +92,15 @@ namespace VAuto.Zone.Services
                 Name = "arena_default",
                 Entities = new List<TemplateEntityEntry>
                 {
+                    // Center ring - all bosses at ~7 units radius facing center
                     CreateEntry("CHAR_Vampire_Dracula_VBlood", -327335305, 0f, 0f, 0f, 0f),
-                    CreateEntry("CHAR_Vampire_HighLord_VBlood", -496360395, 10f, 0f, 0f, 180f),
-                    CreateEntry("CHAR_Vampire_BloodKnight_VBlood", 495971434, -10f, 0f, 0f, 0f),
-                    CreateEntry("CHAR_Winter_Yeti_VBlood", -1347412392, 0f, 0f, 10f, 180f),
-                    CreateEntry("CHAR_Wendigo_VBlood", 24378719, 0f, 0f, -10f, 0f),
-                    CreateEntry("CHAR_Spider_Queen_VBlood", -548489519, 14f, 0f, 14f, 225f),
-                    CreateEntry("CHAR_VHunter_Leader_VBlood", -1449631170, -14f, 0f, 14f, 135f),
-                    CreateEntry("CHAR_Bandit_Stalker_VBlood", 1106149033, 14f, 0f, -14f, 315f)
+                    CreateEntry("CHAR_Vampire_HighLord_VBlood", -496360395, 7f, 0f, 0f, 180f),
+                    CreateEntry("CHAR_Vampire_BloodKnight_VBlood", 495971434, -7f, 0f, 0f, 0f),
+                    CreateEntry("CHAR_Winter_Yeti_VBlood", -1347412392, 0f, 0f, 7f, 180f),
+                    CreateEntry("CHAR_Wendigo_VBlood", 24378719, 0f, 0f, -7f, 0f),
+                    CreateEntry("CHAR_Spider_Queen_VBlood", -548489519, 5f, 0f, 5f, 225f),
+                    CreateEntry("CHAR_VHunter_Leader_VBlood", -1449631170, -5f, 0f, 5f, 135f),
+                    CreateEntry("CHAR_Bandit_Stalker_VBlood", 1106149033, 5f, 0f, -5f, 315f)
                 }
             };
         }

@@ -349,12 +349,32 @@ namespace VAuto.Zone.Services
 
                 TrackPlayerPlatform(player, platformId);
 
-                // Always clear current loadout on enter before applying zone kit/build.
-                // Snapshot capture (if enabled) has already occurred in caller flow.
-                TryClearPlayerState(player, em);
-
                 if (LegacyKitsDisabled)
                 {
+                    if (Plugin.KitRestoreOnExitValue)
+                    {
+                        // Capture snapshot before any loadout mutations and avoid overwriting
+                        // a snapshot already captured by lifecycle flow.
+                        if (!_snapshotCapturedByPlayer.ContainsKey(platformId))
+                        {
+                            if (PlayerSnapshotService.TryGetSnapshot(player, out _))
+                            {
+                                _snapshotCapturedByPlayer[platformId] = true;
+                            }
+                            else if (PlayerSnapshotService.SaveSnapshot(player, out var snapshotError))
+                            {
+                                _snapshotCapturedByPlayer[platformId] = true;
+                            }
+                            else
+                            {
+                                _log.LogWarning($"[KitService] Snapshot save failed for player={platformId}: {snapshotError}");
+                            }
+                        }
+                    }
+
+                    // Always clear current loadout on enter before applying zone build.
+                    TryClearPlayerState(player, em);
+
                     if (ArenaBuildExecutor.TryGiveBuildForZone(zoneId, platformId, player, em, out var msg))
                     {
                         _log.LogInfo($"[KitService] ArenaBuild applied for zone '{zoneId}' to player={platformId}. {msg}");
@@ -407,7 +427,12 @@ namespace VAuto.Zone.Services
                 {
                     if (!_snapshotCapturedByPlayer.ContainsKey(platformId))
                     {
-                        if (PlayerSnapshotService.SaveSnapshot(player, out var snapshotError))
+                        // If lifecycle already captured it, keep that snapshot and only set tracking.
+                        if (PlayerSnapshotService.TryGetSnapshot(player, out _))
+                        {
+                            _snapshotCapturedByPlayer[platformId] = true;
+                        }
+                        else if (PlayerSnapshotService.SaveSnapshot(player, out var snapshotError))
                         {
                             _snapshotCapturedByPlayer[platformId] = true;
                         }
@@ -417,6 +442,9 @@ namespace VAuto.Zone.Services
                         }
                     }
                 }
+
+                // Always clear current loadout on enter before applying zone kit/build.
+                TryClearPlayerState(player, em);
 
                 var spawnedCount = 0;
                 foreach (var item in kit.Items)
@@ -1044,22 +1072,7 @@ namespace VAuto.Zone.Services
             {
                 var rootDir = Path.Combine(Paths.ConfigPath, "Bluelock");
                 Directory.CreateDirectory(rootDir);
-
-                var rootPath = Path.Combine(rootDir, "VAuto.Kits.json");
-                var legacyPath = Path.Combine(rootDir, "config", "VAuto.Kits.json");
-                try
-                {
-                    if (!File.Exists(rootPath) && File.Exists(legacyPath))
-                    {
-                        File.Copy(legacyPath, rootPath, overwrite: false);
-                    }
-                }
-                catch
-                {
-                    // Best-effort migration.
-                }
-
-                return rootPath;
+                return Path.Combine(rootDir, "VAuto.Kits.json");
             }
 
             if (Path.IsPathRooted(configured))

@@ -26,6 +26,11 @@
       <Private>true</Private>
     </Reference>
   </ItemGroup>
+  <ItemGroup Condition="'$(VAutoServerInteropPath)' != ''">
+    <None Include="$(VAutoServerInteropPath)Unity.Mathematics.dll" Link="Unity.Mathematics.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(VAutoServerInteropPath)Unity.Collections.dll" Link="Unity.Collections.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="$(VAutoServerInteropPath)Unity.Entities.dll" Link="Unity.Entities.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
@@ -42,6 +47,9 @@
     </Compile>
     <Compile Include="..\..\Bluelock\Models\ZoneBorderConfig.cs">
       <Link>ZoneBorderConfig.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Bluelock\Core\LifecycleActionToken.cs">
+      <Link>LifecycleActionToken.cs</Link>
     </Compile>
   </ItemGroup>
 

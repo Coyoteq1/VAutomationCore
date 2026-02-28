@@ -1,51 +1,29 @@
-﻿using Unity.Collections;
-using Unity.Entities;
 using VAuto.Zone.Services;
-using VAutomationCore.Core.ECS;
-using VAutomationCore.Core.ECS.Components;
+using VAutomationCore.Core.Lifecycle;
 
 namespace VAuto.Zone.Systems
 {
-    public class ZoneTemplateLifecycleSystem : SystemBase
+    /// <summary>
+    /// Template transition handler invoked by <see cref="ZoneTransitionRouterSystem"/>.
+    /// This is intentionally not an ECS system to ensure ZoneTransitionEvent has a single consumer.
+    /// </summary>
+    public static class ZoneTemplateLifecycleSystem
     {
-        private EntityQuery _transitionQuery;
-
-        protected override void OnCreate()
+        public static LifecycleExecutionResult ApplyTransition(ZoneTransitionEnvelope transition)
         {
-            _transitionQuery = GetEntityQuery(ComponentType.ReadOnly<ZoneTransitionEvent>());
-            RequireForUpdate<ZoneTransitionEvent>();
-        }
+            var em = transition.EntityManager;
 
-        protected override void OnUpdate()
-        {
-            var em = EntityManager;
-            var events = _transitionQuery.ToEntityArray(Allocator.Temp);
-
-            try
+            if (transition.OldZoneHash != 0)
             {
-                foreach (var evtEntity in events)
-                {
-                    var evt = em.GetComponentData<ZoneTransitionEvent>(evtEntity);
-
-                    if (evt.OldZoneHash != 0)
-                    {
-                        var oldZoneId = ZoneHashUtility.GetZoneId(evt.OldZoneHash);
-                        ZoneTemplateService.ClearAllZoneTemplates(oldZoneId, em);
-                    }
-
-                    if (evt.NewZoneHash != 0)
-                    {
-                        var newZoneId = ZoneHashUtility.GetZoneId(evt.NewZoneHash);
-                        ZoneTemplateService.SpawnAllZoneTemplates(newZoneId, em);
-                    }
-
-                    em.DestroyEntity(evtEntity);
-                }
+                ZoneTemplateService.ClearAllZoneTemplates(transition.OldZoneId, em);
             }
-            finally
+
+            if (transition.NewZoneHash != 0)
             {
-                events.Dispose();
+                ZoneTemplateService.SpawnAllZoneTemplates(transition.NewZoneId, em);
             }
+
+            return LifecycleExecutionResult.Ok();
         }
     }
 }

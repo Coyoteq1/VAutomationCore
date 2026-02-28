@@ -13,7 +13,7 @@ namespace VAuto.Extensions
     public static class ECSExtensions
     {
         /// <summary>
-        /// Unsafe raw component read (matches KindredExtract signature)
+        /// Unsafe raw component read (compatibility extractor signature)
         /// </summary>
         public unsafe static T Read<T>(this Entity entity) where T : struct
         {
@@ -26,7 +26,7 @@ namespace VAuto.Extensions
         }
 
         /// <summary>
-        /// Unsafe raw component write (matches KindredExtract signature)
+        /// Unsafe raw component write (compatibility extractor signature)
         /// </summary>
         public unsafe static void Write<T>(this Entity entity, T componentData) where T : struct
         {
@@ -41,7 +41,7 @@ namespace VAuto.Extensions
         }
 
         /// <summary>
-        /// Check if entity has component (matches KindredExtract signature)
+        /// Check if entity has component (compatibility extractor signature)
         /// </summary>
         public static bool Has<T>(this Entity entity)
         {
@@ -50,7 +50,7 @@ namespace VAuto.Extensions
         }
 
         /// <summary>
-        /// Add component to entity (matches KindredExtract signature)
+        /// Add component to entity (compatibility extractor signature)
         /// </summary>
         public static void Add<T>(this Entity entity)
         {
@@ -59,7 +59,7 @@ namespace VAuto.Extensions
         }
 
         /// <summary>
-        /// Remove component from entity (matches KindredExtract signature)
+        /// Remove component from entity (compatibility extractor signature)
         /// </summary>
         public static void Remove<T>(this Entity entity)
         {
@@ -68,7 +68,7 @@ namespace VAuto.Extensions
         }
 
         /// <summary>
-        /// Get prefab name from PrefabGUID (matches KindredExtract signature)
+        /// Get prefab name from PrefabGUID (compatibility extractor signature)
         /// </summary>
         public static string LookupName(this PrefabGUID prefabGuid)
         {

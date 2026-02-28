@@ -7,7 +7,7 @@ This guide explains how to use the core framework in practical sections:
 - Snapshot/debug workflows
 - API surfaces
 - Lifecycle snapshot operations
-- Command cheat sheet
+- Command reference
 - Lifecycle config reference
 - File/folder map
 
@@ -121,7 +121,7 @@ Example pattern:
 
 ## 7) Command Docs
 
-- `docs/Command-Cheat-Sheet.md`
+- `docs/api/Command-API.md`
 
 ## 8) Lifecycle Config Docs
 

@@ -26,9 +26,12 @@ namespace VAuto.Zone.Services
             new float3(-800f, 0f, -500f),
             new float3(-700f, 0f, -500f)
         };
-        private const int DefaultBorderCarpetPrefabId = -1191185326; // AB_Militia_LightArrow_SpawnMinions_Summon
+        private const int DefaultBorderCarpetPrefabId = 4345235;
+        private const int DefaultGlowBuffGuidA = 4345235;
+        private const int DefaultGlowBuffGuidB = 54252435;
+        private const int DefaultGlowBuffGuidC = 65245252;
         private const int DefaultBorderMarkerPrefabId = 230163020;   // TM_Castle_ObjectDecor_TargetDummy_Vampire01
-        private const string DefaultBorderCarpetPrefabName = "AB_Militia_LightArrow_SpawnMinions_Summon";
+        private const string DefaultBorderCarpetPrefabName = "4345235";
         private const string DefaultBorderMarkerPrefabName = "TM_Castle_ObjectDecor_TargetDummy_Vampire01";
         private const float DefaultBorderSpacing = 3f;
         private const float DefaultBorderHeightOffset = 0f;
@@ -44,22 +47,7 @@ namespace VAuto.Zone.Services
         {
             var rootDir = Path.Combine(Paths.ConfigPath, "Bluelock");
             Directory.CreateDirectory(rootDir);
-
-            var rootPath = Path.Combine(rootDir, "VAuto.Zones.json");
-            var legacyPath = Path.Combine(rootDir, "config", "VAuto.Zones.json");
-            try
-            {
-                if (!File.Exists(rootPath) && File.Exists(legacyPath))
-                {
-                    File.Copy(legacyPath, rootPath, overwrite: false);
-                }
-            }
-            catch
-            {
-                // Best-effort migration.
-            }
-
-            return rootPath;
+            return Path.Combine(rootDir, "VAuto.Zones.json");
         }
 
         private static JsonSerializerOptions CreateZoneSerializerOptions(bool writeIndented = false)
@@ -664,10 +652,10 @@ namespace VAuto.Zone.Services
                         "AB_Vampire_VeilOfBones_AbilityGroup"
                     },
                     GlowEffectColorHex = "#FFD700",
-                    GlowPrefabId = DefaultBorderCarpetPrefabId,
-                    GlowPrefab = DefaultBorderCarpetPrefabName,
-                    GlowTilePrefabId = DefaultBorderCarpetPrefabId,
-                    GlowTilePrefab = DefaultBorderCarpetPrefabName,
+                    GlowPrefabId = DefaultGlowBuffGuidA,
+                    GlowPrefab = DefaultGlowBuffGuidA.ToString(),
+                    GlowTilePrefabId = DefaultGlowBuffGuidA,
+                    GlowTilePrefab = DefaultGlowBuffGuidA.ToString(),
                     GlowTileSpacing = DefaultGlowTileSpacing,
                     GlowTileHeightOffset = DefaultGlowTileHeightOffset,
                     GlowTileRotationDegrees = 0f,

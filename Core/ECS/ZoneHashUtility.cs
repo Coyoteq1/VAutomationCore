@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using Unity.Mathematics;
 
 namespace VAutomationCore.Core.ECS
@@ -20,9 +21,27 @@ namespace VAutomationCore.Core.ECS
         {
             if (string.IsNullOrEmpty(zoneId)) return 0;
             if (ZoneIdToHash.TryGetValue(zoneId, out var hash)) return hash;
-            hash = zoneId.GetHashCode();
-            ZoneIdToHash[zoneId] = hash;
-            HashToZoneId[hash] = zoneId;
+
+            hash = ComputeStableHash(zoneId);
+            if (hash == 0)
+            {
+                hash = 1;
+            }
+
+            var normalizedZoneId = zoneId.Trim();
+            while (HashToZoneId.TryGetValue(hash, out var existing) &&
+                   !string.Equals(existing, normalizedZoneId, System.StringComparison.Ordinal))
+            {
+                // Resolve collisions deterministically by re-hashing with a numeric salt.
+                hash = ComputeStableHash(normalizedZoneId + "#" + hash);
+                if (hash == 0)
+                {
+                    hash = 1;
+                }
+            }
+
+            ZoneIdToHash[normalizedZoneId] = hash;
+            HashToZoneId[hash] = normalizedZoneId;
             return hash;
         }
 
@@ -47,6 +66,22 @@ namespace VAutomationCore.Core.ECS
             var centerA = GetZoneCenter(hashA);
             var centerB = GetZoneCenter(hashB);
             return math.distancesq(centerA, centerB) < 0.01f;
+        }
+
+        private static int ComputeStableHash(string value)
+        {
+            const uint offsetBasis = 2166136261;
+            const uint prime = 16777619;
+
+            var bytes = Encoding.UTF8.GetBytes((value ?? string.Empty).Trim().ToLowerInvariant());
+            uint hash = offsetBasis;
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                hash ^= bytes[i];
+                hash *= prime;
+            }
+
+            return unchecked((int)hash);
         }
     }
 }

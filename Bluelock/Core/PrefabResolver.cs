@@ -111,7 +111,7 @@ namespace VAuto.Zone.Core
                 }
 
                 LoadPrefabsRef();
-                LoadLegacyAbilityAliases();
+                // Legacy ability_prefabs.json parser intentionally disabled.
                 LoadGuidNameLookup();
                 _loaded = true;
             }
@@ -387,33 +387,7 @@ namespace VAuto.Zone.Core
 
         private static void LoadLegacyAbilityAliases()
         {
-            try
-            {
-                if (!File.Exists(AbilityPrefabsPath))
-                {
-                    return;
-                }
-
-                var json = File.ReadAllText(AbilityPrefabsPath);
-                var legacy = JsonSerializer.Deserialize<LegacyAbilityAliasConfig>(json, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                if (legacy?.Aliases == null || legacy.Aliases.Count == 0)
-                {
-                    return;
-                }
-
-                foreach (var kvp in legacy.Aliases)
-                {
-                    AddAlias(kvp.Key, kvp.Value, "[ability_prefabs]");
-                }
-            }
-            catch (Exception ex)
-            {
-                ZoneCore.LogWarning($"[PrefabResolver] Failed to load legacy ability aliases: {ex.Message}");
-            }
+            // Legacy ability_prefabs.json parser removed.
         }
 
         private static void AddAlias(string alias, string target, string sourceTag)

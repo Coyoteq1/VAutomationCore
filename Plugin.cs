@@ -11,10 +11,9 @@ using VAutomationCore.Core.Api;
 
 namespace VAutomationCore
 {
-    [BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]
+    [BepInPlugin("gg.coyote.VAutomationCore", "VAutomationCore", "1.0.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
-    [BepInProcess("VRising.exe")]
     public class Plugin : BasePlugin
     {
         private const string ConfigFileName = "gg.coyote.VAutomationCore.cfg";

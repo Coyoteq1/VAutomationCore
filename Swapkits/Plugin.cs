@@ -14,7 +14,7 @@ using VAutomationCore.Core.Logging;
 using ExtraSlots.Systems;
 using ExtraSlots.Models;
 
-[BepInPlugin(ExtraSlots.MyPluginInfo.GUID, ExtraSlots.MyPluginInfo.NAME, ExtraSlots.MyPluginInfo.VERSION)]
+[BepInPlugin("gg.coyote.ExtraSlots", "ExtraSlots", "1.0.1")]
 [BepInDependency("gg.coyote.VAutomationCore", "1.0.1")]
 [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
 [BepInDependency("gg.coyote.lifecycle", "1.0.1")]

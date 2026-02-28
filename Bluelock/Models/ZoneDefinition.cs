@@ -67,6 +67,11 @@ namespace VAuto.Zone.Models
         public string FlowId { get; set; } = "ZoneDefault";
 
         /// <summary>
+        /// Higher priority zones are evaluated first when overlaps exist.
+        /// </summary>
+        public int Priority { get; set; }
+
+        /// <summary>
         /// Fallback flow when <see cref="FlowId"/> cannot be resolved.
         /// </summary>
         public string FlowFallback { get; set; } = "ZoneDefault";

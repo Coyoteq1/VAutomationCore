@@ -6,7 +6,7 @@ using VAutomationCore.Core.Unified;
 using VAuto.Zone.Systems;
 using VAuto.Zone.Services;
 
-namespace Bluelock.Commands.Core
+namespace VAuto.Zone.Commands
 {
     [CommandGroup("arena", "ar")]
     public static class ArenaEcsCommands

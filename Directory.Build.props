@@ -5,6 +5,9 @@
     <VAutoServerInteropPath Condition="'$(VAutoServerInteropPath)' != '' and !HasTrailingSlash('$(VAutoServerInteropPath)')">$(VAutoServerInteropPath)\</VAutoServerInteropPath>
     <VAutoServerCorePath Condition="'$(VAutoServerCorePath)' == '' and Exists('$(VAutoServerRoot)\core\')">$(VAutoServerRoot)\core\</VAutoServerCorePath>
     <VAutoServerCorePath Condition="'$(VAutoServerCorePath)' != '' and !HasTrailingSlash('$(VAutoServerCorePath)')">$(VAutoServerCorePath)\</VAutoServerCorePath>
+    <BepInExPluginsPath Condition="'$(BepInExPluginsPath)' == '' and '$(VAutoServerRoot)' != ''">$(VAutoServerRoot)\plugins</BepInExPluginsPath>
+    <BepInExConfigPath Condition="'$(BepInExConfigPath)' == '' and '$(VAutoServerRoot)' != ''">$(VAutoServerRoot)\config</BepInExConfigPath>
+    <DeployToServer Condition="'$(DeployToServer)' == ''">false</DeployToServer>
   </PropertyGroup>
   <ItemGroup Condition="'$(VAutoServerInteropPath)' != ''">
     <Reference Include="Backtrace.Unity" HintPath="$(VAutoServerInteropPath)Backtrace.Unity.dll" Condition="Exists('$(VAutoServerInteropPath)Backtrace.Unity.dll')" />
