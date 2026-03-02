@@ -1,5 +1,5 @@
 VAutomationCore — V Rising Server Modding Engine Framework 
-A collection of BepInEx plugins for V Rising dedicated servers providing zone-based arenas, sandbox ability testing, template-driven structures, and lifecycle-controlled player state management — all without touching world progression.
+A collection of BepInEx plugins for V Rising dedicated servers providing zone-based arenas, sandbox ability testing, template-driven structures, and lifecycle-controlled player state management boss pv3 ,pv4pv5 — all without touching world progression.
 
 ---
 
