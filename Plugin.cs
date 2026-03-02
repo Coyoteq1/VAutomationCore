@@ -57,8 +57,20 @@ namespace VAutomationCore
             {
                 if (_harmony != null)
                 {
+<<<<<<< Updated upstream
                     var unpatchAll = typeof(Harmony).GetMethod("UnpatchAll", new[] { typeof(string) });
                     unpatchAll?.Invoke(_harmony, new object[] { MyPluginInfo.GUID });
+=======
+                    _harmony.UnpatchSelf();
+                    _harmony = null;
+                }
+
+                if (_configFile != null)
+                {
+                    _configFile.Save();
+                    _configFile = null;
+                    _configEnabled = null;
+>>>>>>> Stashed changes
                 }
             }
             catch (Exception ex)

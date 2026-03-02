@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Glow Auto-Rotation Configuration",
+  "description": "Configuration for auto-rotation of glow effects",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version"
+    },
+    "globalRotationEnabled": {
+      "type": "boolean",
+      "description": "Whether global auto-rotation is enabled"
+    },
+    "globalRotationIntervalMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Global rotation interval in minutes"
+    },
+    "zoneOverrides": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether rotation is enabled for this zone"
+          },
+          "intervalMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Rotation interval for this zone in minutes"
+          },
+          "glowTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Names of glow types to use for this zone"
+            },
+            "minItems": 1
+          },
+          "presetName": {
+            "type": "string",
+            "description": "Name of preset to use for this zone"
+          }
+        },
+        "required": ["enabled", "intervalMinutes"]
+      }
+    }
+  },
+  "required": ["version", "globalRotationEnabled", "globalRotationIntervalMinutes", "zoneOverrides"]
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Glow Types Configuration",
+  "description": "Configuration for glow types used in the zone glow system",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version"
+    },
+    "glowTypes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name of the glow type"
+          },
+          "prefabGuid": {
+            "type": "integer",
+            "description": "Prefab GUID hash for the glow effect"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the glow effect"
+          },
+          "color": {
+            "type": "object",
+            "properties": {
+              "r": { "type": "number", "minimum": 0, "maximum": 1 },
+              "g": { "type": "number", "minimum": 0, "maximum": 1 },
+              "b": { "type": "number", "minimum": 0, "maximum": 1 },
+              "a": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "required": ["r", "g", "b", "a"]
+          }
+        },
+        "required": ["name", "prefabGuid", "description", "color"]
+      }
+    }
+  },
+  "required": ["version", "glowTypes"]
+}

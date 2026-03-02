@@ -1,0 +1,117 @@
+# VAutomationCore License Agreement
+
+## Copyright Notice
+
+Copyright (c) 2024-2026 CoyoteQ1 /All Rights Reserved.
+
+## VAutomationCore
+ Proprietary License - Strict Rights Reserved
+
+This software, including but not limited to source code, compiled binaries, documentation, 
+and associated materials (collectively, the "Software"), is proprietary and confidential 
+to the author(s) and is protected by copyright laws and international treaties.
+
+## Permitted Use
+
+You are granted a limited, non-exclusive, non-transferable license to:
+
+1. **Use** the Software for personal, non-commercial purposes
+2. **Modify** the Software for your own internal use
+3. **Integrate** the Software into your own projects with attribution
+
+## Prohibited Activities
+
+You may NOT:
+
+1. **Redistribute** the Software or any derivative works in any form
+2. **Publish** the Software or its modifications publicly
+3. **Sell** the Software or include it in commercial products
+4. **Remove** or alter copyright notices or this license agreement
+5. **Reverse engineer** except as permitted by applicable law
+6. **Sublicense** the Software to third parties
+7. **Use** the Software for any illegal purpose
+
+## Attribution Requirements
+
+If you use this Software, you must:
+
+1. Include the original copyright notice
+2. Provide attribution to the author(s)
+3. Include a link to the original repository
+
+## Disclaimer of Warranty
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+## Limitation of Liability
+
+IN NO EVENT SHALL THE AUTHOR(S) OR COPYRIGHT HOLDERS BE LIABLE FOR ANY DIRECT, 
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY 
+OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
+OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED 
+OF THE POSSIBILITY OF SUCH DAMAGE.
+
+## Third-Party Components
+
+This Software may include third-party components under separate license terms. 
+Use of third-party components is subject to their respective licenses.
+
+## Termination
+
+This license is effective until terminated. It will terminate automatically without 
+notice if you fail to comply with any provision of this license.
+
+## Governing Law
+
+This license shall be governed by and construed in accordance with the laws of 
+the jurisdiction in which the author(s) reside, without regard to conflict of 
+law provisions.
+
+## Contact Information
+
+For licensing inquiries, please contact the author(s):
+- Discord: V Rising Mods Community
+- GitHub: https://github.com/Coyoteq1/D-VAutomationCore-VAutomationCore
+
+---
+
+## Additional Terms for Modding Community
+
+### Mod Usage
+
+This Software is designed for use with the game "V Rising". Modifications and 
+extensions created using this Software:
+
+1. Must not violate the game's End User License Agreement (EULA)
+2. Must not interfere with game anti-cheat systems
+3. Should respect the game's community guidelines
+4. May be shared privately within the modding community with attribution
+
+### Server Operators
+
+Server operators may:
+1. Use this Software on their servers
+2. Configure and customize for their community
+3. Create custom modifications for their specific needs
+
+Server operators may NOT:
+1. Sell access to servers using this Software
+2. Claim ownership of the Software
+3. Distribute modified versions publicly
+
+### Commercial Licensing
+
+For commercial use cases not covered by this license, contact the author(s) to 
+negotiate a separate commercial license agreement.
+
+---
+
+**By using this Software, you acknowledge that you have read, understood, and agree 
+to be bound by the terms and conditions of this license agreement.**

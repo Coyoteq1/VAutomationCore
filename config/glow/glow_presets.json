@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Glow Presets Configuration",
+  "description": "Configuration for glow presets used in the zone glow system",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version"
+    },
+    "presets": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name of the preset"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the preset"
+          },
+          "spacing": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Distance between glow entities"
+          },
+          "heightOffset": {
+            "type": "number",
+            "description": "Vertical offset for glow entities"
+          },
+          "glowTypes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Names of glow types to use in this preset"
+            },
+            "minItems": 1
+          },
+          "autoRotate": {
+            "type": "boolean",
+            "description": "Whether to auto-rotate glow effects"
+          },
+          "rotationIntervalMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rotation interval in minutes (0 = no rotation)"
+          }
+        },
+        "required": ["name", "description", "spacing", "heightOffset", "glowTypes", "autoRotate", "rotationIntervalMinutes"]
+      }
+    }
+  },
+  "required": ["version", "presets"]
+}

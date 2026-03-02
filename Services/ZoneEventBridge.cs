@@ -139,6 +139,26 @@ namespace VAutomationCore.Services
             }
         }
 
+<<<<<<< Updated upstream
+=======
+        public static void RemovePlayerState(Entity player)
+        {
+            RemovePlayerZoneState(player);
+        }
+
+        public static Core.ECS.Components.EcsPlayerZoneState GetPlayerZoneComponentState(Entity player)
+        {
+            var modelState = GetPlayerZoneState(player);
+            return ZoneStateMapper.ToComponent(modelState, Core.ECS.ZoneHashUtility.GetZoneHash);
+        }
+
+        public static void UpdateFromComponentState(Entity player, Core.ECS.Components.EcsPlayerZoneState state)
+        {
+            var model = ZoneStateMapper.ToModel(state, Core.ECS.ZoneHashUtility.GetZoneId);
+            UpdatePlayerZoneState(player, model);
+        }
+
+>>>>>>> Stashed changes
         private static void EnsureInitialized()
         {
             if (_initialized)

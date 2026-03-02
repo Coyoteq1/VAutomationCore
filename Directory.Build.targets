@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <AutoDeployScriptPath>$(MSBuildThisFileDirectory)tools\auto-deploy.ps1</AutoDeployScriptPath>
+    <AutoDeployEnabled Condition="'$(DeployToServer)' == 'true' and Exists('$(AutoDeployScriptPath)')">true</AutoDeployEnabled>
+  </PropertyGroup>
+
+  <Target Name="AutoDeployToBepInEx"
+          AfterTargets="Build"
+          Condition="'$(AutoDeployEnabled)' == 'true' and '$(IsTestProject)' != 'true' and ('$(MSBuildProjectName)' == 'VAutomationCore' or '$(MSBuildProjectName)' == 'VAutoZone' or '$(MSBuildProjectName)' == 'Vlifecycle' or '$(MSBuildProjectName)' == 'Vexil')">
+    <Message Text="[AutoDeploy] Deploying $(TargetFileName) to $(BepInExPluginsPath)" Importance="high" />
+    <Exec Command='powershell -NoProfile -ExecutionPolicy Bypass -File "&quot;$(AutoDeployScriptPath)&quot;" -SourcePath "&quot;$(TargetPath)&quot;" -DestinationDir "&quot;$(BepInExPluginsPath)&quot;" -ProjectName "$(MSBuildProjectName)"' />
+    <MakeDir Directories="$(BepInExConfigPath)\Bluelock" Condition="'$(MSBuildProjectName)' == 'VAutoZone'" />
+  </Target>
+</Project>
