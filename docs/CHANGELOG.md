@@ -2,22 +2,26 @@
 
 All notable changes to the VAutomation framework are documented here.
 
-## [Current] - Work in Progress
+## [1.1.0] - 2026-03-06
 
 ### Added
-- **Blueluck v1.0.0** - Zone management system with BossZone and ArenaZone support
-  - ECS-based zone detection system
-  - Flow system for zone enter/exit actions
+- **VAutomationCore v1.1.0** - Core library updates
+  - Enhanced automation service and sandboxing
+  - HTTP server and event scheduling
+  - Improved ECS utilities and lifecycle contracts
+  - Configuration infrastructure with JSON schema validation
+  - Feature flags and observability improvements
+  - Enhanced logging with correlation IDs
+
+- **Blueluck v1.1.0** - Zone management system
+  - ECS-based zone detection system with fallback support
+  - Complete flow system for zone enter/exit actions
   - Kit system for equipment loadouts
   - Snapshot system for progress save/restore
   - Ability loadouts (server-side buff application)
   - Boss co-op spawning service
-  - Full chat command interface
-
-- **VAutomationCore v1.0.1** - Core library updates
-  - Automation service and sandboxing
-  - HTTP server and event scheduling
-  - Enhanced ECS utilities
+  - Full chat command interface with comprehensive commands
+  - Flow validation service for runtime safety
 
 ### Chat Commands (Blueluck)
 - `zone status` / `zs` - Show zone status
@@ -53,7 +57,7 @@ All notable changes to the VAutomation framework are documented here.
 - `zone.applykit` - Apply kit to players
 - `zone.removekit` - Remove kit from players
 
-### Flow Validation Service (NEW)
+### Flow Validation Service
 - Validates prefabs before execution to prevent runtime crashes
 - Validates boss prefabs against known VBlood list
 - Validates VFX prefabs
@@ -61,3 +65,16 @@ All notable changes to the VAutomation framework are documented here.
 - Validates kit references
 - Exposes `flow validate` command for server operators
 - Includes known prefab lists for early error detection
+
+### Improved
+- Unified configuration system across all components
+- Enhanced error handling and logging
+- Better performance with optimized ECS queries
+- Improved zone detection accuracy and reliability
+- Enhanced mod compatibility and integration points
+
+## [1.0.x] - Previous Releases
+- Initial framework foundation
+- Basic zone management
+- Core ECS utilities
+- Configuration system foundation

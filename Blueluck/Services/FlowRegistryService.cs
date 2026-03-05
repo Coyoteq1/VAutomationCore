@@ -47,6 +47,9 @@ namespace Blueluck.Services
             public const string RemoveBorderFx = "zone.removeborderfx";
             public const string ApplyZoneBuff = "zone.applyzonebuff";
             public const string RemoveZoneBuff = "zone.removezonebuff";
+            public const string EnableCoop = "zone.enablecoop";
+            public const string DisableCoop = "zone.disablecoop";
+            public const string TriggerCoopEvent = "zone.triggercoop";
         }
 
         public void Initialize()
@@ -101,6 +104,9 @@ namespace Blueluck.Services
                 FlowService.RegisterActionAlias(FlowActions.RemoveBorderFx, "RemoveBorderFx", replace: true);
                 FlowService.RegisterActionAlias(FlowActions.ApplyZoneBuff, "ApplyZoneBuff", replace: true);
                 FlowService.RegisterActionAlias(FlowActions.RemoveZoneBuff, "RemoveZoneBuff", replace: true);
+                FlowService.RegisterActionAlias(FlowActions.EnableCoop, "EnableCoop", replace: true);
+                FlowService.RegisterActionAlias(FlowActions.DisableCoop, "DisableCoop", replace: true);
+                FlowService.RegisterActionAlias(FlowActions.TriggerCoopEvent, "TriggerCoopEvent", replace: true);
 
                 _log.LogInfo("[FlowRegistry] Registered essential action aliases.");
             }
@@ -167,6 +173,12 @@ namespace Blueluck.Services
             if (string.IsNullOrEmpty(flowId))
                 return;
 
+            if (player == Entity.Null)
+            {
+                _log.LogWarning($"[FlowRegistry] ExecuteFlow called with null player for flow: {flowId}");
+                return;
+            }
+
             if (!_flows.TryGetValue(flowId, out var actions))
             {
                 _log.LogWarning($"[FlowRegistry] Flow not found: {flowId}");
@@ -185,11 +197,21 @@ namespace Blueluck.Services
         // when no explicit FlowOnEnter/FlowOnExit is configured on the zone).
         public void SetPvp(Entity player, bool enabled, int zoneHash = 0)
         {
+            if (player == Entity.Null)
+            {
+                _log.LogWarning("[FlowRegistry] SetPvp called with null player");
+                return;
+            }
             HandleSetPvp(new FlowAction { Action = FlowActions.SetPvp, Value = enabled }, player, zoneHash);
         }
 
         public void SendMessage(Entity player, string message, int zoneHash = 0)
         {
+            if (player == Entity.Null)
+            {
+                _log.LogWarning("[FlowRegistry] SendMessage called with null player");
+                return;
+            }
             if (string.IsNullOrWhiteSpace(message))
                 return;
 
@@ -198,6 +220,11 @@ namespace Blueluck.Services
 
         public void ApplyBorderFx(Entity player, int zoneHash, string vfxPrefab, float radius, int segments)
         {
+            if (player == Entity.Null)
+            {
+                _log.LogWarning("[FlowRegistry] ApplyBorderFx called with null player");
+                return;
+            }
             HandleApplyBorderFx(new FlowAction
             {
                 Action = FlowActions.ApplyBorderFx,
@@ -214,6 +241,12 @@ namespace Blueluck.Services
 
         public bool EnsureBosses(Entity player, int zoneHash, string bossPrefab, int quantity = 1, bool randomInZone = true, float3? position = null)
         {
+            if (player == Entity.Null)
+            {
+                _log.LogWarning("[FlowRegistry] EnsureBosses called with null player");
+                return false;
+            }
+
             if (string.IsNullOrWhiteSpace(bossPrefab))
                 return false;
 

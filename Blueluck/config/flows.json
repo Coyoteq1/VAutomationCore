@@ -148,6 +148,33 @@
         "ctf_exit": [
             { "action": "zone.setpvp", "value": false },
             { "action": "zone.sendmessage", "message": "🏠 CTF match ended" }
+        ],
+        "coop_enter": [
+            { "action": "zone.enablecoop", "value": true },
+            { "action": "zone.sendmessage", "message": "🤝 CO-OP ZONE: Team up with other players!" }
+        ],
+        "coop_exit": [
+            { "action": "zone.disablecoop", "value": true },
+            { "action": "zone.sendmessage", "message": "💔 CO-OP ended. Good luck!" }
+        ],
+        "coop_boss_enter": [
+            { "action": "zone.enablecoop", "value": true },
+            { "action": "zone.spawnboss", "prefab": "CHAR_Gloomrot_Purifier_VBlood", "qty": 1, "randomInZone": true },
+            { "action": "zone.sendmessage", "message": "👹 CO-OP BOSS: Team up to defeat the boss!" }
+        ],
+        "coop_boss_exit": [
+            { "action": "zone.disablecoop", "value": true },
+            { "action": "zone.removeboss" },
+            { "action": "zone.sendmessage", "message": "💀 CO-OP Boss defeated! Great teamwork!" }
+        ],
+        "coop_dungeon_enter": [
+            { "action": "zone.enablecoop", "value": true },
+            { "action": "zone.setpvp", "value": false },
+            { "action": "zone.sendmessage", "message": "🏰 CO-OP DUNGEON: Work together to survive!" }
+        ],
+        "coop_dungeon_exit": [
+            { "action": "zone.disablecoop", "value": true },
+            { "action": "zone.sendmessage", "message": "🏠 CO-OP Dungeon complete! Great teamwork!" }
         ]
     }
 }

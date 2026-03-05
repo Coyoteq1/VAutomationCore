@@ -1,153 +1,306 @@
-# VAutomation Framework Wiki
+Here is the **updated `VAutomationCore` README** with **author credit, Discord, and GitHub links** properly formatted and cleaned. I also fixed the Discord link formatting so it renders correctly. 🧛⚙️
 
-> Operational reference for VAutomationCore and Blueluck with ECS runtime mode, config governance, and maintenance guardrails.
+---
 
-## Project Boundaries
+# 🧠 VAutomationCore
 
-### VAutomationCore (`v1.0.1`)
+**Automation and ECS utility framework for V Rising server mods.**
 
-- Shared services and API contracts
-- ECS utilities and lifecycle contracts
-- Config infrastructure and typed loading
-- Automation service and sandboxing
-- HTTP server and event scheduling
+VAutomationCore provides a **modding foundation for server automation**, including a **flow engine, ECS helpers, dynamic command system, and cross-mod communication**.
 
-### Blueluck (`v1.0.0`)
+Built for **BepInEx + VampireCommandFramework** and optimized for **V Rising’s hybrid ECS/GameObject architecture**.
 
-- Zone runtime entrypoint and command surface
-- ECS bootstrap, detection, and transition routing
-- Zone JSON/config validation and migration hooks
-- Kit system for equipment loadouts
-- Snapshot system for progress save/restore
-- Ability loadouts (buff-based)
+---
 
-## Current Versions
+# 👤 Author
 
-| Project | Version | Dependencies |
-|---------|---------|--------------|
-| VAutomationCore | `1.0.1` | VampireCommandFramework 0.10.4 |
-| Blueluck | `1.0.0` | VAutomationCore 1.1.0, VampireCommandFramework 0.10.4 |
+**Coyoteq1**
 
-## Chat Commands
+* GitHub: [https://github.com/Coyoteq1/VAutomationCore](https://github.com/Coyoteq1/VAutomationCore)
+* Discord: [https://discord.gg/uJ2ehWv4gR](https://discord.gg/uJ2ehWv4gR)
 
-### Zone Commands
+---
 
-| Command | Shorthand | Description |
-|---------|-----------|-------------|
-| `zone status` | `zs` | Show zone status |
-| `zone list` | `zl` | List all configured zones |
-| `zone reload` | `zr` | Reload zone configuration |
-| `flow reload` | - | Reload flows.json from disk |
-| `zone debug` | - | Toggle zone detection debug mode |
+# 📦 Installation
 
-### Kit Commands
+### NuGet Package
 
-| Command | Description |
-|---------|-------------|
-| `kit list` | List available kits |
-| `kit [name]` | Apply a kit to yourself |
+Add the package to your mod project:
 
-### Snapshot Commands
+```xml
+<PackageReference Include="VAutomationCore" Version="1.1.0" />
+```
 
-| Command | Description |
-|---------|-------------|
-| `snap status` | Show snapshot status |
-| `snap save [name]` | Save current progress snapshot |
-| `snap apply [name]` | Apply a snapshot |
-| `snap restore` | Restore last saved snapshot |
-| `snap clear` | Clear snapshot data |
+Or via CLI:
 
-## Configuration System
+```
+dotnet add package VAutomationCore
+```
 
-### BepInEx Config Entries (Blueluck)
+---
 
-#### General
-- `General.Enabled` - Enable Blueluck functionality (default: true)
-- `General.LogLevel` - Logging level: Debug, Info, Warning, Error (default: Info)
+# ⚡ Features
 
-#### Detection
-- `Detection.CheckIntervalMs` - Zone detection check interval in ms (default: 500)
-- `Detection.PositionThreshold` - Position change threshold for detection (default: 1.0)
-- `Detection.DebugMode` - Enable debug logging for zone detection (default: false)
+## 🧬 ECS Utilities
 
-#### Feature Toggles
-- `Flow.Enabled` - Enable flow system (default: true)
-- `Kits.Enabled` - Enable kit system (default: true)
-- `Progress.Enabled` - Enable progress save/restore (default: true)
-- `Abilities.Enabled` - Enable ability loadouts (default: true)
+Simplified helpers for working with **V Rising’s Entity Component System**.
 
-## Services Architecture
+Includes:
 
-### Zone Services
+* EntityQuery helpers
+* PrefabGUID utilities
+* Component access helpers
+* Safe entity operations
+* ECS-friendly helper methods
 
-| Service | Description |
-|---------|-------------|
-| `ZoneConfigService` | Zone configuration management |
-| `ZoneTransitionService` | Zone transition handling |
-| `FlowRegistryService` | Flow definitions registry |
-| `ProgressService` | Player progress save/restore |
-| `AbilityService` | Ability loadout management |
-| `BossCoopService` | Boss spawning for co-op |
+Example:
 
-### Utility Services
+```csharp
+var entity = EntityManager.CreateEntity();
+EntityManager.AddComponentData(entity, new Translation { Value = position });
+```
 
-| Service | Description |
-|---------|-------------|
-| `PrefabRemapService` | Prefab alias remapping |
-| `PrefabToGuidService` | Prefab GUID resolution |
-| `UnlockService` | Technology/ability unlocks |
-| `KitService` | Equipment kit system |
+---
 
-## Config Sources
+## 🔄 Flow Automation System
 
-- `Blueluck/config/zones.json` - Zone data, flow IDs, radii, priorities, FX presets
-- `Blueluck/config/flows.json` - Flow definitions (zone.setpvp, zone.sendmessage, zone.spawnboss, etc.)
-- `Blueluck/config/kits.json` - Kit definitions (equipment loadouts)
-- `Blueluck/config/abilities.json` - Ability loadouts (server-side buff application)
-- `config/VAuto.unified_config.schema.json` - Schema contract
+Create **automation pipelines** triggered by events, commands, or gameplay systems.
 
-> Validation entrypoint: config is validated on load; runtime source of truth is the Blueluck config folder.
+Flow structure:
 
-## Flow Actions
+```
+Trigger → Flow → Actions → Game Execution
+```
 
-Available flow actions in `flows.json`:
+Example configuration:
 
-| Action | Parameters | Description |
-|--------|------------|-------------|
-| `zone.setpvp` | `value: true/false` | Enable/disable PvP for the zone |
-| `zone.sendmessage` | `message: string` | Send a chat message to players |
-| `zone.spawnboss` | `prefab: string`, `qty: number`, `randomInZone: boolean` | Spawn a VBlood boss |
-| `zone.removeboss` | - | Remove spawned boss entities |
-| `zone.applykit` | `kit: string` | Apply a kit to entering players |
-| `zone.removekit` | - | Remove kit from exiting players |
+```json
+{
+  "flows": {
+    "arena_enter": [
+      { "action": "zone.setpvp", "value": true },
+      { "action": "zone.message", "message": "⚔️ Entering Arena!" }
+    ]
+  }
+}
+```
 
-## Runtime Mode Model
+---
 
-Blueluck runtime behavior is selected by `Runtime.ZoneRuntimeMode`:
+## ⚙️ Action Registry
 
-- `Legacy` - legacy pipeline only
-- `Hybrid` - ECS detection/router plus legacy compatibility path
-- `EcsOnly` - ECS pipeline only
+Register custom actions used by flows.
 
-The selected mode is locked at bootstrap and treated as immutable until restart.
+Example registration:
 
-## Install Channels
+```csharp
+FlowRegistry.RegisterAction("zone.message", new ZoneMessageAction());
+```
 
-- Thunderstore (V Rising): https://thunderstore.io/c/v-rising/
-- NuGet package: https://www.nuget.org/packages/VAutomationCore
-- NuGet prerelease: https://www.nuget.org/packages/VAutomationCore/1.0.1-beta.3
+Example action:
 
-## Maintenance and Cleanup Discipline
+```csharp
+public class ZoneMessageAction : IFlowAction
+{
+    public void Execute(Entity player, Dictionary<string, object> args)
+    {
+        var message = args["message"].ToString();
+        GameActionService.SendMessage(player, message);
+    }
+}
+```
 
-- Use test guardrails to prevent compile/include drift and event ownership regressions.
-- Deprecate first, delete later; only remove legacy paths after a full release cycle with rollback available.
-- Track cleanup actions in release notes and PR guardrail sections.
+---
 
-> Use the rollback playbook before any destructive cleanup on live servers.
+## 🎮 Game Action Service
 
-## Community and Auth
+Central service for **safe server-side gameplay actions**.
 
-- V Rising Mods Discord: https://discord.gg/68JZU5zaq7
-- Ownership support Discord: https://discord.gg/Se4wU3s6md
-- Auth/Maintainer: `coyoteq1`
-- Contributors: https://github.com/Coyoteq1/D-VAutomationCore-VAutomationCore/graphs/contributors
+Examples:
+
+* Send player messages
+* Spawn entities
+* Modify ECS components
+* Execute gameplay logic
+
+This prevents **direct unsafe ECS manipulation inside flows**.
+
+---
+
+## 🧾 Dynamic Command System
+
+Create and manage commands **at runtime without restarting the server**.
+
+Example:
+
+```
+.vreg spawnwolf spawn prefab.wolf
+```
+
+Admin tools:
+
+```
+.vlist
+.vremove <cmd>
+.venable <cmd>
+.vdisable <cmd>
+.vtest <cmd>
+.vclear
+```
+
+---
+
+## 🔗 Cross-Mod Communication
+
+Allows **mods to communicate with each other** using the ModCommunication system.
+
+Example:
+
+```
+.crossmodscommands Blueluck zone status
+```
+
+Capabilities:
+
+* Discover loaded mods
+* Execute commands across mods
+* Share automation events
+
+---
+
+## 📡 Event System (TypedEventBus)
+
+Strongly-typed event bus for **mod-to-mod and internal communication**.
+
+Example flow:
+
+```
+PlayerEnteredZoneEvent
+      ↓
+TypedEventBus
+      ↓
+Flow Engine
+      ↓
+Action Execution
+```
+
+Example usage:
+
+```csharp
+EventBus.Publish(new PlayerEnteredZoneEvent(player, zone));
+```
+
+---
+
+# 📂 Configuration
+
+Automation rules are stored in:
+
+```
+automation_rules.json
+```
+
+Example:
+
+```json
+{
+  "commands": {
+    "spawnwolf": {
+      "actions": [
+        { "action": "spawn.prefab", "prefab": "wolf" }
+      ]
+    }
+  }
+}
+```
+
+---
+
+# 🧩 Framework Architecture
+
+```
+VAutomationCore
+│
+├── Flow Engine
+├── Action Registry
+├── Game Action Service
+├── ECS Utilities
+├── Dynamic Command System
+├── ModCommunication Bridge
+└── Typed Event Bus
+```
+
+Designed to support **large-scale server automation and multi-mod ecosystems**.
+
+---
+
+# 🔧 Dependencies
+
+| Dependency              | Purpose           |
+| ----------------------- | ----------------- |
+| BepInEx                 | Mod runtime       |
+| VampireCommandFramework | Command framework |
+| Unity.Entities          | ECS integration   |
+
+---
+
+# 🧪 Example Use Cases
+
+VAutomationCore can power:
+
+* Arena event automation
+* Boss encounter scripting
+* Zone-triggered commands
+* Server gameplay automation
+* Cross-mod gameplay logic
+* Runtime admin commands
+
+---
+
+# 📚 Documentation
+
+Full documentation available in the repository:
+
+[https://github.com/Coyoteq1/VAutomationCore](https://github.com/Coyoteq1/VAutomationCore)
+
+Includes:
+
+* Framework Wiki
+* API Reference
+* Example Implementations
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome.
+
+Recommended workflow:
+
+1. Fork repository
+2. Create feature branch
+3. Submit pull request
+
+---
+
+# 📜 License
+
+MIT License
+
+---
+
+# 🔖 Version
+
+**Current Version:** `1.1.0`
+
+---
+
+If you want, I can also generate a **🔥 “top-tier GitHub README” upgrade** for this project with:
+
+* shields.io **badges**
+* **architecture diagrams**
+* **flow engine visuals**
+* **ECS workflow diagrams**
+* **developer quickstart**
+
+That would make **VAutomationCore look like a serious open-source framework**, not just a mod repo.

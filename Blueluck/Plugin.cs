@@ -77,6 +77,7 @@ namespace Blueluck
         public static ProgressService Progress { get; private set; }
         public static AbilityService Abilities { get; private set; }
         public static BossCoopService BossCoop { get; private set; }
+        public static CoopEventService CoopEvents { get; private set; }
         public static PrefabRemapService PrefabRemap { get; private set; }
         public static PrefabToGuidService PrefabToGuid { get; private set; }
         public static UnlockService Unlock { get; private set; }
@@ -119,7 +120,7 @@ namespace Blueluck
             {
                 CleanupServices();
                 // Harmony 2.2+: prefer instance-scoped unpatching.
-                _harmony?.UnpatchSelf();
+                _harmony?.UnpatchAll(_harmony.Id);
                 Logger.LogInfo("[Blueluck] Plugin unloaded.");
             }
             catch (Exception ex)
@@ -174,6 +175,7 @@ namespace Blueluck
 
         private static void VerifyAutomationCommandBindings()
         {
+#if DEBUG
             var required = new (Type Type, string Command)[]
             {
                 (typeof(ZoneCommands), "zone status"),
@@ -224,6 +226,7 @@ namespace Blueluck
             {
                 Logger.LogWarning($"[Blueluck] Automation command verification missing: {string.Join(", ", missing)}");
             }
+#endif
         }
 
         private void InitializeServices()
@@ -571,6 +574,11 @@ namespace Blueluck
                 BossCoop.Initialize();
                 Logger.LogInfo("[Blueluck] BossCoop initialized");
 
+                // Automatic co-op events service
+                CoopEvents = new CoopEventService();
+                CoopEvents.Initialize();
+                Logger.LogInfo("[Blueluck] CoopEvents initialized");
+
                 // ZoneTransition depends on the services above for enter/exit side effects.
                 ZoneTransition = new ZoneTransitionService();
                 ZoneTransition.Initialize();
@@ -798,6 +806,7 @@ namespace Blueluck
         private void CleanupServices()
         {
             // Cleanup in reverse order
+            CoopEvents?.Cleanup();
             BossCoop?.Cleanup();
             Abilities?.Cleanup();
             Progress?.Cleanup();

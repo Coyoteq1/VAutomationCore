@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Unity.Entities;
 using VAuto.Services.Interfaces;
@@ -18,10 +19,10 @@ namespace Blueluck.Services
         public bool IsInitialized { get; private set; }
         public ManualLogSource Log => _log;
 
-        // Track players currently in zones
-        private readonly Dictionary<Entity, int> _playersInZones = new();
-        // Track occupancy counts per zone hash so we can apply/remove zone-level effects once.
-        private readonly Dictionary<int, int> _zoneOccupancy = new();
+        // Track players currently in zones - thread-safe for ECS systems
+        private readonly ConcurrentDictionary<Entity, int> _playersInZones = new();
+        // Track occupancy counts per zone hash so we can apply/remove zone-level effects once - thread-safe
+        private readonly ConcurrentDictionary<int, int> _zoneOccupancy = new();
 
         private static ZoneConfigService? ZoneConfig => Plugin.ZoneConfig?.IsInitialized == true ? Plugin.ZoneConfig : null;
         private static FlowRegistryService? FlowRegistry => Plugin.FlowRegistry?.IsInitialized == true ? Plugin.FlowRegistry : null;
@@ -128,12 +129,14 @@ namespace Blueluck.Services
                 _log.LogInfo($"[ZoneTransition] Player {player.Index} exiting zone: {zone.Name} ({zone.Type})");
 
                 // Remove from tracking
-                _playersInZones.Remove(player);
+                _playersInZones.TryRemove(player, out _);
                 if (_zoneOccupancy.TryGetValue(zone.Hash, out var count))
                 {
-                    count--;
-                    if (count <= 0) _zoneOccupancy.Remove(zone.Hash);
-                    else _zoneOccupancy[zone.Hash] = count;
+                    var newCount = count - 1;
+                    if (newCount <= 0) 
+                        _zoneOccupancy.TryRemove(zone.Hash, out _);
+                    else
+                        _zoneOccupancy[zone.Hash] = newCount;
                 }
 
                 // Handle zone-specific exit logic

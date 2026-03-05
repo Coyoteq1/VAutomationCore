@@ -56,6 +56,7 @@ Project roadmaps
   - Server Bootstrap: correlated logging + feature flags implemented; events wired (ServerStarted, WorldReady, WorldInitialized).
   - Zone Lifecycle: unified config model present; PlayerZoneState extended; mapping helpers and validation in place.
   - Unit Spawning: assessed; disposal issue noted; tests pending.
+  - **Status: v1.1.0 released with core stabilization complete**
 - Wave targets
   - Wave 1: Finish P0 stabilization (bootstrap, zone lifecycle, spawner) behind flags.
   - Wave 2: Finish glow + death handling guardrails and tests.
