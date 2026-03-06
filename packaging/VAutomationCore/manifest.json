@@ -1,6 +1,6 @@
 {
   "name": "VAutomationCore",
-  "version_number": "1.1.1",
+  "version_number": "1.0.2",
   "website_url": "https://github.com/Coyoteq1/Vauto-Private-Mods",
   "description": "Core library for Vauto mods providing shared utilities, ECS helpers, and configuration management.",
   "dependencies": [
