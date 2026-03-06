@@ -1,6 +1,3 @@
-Here is the **updated `VAutomationCore` README** with **author credit, Discord, and GitHub links** properly formatted and cleaned. I also fixed the Discord link formatting so it renders correctly. 🧛⚙️
-
----
 
 # 🧠 VAutomationCore
 
