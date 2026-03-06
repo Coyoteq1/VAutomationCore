@@ -15,7 +15,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>VAutomationCore</PackageId>
-    <Version>1.0.3</Version>
+    <Version>1.1.0</Version>
     <Authors>Coyoteq1</Authors>
     <Company>VAutomation</Company>
     <Description>Core library for V Rising automation mods providing shared utilities, ECS helpers, and configuration management.</Description>
@@ -24,7 +24,41 @@
     <RepositoryUrl>https://github.com/Coyoteq1</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageReleaseNotes>Update docs/wiki hosting links, support/community references, and package documentation alignment. Includes package icon/readme, SourceLink, symbols, and XML API documentation.</PackageReleaseNotes>
+    <PackageReleaseNotes>## [1.1.0] - 2026-03-06
+
+### Added
+- **VAutomationCore v1.1.0** - Core library updates
+  - Enhanced automation service and sandboxing
+  - HTTP server and event scheduling
+  - Improved ECS utilities and lifecycle contracts
+  - Configuration infrastructure with JSON schema validation
+  - Feature flags and observability improvements
+  - Enhanced logging with correlation IDs
+
+- **Blueluck v1.1.0** - Zone management system
+  - ECS-based zone detection system with fallback support
+  - Complete flow system for zone enter/exit actions
+  - Kit system for equipment loadouts
+  - Snapshot system for progress save/restore
+  - Ability loadouts (server-side buff application)
+  - Boss co-op spawning service
+  - Full chat command interface
+
+### Chat Commands
+- zone status/list/reload/debug
+- flow validate/reload
+- kit list/[name]
+- snap save/apply/restore/clear/status
+
+### Flow Actions
+- zone.setpvp, zone.sendmessage, zone.spawnboss, zone.removeboss
+- zone.applykit, zone.removekit
+
+### Improved
+- Unified configuration system
+- Enhanced error handling and logging
+- Optimized ECS queries
+- Improved zone detection accuracy</PackageReleaseNotes>
     <Copyright>Copyright (c) Coyoteq1 2026</Copyright>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
