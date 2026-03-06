@@ -25,7 +25,7 @@ using Blueluck.Commands;
 namespace Blueluck
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
-    [BepInDependency("gg.coyote.VAutomationCore", "1.1.0")]
+    [BepInDependency("gg.coyote.VAutomationCore", "1.1.1")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
     public class Plugin : BasePlugin

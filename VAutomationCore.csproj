@@ -15,7 +15,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>VAutomationCore</PackageId>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <Authors>Coyoteq1</Authors>
     <Company>VAutomation</Company>
     <Description>Core library for V Rising automation mods providing shared utilities, ECS helpers, and configuration management.</Description>

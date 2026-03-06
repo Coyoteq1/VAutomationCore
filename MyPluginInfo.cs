@@ -5,6 +5,6 @@ namespace VAutomationCore
     {
         public const string GUID = "gg.coyote.VAutomationCore";
         public const string NAME = "VAutomationCore";
-        public const string VERSION = "1.1.0";
+        public const string VERSION = "1.1.1";
     }
 }
