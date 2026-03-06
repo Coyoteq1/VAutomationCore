@@ -16,7 +16,8 @@
         "enableLogging": { "type": "boolean", "default": true },
         "logLevel": { "type": "string", "enum": ["Debug", "Info", "Warning", "Error"], "default": "Info" },
         "apiEnabled": { "type": "boolean", "default": true },
-        "apiPort": { "type": "integer", "minimum": 1024, "maximum": 65535, "default": 8080 }
+        "apiPort": { "type": "integer", "minimum": 1024, "maximum": 65535, "default": 8080 },
+        "apiKey": { "type": "string", "description": "API key for HTTP server authentication" }
       }
     },
     "blueluck": {
