@@ -17,6 +17,7 @@ using VAutomationCore;
 using VAutomationCore.Core.Logging;
 using Blueluck.Services;
 using Blueluck.Systems;
+using VAutomationCore.Core.Events;
 
 namespace Blueluck
 {
@@ -39,6 +40,7 @@ namespace Blueluck
         private bool _deferredEcsHookRegistered;
         private static bool _fallbackZoneDetectionEnabled;
         private static float _nextLateEcsRetryTime;
+        private Action<DeathOccurredEvent>? _deathEventHandler;
 
         #region Config Entries
         // General
@@ -67,7 +69,7 @@ namespace Blueluck
         #endregion
 
         #region Services
-        // Zone transitions are driven by ECS systems (ZoneDetectionSystem + ZoneTransitionRouterSystem).
+        // Zone transitions are driven by patch-based fallback detection by default.
         public static ZoneConfigService ZoneConfig { get; private set; }
         public static ZoneTransitionService ZoneTransition { get; private set; }
         public static FlowRegistryService FlowRegistry { get; private set; }
@@ -102,6 +104,7 @@ namespace Blueluck
                 
                 _harmony = new Harmony(PluginInfo.PLUGIN_GUID);
                 _harmony.PatchAll(typeof(Plugin).Assembly);
+                RegisterInGameEvents();
                 
                 // Initialize ECS-dependent services (method checks if world is ready).
                 if (!InitializeEcsDependentServices())
@@ -123,6 +126,7 @@ namespace Blueluck
             try
             {
                 CleanupServices();
+                UnregisterInGameEvents();
                 // Harmony 2.2+: prefer instance-scoped unpatching.
                 _harmony?.UnpatchAll(_harmony.Id);
                 Logger.LogInfo("[Blueluck] Plugin unloaded.");
@@ -169,11 +173,41 @@ namespace Blueluck
             {
                 CommandRegistry.RegisterAll(Assembly.GetExecutingAssembly());
                 Logger.LogInfo("[Blueluck] Commands registered successfully.");
+                Logger.LogInfo("[Blueluck] Command roots: game, g");
+                Logger.LogInfo("[Blueluck] Game commands: help, ready, unready, lobby, status, forcestart, start, end, reset, reload, debug, stun, unstun, tpallzone, tpallpos");
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[Blueluck] Failed to register commands: {ex.Message}");
             }
+        }
+
+        private void RegisterInGameEvents()
+        {
+            _deathEventHandler = evt =>
+            {
+                try
+                {
+                    GameSessions?.HandleEntityDeath(evt.Victim);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning($"[Blueluck] DeathOccurredEvent handling failed: {ex.Message}");
+                }
+            };
+
+            TypedEventBus.Subscribe(_deathEventHandler);
+            Logger.LogInfo("[Blueluck] In-game event subscriptions registered: DeathOccurredEvent");
+        }
+
+        private void UnregisterInGameEvents()
+        {
+            if (_deathEventHandler != null)
+            {
+                TypedEventBus.Unsubscribe(_deathEventHandler);
+                _deathEventHandler = null;
+            }
+
         }
 
         private void InitializeServices()
@@ -660,12 +694,8 @@ namespace Blueluck
                     Logger.LogInfo("[Blueluck] Kits initialized");
                 }
 
-                // Ensure ECS systems exist and are in an update group (mod assemblies are not always auto-bootstrapped).
-                var ecsZoneDetectionReady =
-                    EnsureSystemInSimulationGroup<ZoneDetectionSystem>(world) &&
-                    EnsureSystemInSimulationGroup<ZoneTransitionRouterSystem>(world) &&
-                    EnsureSystemInSimulationGroup<ZoneBorderVisualSystem>(world);
-                _fallbackZoneDetectionEnabled = !ecsZoneDetectionReady;
+                // Use patch-driven zone detection as the primary path for this server build.
+                _fallbackZoneDetectionEnabled = true;
 
                 if (FlowSystemEnabled.Value && FlowRegistry != null)
                 {
@@ -726,17 +756,8 @@ namespace Blueluck
                 ZoneTransition.Initialize();
                 Logger.LogInfo("[Blueluck] ZoneTransition initialized");
 
-                if (ecsZoneDetectionReady)
-                {
-                    // Spawn zone entities only after all enter/exit dependencies are ready.
-                    ZoneConfig.SpawnZoneEntitiesIfReady();
-                    GameplayRegistration?.Refresh();
-                    Logger.LogInfo("[Blueluck] Zone entities spawned for detection");
-                }
-                else
-                {
-                    Logger.LogInfo("[Blueluck] Custom ECS zone systems unavailable; using fallback zone detection.");
-                }
+                GameplayRegistration?.Refresh();
+                Logger.LogInfo("[Blueluck] Patch-driven zone detection enabled.");
                 
                 Logger.LogInfo("[Blueluck] All ECS-dependent services initialized.");
                 _ecsServicesInitialized = true;
@@ -809,7 +830,7 @@ namespace Blueluck
             eventInfo.AddEventHandler(null, handler);
         }
 
-        private static bool EnsureSystemInSimulationGroup<T>(World world) where T : ComponentSystemBase
+        private static bool EnsureSystemInSimulationGroup<T>(World world, bool logUnavailable = true) where T : ComponentSystemBase
         {
             try
             {
@@ -820,7 +841,10 @@ namespace Blueluck
 
                 if (system == null && systemHandle == SystemHandle.Null)
                 {
-                    Logger.LogInfo($"[Blueluck] ECS system unavailable for {systemType.Name}; fallback mode will be used.");
+                    if (logUnavailable)
+                    {
+                        Logger.LogInfo($"[Blueluck] ECS system unavailable for {systemType.Name}; fallback mode will be used.");
+                    }
                     return false;
                 }
 
@@ -990,20 +1014,8 @@ namespace Blueluck
                     return;
                 }
 
-                var ecsZoneDetectionReady =
-                    EnsureSystemInSimulationGroup<ZoneDetectionSystem>(world) &&
-                    EnsureSystemInSimulationGroup<ZoneTransitionRouterSystem>(world) &&
-                    EnsureSystemInSimulationGroup<ZoneBorderVisualSystem>(world);
-
-                if (!ecsZoneDetectionReady)
-                {
-                    return;
-                }
-
-                _fallbackZoneDetectionEnabled = false;
-                ZoneConfig?.SpawnZoneEntitiesIfReady();
-                GameplayRegistration?.Refresh();
-                Logger.LogInfo("[Blueluck] Late ECS system promotion succeeded; fallback zone detection disabled.");
+                // Patch-driven detection is the permanent primary path on this build.
+                return;
             }
             catch (Exception ex)
             {
@@ -1029,6 +1041,7 @@ namespace Blueluck
             GamePresets?.Cleanup();
             Unlock?.Cleanup();
             Kits?.Cleanup();
+            PatchDrivenBorderVisualService.Cleanup();
             PrefabToGuid?.Cleanup();
             PrefabRemap?.Cleanup();
             ZoneConfig?.Cleanup();

@@ -90,79 +90,27 @@ New flow types in development for enhanced gameplay:
 
 ## Commands
 
-### Kit Commands
+Blueluck currently exposes one command group through VampireCommandFramework:
 
-| Command | Description | Usage | Admin Only |
-|---------|-------------|-------|------------|
-| `!kit list` | List all available kits with descriptions | `!kit list` | No |
-| `!kit <name>` | Apply a specific kit to yourself | `!kit warrior` | Yes |
-| `!kit apply <player> <name>` | Apply kit to another player | `!kit apply PlayerName warrior` | Yes |
-| `!kit preview <name>` | Preview kit contents without applying | `!kit preview mage` | No |
+### Game Commands
 
-### Zone Commands
-
-| Command | Shortcut | Description | Usage | Admin Only |
-|---------|----------|-------------|-------|------------|
-| `!enterarena <zone>` | - | Force-enter an arena zone by name or hash | `!enterarena arena_1` | Yes |
-| `!exitarena` | - | Force-exit your current arena zone | `!exitarena` | Yes |
-| `!enterboss <zone>` | - | Force-enter a boss zone by name or hash | `!enterboss boss_dracula` | Yes |
-| `!exitboss` | - | Force-exit your current boss zone | `!exitboss` | Yes |
-| `!zone status` | `!zs` | Show current zone status and active flows | `!zone status` | Yes |
-| `!zone list` | `!zl` | List all configured zones with types | `!zone list` | Yes |
-| `!zone reload` | `!zr` | Reload zone configuration from disk | `!zone reload` | Yes |
-| `!zone debug` | - | Toggle zone detection debug mode | `!zone debug` | Yes |
-| `!zone info <zone>` | - | Show detailed zone information | `!zone info arena_1` | Yes |
-| `!zone create <name> <type> <x> <y> <z> <radius>` | - | Create new zone (Admin) | `!zone create test pvp 100 0 100 50` | Yes |
-| `!zone delete <name>` | - | Delete existing zone (Admin) | `!zone delete test` | Yes |
-| `!flow reload` | - | Reload flows.json from disk | `!flow reload` | Yes |
-| `!flow validate` | - | Validate all flow configurations | `!flow validate` | Yes |
-| `!flow list` | - | List all active flows | `!flow list` | Yes |
-| `!flow status <flow>` | - | Show flow status and triggers | `!flow status boss_enter` | Yes |
-
-### Snapshot Commands
-
-| Command | Description | Usage | Admin Only |
-|---------|-------------|-------|------------|
-| `!snap status` | Show your saved snapshot status | `!snap status` | Yes |
-| `!snap save` | Save a snapshot of your progression and buffs | `!snap save` | Yes |
-| `!snap apply` | Apply saved snapshot (keeps extra buffs) | `!snap apply` | Yes |
-| `!snap restore` | Restore snapshot exactly (removes extra buffs) | `!snap restore` | Yes |
-| `!snap clear` | Clear your saved snapshot | `!snap clear` | Yes |
-| `!snap backup <name>` | Create named backup snapshot | `!snap backup checkpoint1` | Yes |
-| `!snap load <name>` | Load named backup snapshot | `!snap load checkpoint1` | Yes |
-| `!snap list` | List all your saved snapshots | `!snap list` | Yes |
-
-### Boss Commands
-
-| Command | Description | Usage | Admin Only |
-|---------|-------------|-------|------------|
-| `!boss spawn <type> [x] [y] [z]` | Spawn specific boss type | `!boss spawn dracula` | Yes |
-| `!boss list` | List all available boss types | `!boss list` | No |
-| `!boss kill <boss_id>` | Kill specific boss by ID | `!boss kill 12345` | Yes |
-| `!boss killall` | Kill all active bosses | `!boss killall` | Yes |
-| `!boss status` | Show boss spawn status and timers | `!boss status` | Yes |
-| `!boss config reload` | Reload boss configuration | `!boss config reload` | Yes |
-
-### Flow Commands
-
-| Command | Description | Usage | Admin Only |
-|---------|-------------|-------|------------|
-| `!flow trigger <flow_name> <player>` | Manually trigger a flow | `!flow trigger boss_enter PlayerName` | Yes |
-| `!flow disable <flow_name>` | Disable specific flow | `!flow disable boss_enter` | Yes |
-| `!flow enable <flow_name>` | Enable specific flow | `!flow enable boss_enter` | Yes |
-| `!flow stats` | Show flow execution statistics | `!flow stats` | Yes |
-| `!flow reset <flow_name>` | Reset flow cooldowns | `!flow reset boss_enter` | Yes |
-
-### Utility Commands
-
-| Command | Description | Usage | Admin Only |
-|---------|-------------|-------|------------|
-| `!help` | Show all available commands | `!help` | No |
-| `!version` | Show mod version information | `!version` | No |
-| `!reload` | Reload all configurations | `!reload` | Yes |
-| `!debug toggle` | Toggle debug mode | `!debug toggle` | Yes |
-| `!coords` | Show your current coordinates | `!coords` | No |
-| `!players` | Show all connected players | `!players` | No |
+| Command | Description | Admin Only |
+|---------|-------------|------------|
+| `!game help` | Show the available Blueluck game commands | No |
+| `!game ready` | Mark yourself ready in the active session | No |
+| `!game unready` | Mark yourself unready in the active session | No |
+| `!game lobby` | Show current session lobby status | No |
+| `!game status` | Alias of `!game lobby` | No |
+| `!game forcestart` | Force all participants ready and start countdown | Yes |
+| `!game start` | Start session enrollment for players currently in zone | Yes |
+| `!game end` | End the current active session | Yes |
+| `!game reset` | Reset the current session to waiting | Yes |
+| `!game reload` | Reload Blueluck flow and zone config from disk | Yes |
+| `!game debug` | Show current session debug state | Yes |
+| `!game stun <seconds>` | Reserved command for session-flow debugging | Yes |
+| `!game unstun` | Reserved command for session-flow debugging | Yes |
+| `!game tpallzone <zoneHash>` | Teleport all active participants to another configured zone | Yes |
+| `!game tpallpos <x> <y> <z>` | Teleport all active participants to a world position | Yes |
 
 ### Command Permissions
 
@@ -188,12 +136,7 @@ New flow types in development for enhanced gameplay:
 
 ### Command Shortcuts
 
-Many commands support shortcuts for faster usage:
-
-- `!zs` = `!zone status`
-- `!zl` = `!zone list` 
-- `!zr` = `!zone reload`
-- `!snap` = `!snap status`
+Blueluck currently exposes the alias command root `!g` for the `!game` command group.
 
 ### Command Help
 
@@ -202,16 +145,16 @@ For detailed help on any command, use:
 !help <command_name>
 ```
 
-Example: `!help !kit` will show detailed information about kit commands.
+Example: `!game help`
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Commands not working:**
-- Ensure you have the required permissions (admin commands need administrator privileges)
-- Check if the mod is properly loaded in the server console
-- Verify command syntax matches the documentation
+- Ensure you have the required permissions for admin-only commands
+- Check the server log for `Commands registered successfully`
+- Use `!game help` to confirm the currently wired command surface
 
 **Zone detection not working:**
 - Use `!zone debug` to enable debug mode and check zone boundaries

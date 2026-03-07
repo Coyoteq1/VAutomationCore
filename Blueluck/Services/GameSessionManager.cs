@@ -128,6 +128,10 @@ namespace Blueluck.Services
                     $"ready-timeout-{zoneHash}",
                     TimeSpan.FromSeconds(session.Definition.Session.ReadyTimeoutSeconds),
                     () => OnReadyTimeout(zoneHash));
+                if (session.ReadyTimeoutEventId == null)
+                {
+                    _log.LogWarning($"[GameSession] Ready timeout timer unavailable for zone {zoneHash}; lobby will remain open until manual/session state changes.");
+                }
             }
 
             ReevaluateSession(session);
@@ -161,20 +165,24 @@ namespace Blueluck.Services
         {
             if (!_sessionsByZone.TryGetValue(zoneHash, out var session))
             {
+                _log.LogWarning($"[GameSession] SetPlayerReady failed: no session for zone {zoneHash}.");
                 return false;
             }
 
             if (session.State is GameSessionState.InProgress or GameSessionState.Ending or GameSessionState.Ended)
             {
+                _log.LogWarning($"[GameSession] SetPlayerReady blocked: zone {zoneHash} state is {session.State}.");
                 return false;
             }
 
             var ok = Lobby?.SetReady(session, player, steamId, ready) == true;
             if (!ok)
             {
+                _log.LogWarning($"[GameSession] SetPlayerReady failed: lobby rejected player {player.Index} steamId={steamId} ready={ready} in zone {zoneHash}.");
                 return false;
             }
 
+            _log.LogInfo($"[GameSession] Player {player.Index} ready={ready} in zone {zoneHash}. readyCount={session.ReadyCount}/{session.ParticipantCount}");
             BroadcastToSession(session, $"Ready: {session.ReadyCount}/{session.ParticipantCount}");
             ReevaluateSession(session);
             return true;
@@ -184,11 +192,13 @@ namespace Blueluck.Services
         {
             if (!_sessionsByZone.TryGetValue(zoneHash, out var session) || session.Definition == null)
             {
+                _log.LogWarning($"[GameSession] ForceStart failed: session missing or definition unresolved for zone {zoneHash}.");
                 return false;
             }
 
             if (session.ParticipantCount < session.Definition.Session.MinPlayers)
             {
+                _log.LogWarning($"[GameSession] ForceStart blocked: zone {zoneHash} participants={session.ParticipantCount} minPlayers={session.Definition.Session.MinPlayers}.");
                 return false;
             }
 
@@ -197,6 +207,7 @@ namespace Blueluck.Services
                 player.IsReady = true;
             }
 
+            _log.LogInfo($"[GameSession] ForceStart accepted for zone {zoneHash}. participants={session.ParticipantCount}");
             StartCountdown(session);
             return true;
         }
@@ -205,18 +216,22 @@ namespace Blueluck.Services
         {
             if (!IsSessionEnabledZone(zoneHash))
             {
+                _log.LogWarning($"[GameSession] Start blocked: zone {zoneHash} is not session-enabled.");
                 return false;
             }
 
             if (ZoneTransition?.GetPlayersInZone(zoneHash) is not { Count: > 0 } playersInZone)
             {
+                _log.LogWarning($"[GameSession] Start blocked: no players detected inside zone {zoneHash}.");
                 return false;
             }
 
+            _log.LogInfo($"[GameSession] Start requested for zone {zoneHash}. detectedPlayers={playersInZone.Count}");
             foreach (var player in playersInZone)
             {
                 if (!TryGetPlatformId(player, out var steamId))
                 {
+                    _log.LogWarning($"[GameSession] Start skipped player {player.Index}: platform id unresolved.");
                     continue;
                 }
 
@@ -289,6 +304,7 @@ namespace Blueluck.Services
         {
             if (session.Definition == null || !session.Definition.IsValid || !session.Definition.Session.Enabled)
             {
+                _log.LogWarning($"[GameSession] Reevaluate skipped: zone {session.ZoneHash} definition invalid or session disabled.");
                 return;
             }
 
@@ -296,6 +312,7 @@ namespace Blueluck.Services
             {
                 if (session.ParticipantCount < session.Definition.Session.MinPlayers || Lobby?.AreAllParticipantsReady(session) != true)
                 {
+                    _log.LogWarning($"[GameSession] Countdown cancelled during reevaluate: zone {session.ZoneHash} participants={session.ParticipantCount}/{session.Definition.Session.MinPlayers} allReady={Lobby?.AreAllParticipantsReady(session) == true}.");
                     CancelCountdown(session);
                 }
 
@@ -307,6 +324,7 @@ namespace Blueluck.Services
                 return;
             }
 
+            _log.LogInfo($"[GameSession] Reevaluate zone {session.ZoneHash}: state={session.State} participants={session.ParticipantCount} ready={session.ReadyCount} minPlayers={session.Definition.Session.MinPlayers} autoStart={session.Definition.Session.AutoStartWhenReady}");
             if (Lobby?.AreAllParticipantsReady(session) == true)
             {
                 session.State = GameSessionState.Ready;
@@ -325,12 +343,14 @@ namespace Blueluck.Services
         {
             if (session.State == GameSessionState.Countdown || session.Definition == null)
             {
+                _log.LogWarning($"[GameSession] StartCountdown skipped: zone {session.ZoneHash} state={session.State} definitionNull={session.Definition == null}.");
                 return;
             }
 
             session.State = GameSessionState.Countdown;
             session.IsAdmissionLocked = string.Equals(session.ZoneType, "ArenaZone", StringComparison.OrdinalIgnoreCase);
             session.CountdownStartedAt = DateTime.UtcNow;
+            _log.LogInfo($"[GameSession] Countdown started for zone {session.ZoneHash}. seconds={session.Definition.Session.CountdownSeconds} participants={session.ParticipantCount}");
 
             foreach (var player in session.Players.Where(x => x.IsParticipant).Select(x => x.Player))
             {
@@ -350,11 +370,23 @@ namespace Blueluck.Services
             BroadcastToSession(session, $"Match starts in {session.Definition.Session.CountdownSeconds}s");
             Timers?.Cancel(session.CountdownEventId);
             session.CountdownEventId = null;
+            if (session.Definition.Session.CountdownSeconds <= 0)
+            {
+                _log.LogWarning($"[GameSession] Countdown seconds <= 0 for zone {session.ZoneHash}; starting match immediately.");
+                StartGame(session.ZoneHash);
+                return;
+            }
+
             session.CountdownEventId = Timers?.Schedule(
                 session,
                 $"countdown-{session.ZoneHash}",
                 TimeSpan.FromSeconds(session.Definition.Session.CountdownSeconds),
                 () => StartGame(session.ZoneHash));
+            if (session.CountdownEventId == null)
+            {
+                _log.LogWarning($"[GameSession] Countdown timer unavailable for zone {session.ZoneHash}; starting match immediately.");
+                StartGame(session.ZoneHash);
+            }
         }
 
         private void CancelCountdown(GameSession session)
@@ -370,6 +402,7 @@ namespace Blueluck.Services
 
                 session.State = GameSessionState.Waiting;
                 session.IsAdmissionLocked = false;
+                _log.LogWarning($"[GameSession] Countdown cancelled for zone {session.ZoneHash}. participants={session.ParticipantCount} ready={session.ReadyCount}");
                 BroadcastToSession(session, "Countdown cancelled.");
             }
         }
@@ -378,9 +411,11 @@ namespace Blueluck.Services
         {
             if (!_sessionsByZone.TryGetValue(zoneHash, out var session) || session.Definition == null)
             {
+                _log.LogWarning($"[GameSession] StartGame skipped: session missing or definition unresolved for zone {zoneHash}.");
                 return;
             }
 
+            _log.LogInfo($"[GameSession] StartGame entered for zone {zoneHash}. participants={session.ParticipantCount} ready={session.ReadyCount} stateBefore={session.State}");
             session.State = GameSessionState.InProgress;
             session.StartedAt = DateTime.UtcNow;
             session.IsAdmissionLocked = string.Equals(session.ZoneType, "ArenaZone", StringComparison.OrdinalIgnoreCase);
@@ -402,8 +437,13 @@ namespace Blueluck.Services
                     $"match-duration-{zoneHash}",
                     TimeSpan.FromSeconds(session.Definition.Session.MatchDurationSeconds),
                     () => EndSession(session));
+                if (session.MatchDurationEventId == null)
+                {
+                    _log.LogWarning($"[GameSession] Match duration timer unavailable for zone {zoneHash}; match will continue until manual/objective end.");
+                }
             }
 
+            _log.LogInfo($"[GameSession] StartGame completed for zone {zoneHash}. stateNow={session.State}");
             BroadcastToSession(session, "Match started.");
         }
 
@@ -433,6 +473,11 @@ namespace Blueluck.Services
                 $"reset-{session.ZoneHash}",
                 TimeSpan.FromSeconds(session.Definition?.Session.PostMatchResetDelaySeconds ?? 1),
                 () => ResetSession(session));
+            if (session.ResetEventId == null)
+            {
+                _log.LogWarning($"[GameSession] Reset timer unavailable for zone {session.ZoneHash}; resetting session immediately.");
+                ResetSession(session);
+            }
         }
 
         private void ResetSession(GameSession session)

@@ -4,6 +4,30 @@
       "presetId": "boss_encounter_core",
       "gameplayType": "boss",
       "supportedZoneTypes": ["boss"],
+      "session": {
+        "enabled": true,
+        "minPlayers": 1,
+        "maxPlayers": 10,
+        "countdownSeconds": 3,
+        "readyTimeoutSeconds": 90,
+        "postMatchResetDelaySeconds": 5,
+        "freezeDuringCountdown": false,
+        "resetOnEmpty": true,
+        "allowLateJoin": true,
+        "lateJoinGraceSeconds": 30
+      },
+      "sessionLifecycle": {
+        "lobbyOpenFlows": ["boss_encounter_core_lobby"],
+        "lateJoinFlows": ["boss_encounter_core_lobby"],
+        "startFlows": ["boss_encounter_core_start"],
+        "endFlows": ["boss_encounter_core_end"],
+        "resetFlows": ["boss_encounter_core_end"]
+      },
+      "objective": {
+        "objectiveType": "boss_defeat",
+        "endMatchOnObjective": true,
+        "treatTimeoutAsDraw": false
+      },
       "entryFlows": ["boss_encounter_core_enter"],
       "exitFlows": ["boss_encounter_core_exit"]
     }

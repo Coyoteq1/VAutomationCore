@@ -11,6 +11,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using VAuto.Services.Interfaces;
 using VAutomationCore.Core;
+using VAutomationCore.Services;
 
 namespace Blueluck.Services
 {
@@ -61,10 +62,8 @@ namespace Blueluck.Services
             // Cache unlock methods
             CacheUnlockMethods();
 
-            EnsureDebugEventsSystem(world);
-
             IsInitialized = true;
-            _log.LogInfo("[Unlock] Initialized with DebugEvent system");
+            _log.LogInfo("[Unlock] Initialized with progression action support");
         }
 
         public void Cleanup()
@@ -81,14 +80,9 @@ namespace Blueluck.Services
         /// </summary>
         public bool UnlockAll(Entity player)
         {
-            if (!IsInitialized || _debugEventsSystem == null)
+            if (!IsInitialized)
             {
-                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
-            }
-
-            if (!IsInitialized || _debugEventsSystem == null)
-            {
-                _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
+                _log.LogWarning("[Unlock] Service not initialized.");
                 return false;
             }
 
@@ -98,20 +92,9 @@ namespace Blueluck.Services
                 return false;
             }
 
-            var success = true;
-            var debugSystemType = _debugEventsSystem.GetType();
-
-            // Unlock Research
-            success &= TryInvokeUnlock(debugSystemType, UnlockType.Research, fromCharacter);
-
-            // Unlock VBloods
-            success &= TryInvokeUnlock(debugSystemType, UnlockType.VBlood, fromCharacter);
-
-            // Unlock Achievements
-            success &= TryInvokeUnlock(debugSystemType, UnlockType.Achievement, fromCharacter);
-
-            // Unlock Spells/Abilities
-            success &= TryInvokeUnlock(debugSystemType, UnlockType.Spells, fromCharacter);
+            var success = UnlockViaGameActions(player, UnlockType.Research)
+                & UnlockViaGameActions(player, UnlockType.VBlood)
+                & UnlockViaGameActions(player, UnlockType.Spells);
 
             if (success)
             {
@@ -130,14 +113,9 @@ namespace Blueluck.Services
         /// </summary>
         public bool UnlockProgressionType(Entity player, UnlockType unlockType)
         {
-            if (!IsInitialized || _debugEventsSystem == null)
+            if (!IsInitialized)
             {
-                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
-            }
-
-            if (!IsInitialized || _debugEventsSystem == null)
-            {
-                _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
+                _log.LogWarning("[Unlock] Service not initialized.");
                 return false;
             }
 
@@ -147,8 +125,7 @@ namespace Blueluck.Services
                 return false;
             }
 
-            var debugSystemType = _debugEventsSystem.GetType();
-            var success = TryInvokeUnlock(debugSystemType, unlockType, fromCharacter);
+            var success = UnlockViaGameActions(player, unlockType) || TryInvokeDebugUnlock(fromCharacter, unlockType);
 
             if (success)
             {
@@ -167,17 +144,6 @@ namespace Blueluck.Services
         /// </summary>
         public bool ApplyBuff(Entity player, PrefabGUID buffPrefab, float duration = 0f)
         {
-            if (!IsInitialized || _debugEventsSystem == null)
-            {
-                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
-            }
-
-            if (!IsInitialized || _debugEventsSystem == null)
-            {
-                _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
-                return false;
-            }
-
             if (!TryGetFromCharacter(player, out var fromCharacter))
             {
                 _log.LogWarning($"[Unlock] Failed to get FromCharacter for player {player.Index}");
@@ -191,7 +157,17 @@ namespace Blueluck.Services
                     BuffPrefabGUID = buffPrefab
                 };
 
-                _debugEventsSystem.ApplyBuff(fromCharacter, buffEvent);
+                if (!GameActionService.InvokeAction("applybuff", new object[] { fromCharacter.User, player, buffPrefab, duration }))
+                {
+                    EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+                    if (_debugEventsSystem == null)
+                    {
+                        _log.LogWarning("[Unlock] Buff apply unavailable: core action and DebugEventsSystem missing.");
+                        return false;
+                    }
+
+                    _debugEventsSystem.ApplyBuff(fromCharacter, buffEvent);
+                }
                 _log.LogInfo($"[Unlock] Applied buff {buffPrefab.GetHashCode()} to player {player.Index}");
                 return true;
             }
@@ -208,17 +184,6 @@ namespace Blueluck.Services
         /// </summary>
         public bool RemoveBuff(Entity player, PrefabGUID buffPrefab)
         {
-            if (!IsInitialized || _debugEventsSystem == null)
-            {
-                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
-            }
-
-            if (!IsInitialized || _debugEventsSystem == null)
-            {
-                _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
-                return false;
-            }
-
             if (!TryGetFromCharacter(player, out var fromCharacter))
             {
                 _log.LogWarning($"[Unlock] Failed to get FromCharacter for player {player.Index}");
@@ -227,6 +192,19 @@ namespace Blueluck.Services
 
             try
             {
+                if (GameActionService.InvokeAction("removebuff", new object[] { player, buffPrefab }))
+                {
+                    _log.LogInfo($"[Unlock] Removed buff {buffPrefab.GetHashCode()} from player {player.Index}");
+                    return true;
+                }
+
+                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+                if (_debugEventsSystem == null)
+                {
+                    _log.LogWarning("[Unlock] Buff remove unavailable: core action and DebugEventsSystem missing.");
+                    return false;
+                }
+
                 // Try to use RemoveBuff if available
                 var debugSystemType = _debugEventsSystem.GetType();
                 var removeBuffMethod = debugSystemType.GetMethod("RemoveBuff", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
@@ -389,6 +367,32 @@ namespace Blueluck.Services
         {
             EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
             return _debugEventsSystem != null && IsInitialized;
+        }
+
+        private bool UnlockViaGameActions(Entity player, UnlockType unlockType)
+        {
+            return unlockType switch
+            {
+                UnlockType.Research => GameActionService.InvokeAction("unlock_progression", new object[] { player, "all" }),
+                UnlockType.VBlood => GameActionService.InvokeAction("unlock_vblood_progression", new object[] { player, 0, 999 }),
+                UnlockType.Spells => GameActionService.InvokeAction("unlock_spellbook_abilities", new object[] { player, "all", "all" }),
+                UnlockType.All => GameActionService.InvokeAction("unlock_progression", new object[] { player, "all" })
+                    && GameActionService.InvokeAction("unlock_vblood_progression", new object[] { player, 0, 999 })
+                    && GameActionService.InvokeAction("unlock_spellbook_abilities", new object[] { player, "all", "all" }),
+                _ => false
+            };
+        }
+
+        private bool TryInvokeDebugUnlock(FromCharacter fromCharacter, UnlockType unlockType)
+        {
+            EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+            if (_debugEventsSystem == null)
+            {
+                return false;
+            }
+
+            var debugSystemType = _debugEventsSystem.GetType();
+            return TryInvokeUnlock(debugSystemType, unlockType, fromCharacter);
         }
 
         private void EnsureDebugEventsSystem(World? world)

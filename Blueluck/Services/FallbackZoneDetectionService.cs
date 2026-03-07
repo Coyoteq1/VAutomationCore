@@ -43,6 +43,7 @@ namespace Blueluck.Services
             _nextDetectionTickTime = now + intervalSeconds;
 
             var em = world.EntityManager;
+            PatchDrivenBorderVisualService.ProcessTick(em);
             var query = em.CreateEntityQuery(ComponentType.ReadOnly<PlayerCharacter>());
             var players = query.ToEntityArray(Allocator.Temp);
 

@@ -1,7 +1,15 @@
 {
   "flows": [
     {
-      "flowId": "boss_encounter_core_enter",
+      "flowId": "boss_encounter_core_lobby",
+      "gameplayType": "boss",
+      "supportedZoneTypes": ["boss"],
+      "actions": [
+        { "action": "zone.sendmessage", "message": "Boss lobby opened." }
+      ]
+    },
+    {
+      "flowId": "boss_encounter_core_start",
       "gameplayType": "boss",
       "supportedZoneTypes": ["boss"],
       "actions": [
@@ -10,6 +18,17 @@
         { "action": "boss.spawnencounter" },
         { "action": "boss.applyencountervisuals" },
         { "action": "zone.sendmessage", "message": "Boss encounter started." }
+      ]
+    },
+    {
+      "flowId": "boss_encounter_core_end",
+      "gameplayType": "boss",
+      "supportedZoneTypes": ["boss"],
+      "actions": [
+        { "action": "boss.cleanupencountergroup" },
+        { "action": "boss.unwindencounterstate" },
+        { "action": "boss.restoreencounteroverrides" },
+        { "action": "zone.sendmessage", "message": "Boss encounter ended." }
       ]
     },
     {

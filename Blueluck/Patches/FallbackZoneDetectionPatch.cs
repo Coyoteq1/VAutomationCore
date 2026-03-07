@@ -4,7 +4,7 @@ using ProjectM;
 
 namespace Blueluck.Patches
 {
-    [HarmonyPatch(typeof(BacktraceSystem), nameof(BacktraceSystem.OnUpdate))]
+    [HarmonyPatch(typeof(ServerBootstrapSystem), nameof(ServerBootstrapSystem.OnUpdate))]
     internal static class FallbackZoneDetectionPatch
     {
         [HarmonyPostfix]

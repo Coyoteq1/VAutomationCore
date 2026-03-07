@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using BepInEx.Logging;
+using Il2CppInterop.Runtime;
 using Unity.Entities;
 using VAuto.Services.Interfaces;
 using VAutomationCore.Core.ECS.Components;
@@ -71,7 +72,13 @@ namespace Blueluck.Services
             try
             {
                 var em = world.EntityManager;
-                var query = em.CreateEntityQuery(ComponentType.ReadOnly<ZoneComponent>());
+                var zoneType = Il2CppType.Of<ZoneComponent>(throwOnFailure: false);
+                if (zoneType == null)
+                {
+                    return;
+                }
+
+                var query = em.CreateEntityQuery(new ComponentType(zoneType, ComponentType.AccessMode.ReadOnly));
                 var zones = query.ToComponentDataArray<ZoneComponent>(Unity.Collections.Allocator.Temp);
                 try
                 {
@@ -90,7 +97,7 @@ namespace Blueluck.Services
             }
             catch (Exception ex)
             {
-                _log.LogWarning($"[GameplayRegistrationSnapshot] Failed to refresh ECS zone list: {ex.Message}");
+                _log.LogDebug($"[GameplayRegistrationSnapshot] ECS zone snapshot refresh skipped: {ex.Message}");
             }
         }
     }

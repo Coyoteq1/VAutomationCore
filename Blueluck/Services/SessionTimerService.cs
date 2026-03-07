@@ -38,6 +38,7 @@ namespace Blueluck.Services
         {
             if (!IsInitialized)
             {
+                _log.LogWarning($"[SessionTimer] Schedule skipped: timer service not initialized. session={session?.SessionId ?? "<null>"} name={name}");
                 return null;
             }
 
@@ -51,9 +52,11 @@ namespace Blueluck.Services
 
             if (!_timers.TryAdd(eventId, scheduled))
             {
+                _log.LogWarning($"[SessionTimer] Schedule failed: duplicate eventId={eventId}");
                 return null;
             }
 
+            _log.LogInfo($"[SessionTimer] Scheduled event name={name} eventId={eventId} dueAtUtc={scheduled.DueAtUtc:O}");
             return eventId;
         }
 
@@ -61,7 +64,10 @@ namespace Blueluck.Services
         {
             if (!string.IsNullOrWhiteSpace(eventId))
             {
-                _timers.TryRemove(eventId, out _);
+                if (_timers.TryRemove(eventId, out _))
+                {
+                    _log.LogInfo($"[SessionTimer] Cancelled event {eventId}");
+                }
             }
         }
 
@@ -103,6 +109,7 @@ namespace Blueluck.Services
             {
                 try
                 {
+                    _log.LogInfo($"[SessionTimer] Firing event {timer.EventId}");
                     timer.Callback();
                 }
                 catch (Exception ex)

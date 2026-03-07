@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using ProjectM;
@@ -7,50 +9,94 @@ using Unity.Entities;
 
 namespace Blueluck.Patches
 {
-    [HarmonyPatch]
     internal static class DownedSystemPatch
     {
-        private static Type? ResolveTargetType()
+        internal static void Register(Harmony harmony)
         {
-            var candidates = new[]
+            foreach (var method in ResolveTargetMethods())
+            {
+                harmony.Patch(method, postfix: new HarmonyMethod(typeof(DownedSystemPatch).GetMethod(nameof(OnUpdatePostfix), BindingFlags.Static | BindingFlags.NonPublic)));
+                Plugin.Logger.LogInfo($"[GameSession] Hooked death/downed ECS system: {method.DeclaringType?.FullName}");
+            }
+        }
+
+        private static IEnumerable<MethodBase> ResolveTargetMethods()
+        {
+            var methods = new List<MethodBase>();
+            var candidateTypeNames = new[]
             {
                 "ProjectM.DownedSystem",
                 "ProjectM.Gameplay.Systems.DownedSystem",
                 "ProjectM.DeathSystem",
                 "ProjectM.Gameplay.Systems.DeathSystem"
             };
-
-            foreach (var candidate in candidates)
+            foreach (var candidate in candidateTypeNames)
             {
-                var type = AccessTools.TypeByName(candidate);
-                if (type != null)
+                var type = Type.GetType(candidate, throwOnError: false);
+                var method = type?.GetMethod("OnUpdate", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (method != null)
                 {
-                    return type;
+                    methods.Add(method);
+                }
+                else
+                {
+                    Plugin.Logger.LogWarning($"[GameSession] Hook target not found: {candidate}.OnUpdate");
                 }
             }
 
-            return null;
-        }
-
-        private static bool Prepare()
-        {
-            var targetType = ResolveTargetType();
-            if (targetType != null)
+            if (methods.Count > 0)
             {
-                return true;
+                return methods.Distinct();
             }
 
-            Plugin.Logger.LogWarning("[GameSession] Downed/death system type not found; session death tracking patch skipped.");
-            return false;
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var assemblyName = assembly.GetName().Name ?? string.Empty;
+                if (!assemblyName.StartsWith("ProjectM", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Type[]? types = null;
+                try
+                {
+                    types = assembly.GetTypes();
+                }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    types = ex.Types;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var type in types.Where(t => t != null))
+                {
+                    try
+                    {
+                        var queryField = type.GetField("__DeathEventQuery", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        var onUpdate = type.GetMethod("OnUpdate", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                        if (queryField != null && onUpdate != null)
+                        {
+                            methods.Add(onUpdate);
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore incomplete IL2CPP metadata types.
+                    }
+                }
+            }
+
+            if (methods.Count == 0)
+            {
+                Plugin.Logger.LogWarning("[GameSession] No runtime downed/death ECS system exposing __DeathEventQuery was found; session death tracking patch skipped.");
+            }
+
+            return methods.Distinct();
         }
 
-        private static MethodBase? TargetMethod()
-        {
-            var systemType = ResolveTargetType();
-            return systemType == null ? null : AccessTools.Method(systemType, "OnUpdate");
-        }
-
-        [HarmonyPostfix]
         private static void OnUpdatePostfix(object __instance)
         {
             try
@@ -68,7 +114,7 @@ namespace Blueluck.Patches
 
                 var entityManager = world.EntityManager;
 
-                var queryField = AccessTools.Field(__instance.GetType(), "__DeathEventQuery");
+                var queryField = __instance.GetType().GetField("__DeathEventQuery", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 if (queryField == null)
                 {
                     return;
@@ -90,7 +136,7 @@ namespace Blueluck.Patches
                         }
 
                         var deathEvent = entityManager.GetComponentData<DeathEvent>(entity);
-                        var deadField = AccessTools.Field(deathEvent.GetType(), "Dead");
+                        var deadField = deathEvent.GetType().GetField("Dead", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                         if (deadField?.GetValue(deathEvent) is Entity deadEntity)
                         {
                             Plugin.GameSessions.HandleEntityDeath(deadEntity);

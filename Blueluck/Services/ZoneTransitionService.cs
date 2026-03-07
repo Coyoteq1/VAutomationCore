@@ -1,9 +1,12 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using BepInEx.Logging;
 using ProjectM;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 using VAuto.Services.Interfaces;
 using Blueluck.Models;
 using VAutomationCore.Core.Lifecycle;
@@ -160,7 +163,12 @@ namespace Blueluck.Services
         /// </summary>
         public int GetPlayerZone(Entity player)
         {
-            return _playersInZones.TryGetValue(player, out var hash) ? hash : 0;
+            if (_playersInZones.TryGetValue(player, out var hash) && hash != 0)
+            {
+                return hash;
+            }
+
+            return ResolveZoneHashByPosition(player);
         }
 
         /// <summary>
@@ -188,7 +196,128 @@ namespace Blueluck.Services
                 }
             }
 
+            if (players.Count > 0)
+            {
+                return players;
+            }
+
+            try
+            {
+                var em = VAutomationCore.Core.UnifiedCore.EntityManager;
+                if (em == default)
+                {
+                    return players;
+                }
+
+                var query = em.CreateEntityQuery(ComponentType.ReadOnly<PlayerCharacter>());
+                var playerEntities = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+                try
+                {
+                    foreach (var player in playerEntities)
+                    {
+                        if (ResolveZoneHashByPosition(player) == zoneHash)
+                        {
+                            players.Add(player);
+                        }
+                    }
+                }
+                finally
+                {
+                    playerEntities.Dispose();
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
             return players;
+        }
+
+        private int ResolveZoneHashByPosition(Entity player)
+        {
+            try
+            {
+                var em = VAutomationCore.Core.UnifiedCore.EntityManager;
+                if (em == default || player == Entity.Null || !em.Exists(player) || ZoneConfig == null)
+                {
+                    return 0;
+                }
+
+                if (!TryGetBestPosition(em, player, out var position))
+                {
+                    return 0;
+                }
+
+                var currentHash = _playersInZones.TryGetValue(player, out var cachedHash) ? cachedHash : 0;
+                var zones = ZoneConfig.GetZones()
+                    .OrderByDescending(z => z.Priority)
+                    .ThenByDescending(z => z.EntryRadiusSq)
+                    .ThenBy(z => z.Hash);
+
+                foreach (var zone in zones)
+                {
+                    var distSq = math.distancesq(position, zone.GetCenterFloat3());
+                    var inside = currentHash == zone.Hash
+                        ? distSq <= zone.ExitRadiusSq
+                        : distSq <= zone.EntryRadiusSq;
+                    if (inside)
+                    {
+                        _playersInZones[player] = zone.Hash;
+                        return zone.Hash;
+                    }
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return 0;
+        }
+
+        private static bool TryGetBestPosition(EntityManager em, Entity entity, out float3 position)
+        {
+            position = default;
+
+            try
+            {
+                if (em.HasComponent<LocalTransform>(entity))
+                {
+                    position = em.GetComponentData<LocalTransform>(entity).Position;
+                    return true;
+                }
+
+                if (em.HasComponent<Translation>(entity))
+                {
+                    position = em.GetComponentData<Translation>(entity).Value;
+                    return true;
+                }
+
+                if (em.HasComponent<LastTranslation>(entity))
+                {
+                    position = em.GetComponentData<LastTranslation>(entity).Value;
+                    return true;
+                }
+
+                if (em.HasComponent<SpawnTransform>(entity))
+                {
+                    position = em.GetComponentData<SpawnTransform>(entity).Position;
+                    return true;
+                }
+
+                if (em.HasComponent<LocalToWorld>(entity))
+                {
+                    position = em.GetComponentData<LocalToWorld>(entity).Position;
+                    return true;
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return false;
         }
 
         private static bool TryGetPlatformId(Entity characterEntity, out ulong platformId)

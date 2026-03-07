@@ -6,7 +6,7 @@
       "supportedZoneTypes": ["arena"],
       "session": {
         "enabled": true,
-        "minPlayers": 2,
+        "minPlayers": 1,
         "maxPlayers": 16,
         "countdownSeconds": 8,
         "readyTimeoutSeconds": 90,

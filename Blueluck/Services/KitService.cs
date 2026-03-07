@@ -12,6 +12,7 @@ using Stunlock.Core;
 using Unity.Entities;
 using VAuto.Services.Interfaces;
 using VAuto.Core;
+using VAutomationCore.Abstractions;
 using VAutomationCore.Services;
 
 namespace Blueluck.Services
@@ -70,8 +71,6 @@ namespace Blueluck.Services
             }
 
             LoadKits();
-            EnsureDebugEventsSystem(world);
-
             IsInitialized = true;
             _log.LogInfo($"[Kits] Initialized with {_kits.Count} kits.");
         }
@@ -136,17 +135,6 @@ namespace Blueluck.Services
                 return false;
             }
 
-            if (_giveItem == null)
-            {
-                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
-            }
-
-            if (_giveItem == null)
-            {
-                NotifyUser(fromCharacter.User, $"[Kits] Cannot grant kit '{kitName}': give-item API unavailable.");
-                return false;
-            }
-
             var ok = true;
             foreach (var item in items)
             {
@@ -163,7 +151,18 @@ namespace Blueluck.Services
                     continue;
                 }
 
-                if (!_giveItem(fromCharacter, guid, qty))
+                var granted = Items.AddItem(fromCharacter.User, player, guid, qty);
+                if (!granted)
+                {
+                    if (_giveItem == null)
+                    {
+                        EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+                    }
+
+                    granted = _giveItem != null && _giveItem(fromCharacter, guid, qty);
+                }
+
+                if (!granted)
                 {
                     _log.LogWarning($"[Kits] Failed to give '{item.Prefab}' x{qty} to player {player.Index} (kit '{kitName}')");
                     ok = false;
@@ -424,14 +423,14 @@ namespace Blueluck.Services
             if (_giveItem != null)
             {
                 _loggedUnavailable = false;
-                _log.LogInfo("[Kits] DebugEventsSystem resolved lazily; kit grants enabled.");
+                _log.LogInfo("[Kits] DebugEventsSystem resolved lazily; debug-event kit grants enabled.");
                 return;
             }
 
             if (!_loggedUnavailable)
             {
                 _loggedUnavailable = true;
-                _log.LogWarning("[Kits] DebugEventsSystem still unavailable; kit grants will retry later.");
+                _log.LogWarning("[Kits] DebugEventsSystem unavailable; using VAutomationCore item actions and retrying debug-event grants later.");
             }
         }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BepInEx.Logging;
 using Blueluck.Models;
 using ProjectM;
@@ -11,6 +12,7 @@ using VAuto.Core;
 using VAuto.Services.Interfaces;
 using VAutomationCore.Core;
 using VAutomationCore.Core.Api;
+using VAutomationCore.Core.Services;
 using VAutomationCore.Services;
 
 namespace Blueluck.Services
@@ -21,6 +23,9 @@ namespace Blueluck.Services
     public class FlowRegistryService : IService
     {
         private static readonly ManualLogSource _log = Logger.CreateLogSource("Blueluck.FlowRegistry");
+        private const string BridgeModId = "Blueluck";
+        private const string BossSpawnTopic = "boss.spawn";
+        private const string BloodyBossSpawnTopic = "bloodyboss.spawn";
 
         public bool IsInitialized { get; private set; }
         public ManualLogSource Log => _log;
@@ -29,6 +34,7 @@ namespace Blueluck.Services
         private PrefabToGuidService? _prefabToGuid;
         private readonly Dictionary<int, List<Entity>> _borderFxByZone = new();
         private readonly Dictionary<int, List<Entity>> _bossesByZone = new();
+        private Action<string, object>? _bossSpawnMessageHandler;
 
         public static class FlowActions
         {
@@ -66,12 +72,14 @@ namespace Blueluck.Services
         {
             _prefabToGuid = Plugin.PrefabToGuid;
             RegisterFlowActionAliases();
+            RegisterCrossModBossBridge();
             IsInitialized = true;
             _log.LogInfo("[FlowRegistry] Initialized.");
         }
 
         public void Cleanup()
         {
+            UnregisterCrossModBossBridge();
             CleanupAllSpawnedEntities();
             _flowDefinitions.Clear();
             IsInitialized = false;
@@ -119,6 +127,7 @@ namespace Blueluck.Services
         {
             if (string.IsNullOrWhiteSpace(flowId) || player == Entity.Null)
             {
+                _log.LogWarning($"[FlowRegistry] ExecuteFlow skipped: invalid flowId/player. flowId='{flowId ?? "<null>"}' player={player.Index} zoneHash={zoneHash}");
                 return;
             }
 
@@ -128,6 +137,13 @@ namespace Blueluck.Services
                 return;
             }
 
+            if (definition.Actions == null || definition.Actions.Length == 0)
+            {
+                _log.LogWarning($"[FlowRegistry] Flow '{flowId}' has no actions. zone={zoneId} hash={zoneHash} player={player.Index}");
+                return;
+            }
+
+            _log.LogInfo($"[FlowRegistry] Executing flow '{flowId}' with {definition.Actions.Length} action(s). zone={zoneId} hash={zoneHash} player={player.Index}");
             foreach (var action in definition.Actions)
             {
                 ExecuteAction(action, player, zoneId, zoneHash);
@@ -136,7 +152,15 @@ namespace Blueluck.Services
 
         public void ExecuteFlows(IEnumerable<string> flowIds, Entity player, string zoneId, int zoneHash)
         {
-            foreach (var flowId in flowIds ?? Array.Empty<string>())
+            var resolved = (flowIds ?? Array.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
+            if (resolved.Length == 0)
+            {
+                _log.LogWarning($"[FlowRegistry] ExecuteFlows skipped: no flow ids resolved. zone={zoneId} hash={zoneHash} player={player.Index}");
+                return;
+            }
+
+            _log.LogInfo($"[FlowRegistry] Executing {resolved.Length} flow id(s): {string.Join(", ", resolved)}. zone={zoneId} hash={zoneHash} player={player.Index}");
+            foreach (var flowId in resolved)
             {
                 ExecuteFlow(flowId, player, zoneId, zoneHash);
             }
@@ -185,7 +209,17 @@ namespace Blueluck.Services
 
         public bool EnsureBosses(Entity player, int zoneHash, string bossPrefab, int quantity = 1, bool randomInZone = true, float3? position = null)
         {
-            if (player == Entity.Null || string.IsNullOrWhiteSpace(bossPrefab))
+            return EnsureBosses(zoneHash, bossPrefab, quantity, randomInZone, position, player);
+        }
+
+        public bool EnsureBosses(int zoneHash, string bossPrefab, int quantity = 1, bool randomInZone = true, float3? position = null)
+        {
+            return EnsureBosses(zoneHash, bossPrefab, quantity, randomInZone, position, Entity.Null);
+        }
+
+        private bool EnsureBosses(int zoneHash, string bossPrefab, int quantity, bool randomInZone, float3? position, Entity player)
+        {
+            if (zoneHash == 0 || string.IsNullOrWhiteSpace(bossPrefab))
             {
                 return false;
             }
@@ -276,10 +310,469 @@ namespace Blueluck.Services
             }
         }
 
+        private void RegisterCrossModBossBridge()
+        {
+            if (_bossSpawnMessageHandler != null)
+            {
+                return;
+            }
+
+            _bossSpawnMessageHandler = HandleBossSpawnMessage;
+
+            try
+            {
+                ModCommunicationService.Instance.Subscribe(BridgeModId, BossSpawnTopic, _bossSpawnMessageHandler);
+                ModCommunicationService.Instance.Subscribe(BridgeModId, BloodyBossSpawnTopic, _bossSpawnMessageHandler);
+                _log.LogInfo($"[FlowRegistry] Cross-mod boss bridge subscribed: {BridgeModId}.{BossSpawnTopic}, {BridgeModId}.{BloodyBossSpawnTopic}");
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning($"[FlowRegistry] Failed to register cross-mod boss bridge: {ex.Message}");
+                _bossSpawnMessageHandler = null;
+            }
+        }
+
+        private void UnregisterCrossModBossBridge()
+        {
+            if (_bossSpawnMessageHandler == null)
+            {
+                return;
+            }
+
+            try
+            {
+                ModCommunicationService.Instance.Unsubscribe(BridgeModId, BossSpawnTopic, _bossSpawnMessageHandler);
+                ModCommunicationService.Instance.Unsubscribe(BridgeModId, BloodyBossSpawnTopic, _bossSpawnMessageHandler);
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug($"[FlowRegistry] Cross-mod boss bridge unsubscribe skipped: {ex.Message}");
+            }
+            finally
+            {
+                _bossSpawnMessageHandler = null;
+            }
+        }
+
+        private void HandleBossSpawnMessage(string fromMod, object payload)
+        {
+            try
+            {
+                if (!TryBuildBossSpawnRequest(payload, out var request, out var error))
+                {
+                    _log.LogWarning($"[FlowRegistry] Rejected boss spawn request from '{fromMod}': {error}");
+                    return;
+                }
+
+                var ok = EnsureBosses(
+                    request.ZoneHash,
+                    request.Prefab,
+                    request.Quantity,
+                    request.RandomInZone,
+                    request.Position);
+
+                if (!ok)
+                {
+                    _log.LogWarning($"[FlowRegistry] Boss spawn request from '{fromMod}' did not execute. zoneHash={request.ZoneHash} prefab={request.Prefab}");
+                    return;
+                }
+
+                _log.LogInfo($"[FlowRegistry] Boss spawn request accepted from '{fromMod}'. zoneHash={request.ZoneHash} prefab={request.Prefab} qty={request.Quantity} random={request.RandomInZone}");
+            }
+            catch (Exception ex)
+            {
+                _log.LogError($"[FlowRegistry] Boss spawn bridge failed for '{fromMod}': {ex.Message}");
+            }
+        }
+
+        private bool TryBuildBossSpawnRequest(object payload, out ExternalBossSpawnRequest request, out string error)
+        {
+            request = default;
+            error = string.Empty;
+
+            if (payload == null)
+            {
+                error = "payload is null";
+                return false;
+            }
+
+            if (!TryReadString(payload, new[] { "prefab", "bossPrefab", "boss", "unit" }, out var prefab) ||
+                string.IsNullOrWhiteSpace(prefab))
+            {
+                error = "missing prefab/bossPrefab";
+                return false;
+            }
+
+            var hasPosition = TryReadFloat3(payload, new[] { "position", "spawnPosition", "pos", "location" }, out var position);
+            var hasRandomInZone = TryReadBool(payload, new[] { "randomInZone", "random", "useRandomSpawn" }, out var randomInZone);
+            var quantity = TryReadInt(payload, new[] { "quantity", "qty", "count" }, out var parsedQuantity) && parsedQuantity > 0
+                ? parsedQuantity
+                : 1;
+
+            var player = ResolveRequestedPlayer(payload);
+            var zoneHash = ResolveRequestedZoneHash(payload, player);
+            if (zoneHash == 0)
+            {
+                error = "missing valid zoneHash/zoneName and no player zone fallback was resolved";
+                return false;
+            }
+
+            request = new ExternalBossSpawnRequest(
+                Prefab: prefab.Trim(),
+                ZoneHash: zoneHash,
+                Quantity: quantity,
+                RandomInZone: hasRandomInZone ? randomInZone : !hasPosition,
+                Position: hasPosition ? position : null);
+            return true;
+        }
+
+        private Entity ResolveRequestedPlayer(object payload)
+        {
+            if (TryReadULong(payload, new[] { "platformId", "playerPlatformId", "steamId", "playerSteamId" }, out var platformId) &&
+                TryResolvePlayerEntity(platformId, out var player))
+            {
+                return player;
+            }
+
+            return Entity.Null;
+        }
+
+        private int ResolveRequestedZoneHash(object payload, Entity player)
+        {
+            if (TryReadInt(payload, new[] { "zoneHash", "zone", "hash" }, out var zoneHash) &&
+                zoneHash != 0 &&
+                Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out _) == true)
+            {
+                return zoneHash;
+            }
+
+            if (TryReadString(payload, new[] { "zoneName", "zoneId", "name" }, out var zoneName) &&
+                TryResolveZoneHashByName(zoneName, out zoneHash))
+            {
+                return zoneHash;
+            }
+
+            return player != Entity.Null && Plugin.ZoneTransition != null
+                ? Plugin.ZoneTransition.GetPlayerZone(player)
+                : 0;
+        }
+
+        private bool TryResolveZoneHashByName(string? zoneName, out int zoneHash)
+        {
+            zoneHash = 0;
+            if (string.IsNullOrWhiteSpace(zoneName) || Plugin.ZoneConfig == null)
+            {
+                return false;
+            }
+
+            var normalized = zoneName.Trim();
+            var match = Plugin.ZoneConfig
+                .GetZones()
+                .FirstOrDefault(zone => string.Equals(zone.Name, normalized, StringComparison.OrdinalIgnoreCase));
+            if (match == null)
+            {
+                return false;
+            }
+
+            zoneHash = match.Hash;
+            return zoneHash != 0;
+        }
+
+        private static bool TryResolvePlayerEntity(ulong platformId, out Entity player)
+        {
+            player = Entity.Null;
+            if (platformId == 0)
+            {
+                return false;
+            }
+
+            try
+            {
+                var em = UnifiedCore.EntityManager;
+                if (em == default)
+                {
+                    return false;
+                }
+
+                var query = em.CreateEntityQuery(ComponentType.ReadOnly<PlayerCharacter>());
+                var players = query.ToEntityArray(Unity.Collections.Allocator.Temp);
+                try
+                {
+                    for (var i = 0; i < players.Length; i++)
+                    {
+                        var candidate = players[i];
+                        if (!em.Exists(candidate) || !em.HasComponent<PlayerCharacter>(candidate))
+                        {
+                            continue;
+                        }
+
+                        var playerCharacter = em.GetComponentData<PlayerCharacter>(candidate);
+                        if (playerCharacter.UserEntity == Entity.Null ||
+                            !em.Exists(playerCharacter.UserEntity) ||
+                            !em.HasComponent<User>(playerCharacter.UserEntity))
+                        {
+                            continue;
+                        }
+
+                        var user = em.GetComponentData<User>(playerCharacter.UserEntity);
+                        if (user.PlatformId != platformId)
+                        {
+                            continue;
+                        }
+
+                        player = candidate;
+                        return true;
+                    }
+                }
+                finally
+                {
+                    players.Dispose();
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return false;
+        }
+
+        private static bool TryReadString(object payload, string[] names, out string value)
+        {
+            value = string.Empty;
+            if (!TryGetPayloadValue(payload, names, out var raw) || raw == null)
+            {
+                return false;
+            }
+
+            value = raw.ToString() ?? string.Empty;
+            return !string.IsNullOrWhiteSpace(value);
+        }
+
+        private static bool TryReadInt(object payload, string[] names, out int value)
+        {
+            value = 0;
+            if (!TryGetPayloadValue(payload, names, out var raw) || raw == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                value = raw switch
+                {
+                    int i => i,
+                    long l => checked((int)l),
+                    short s => s,
+                    byte b => b,
+                    uint ui => checked((int)ui),
+                    _ => Convert.ToInt32(raw)
+                };
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryReadULong(object payload, string[] names, out ulong value)
+        {
+            value = 0;
+            if (!TryGetPayloadValue(payload, names, out var raw) || raw == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                value = raw switch
+                {
+                    ulong ul => ul,
+                    long l when l >= 0 => (ulong)l,
+                    uint ui => ui,
+                    int i when i >= 0 => (ulong)i,
+                    _ => Convert.ToUInt64(raw)
+                };
+                return value != 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryReadBool(object payload, string[] names, out bool value)
+        {
+            value = false;
+            if (!TryGetPayloadValue(payload, names, out var raw) || raw == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                value = raw switch
+                {
+                    bool b => b,
+                    string s when bool.TryParse(s, out var parsed) => parsed,
+                    _ => Convert.ToBoolean(raw)
+                };
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryReadFloat3(object payload, string[] names, out float3 value)
+        {
+            value = default;
+            if (!TryGetPayloadValue(payload, names, out var raw) || raw == null)
+            {
+                return TryReadFloat3FromComponents(payload, out value);
+            }
+
+            switch (raw)
+            {
+                case float3 f3:
+                    value = f3;
+                    return true;
+                case float[] arr when arr.Length >= 3:
+                    value = new float3(arr[0], arr[1], arr[2]);
+                    return true;
+                case double[] arr when arr.Length >= 3:
+                    value = new float3((float)arr[0], (float)arr[1], (float)arr[2]);
+                    return true;
+                case int[] arr when arr.Length >= 3:
+                    value = new float3(arr[0], arr[1], arr[2]);
+                    return true;
+            }
+
+            if (TryGetPayloadValue(raw, new[] { "x" }, out var xRaw) &&
+                TryGetPayloadValue(raw, new[] { "y" }, out var yRaw) &&
+                TryGetPayloadValue(raw, new[] { "z" }, out var zRaw) &&
+                TryConvertToFloat(xRaw, out var x) &&
+                TryConvertToFloat(yRaw, out var y) &&
+                TryConvertToFloat(zRaw, out var z))
+            {
+                value = new float3(x, y, z);
+                return true;
+            }
+
+            return TryReadFloat3FromComponents(payload, out value);
+        }
+
+        private static bool TryReadFloat3FromComponents(object payload, out float3 value)
+        {
+            value = default;
+            return TryGetPayloadValue(payload, new[] { "x", "posX", "spawnX" }, out var xRaw) &&
+                   TryGetPayloadValue(payload, new[] { "y", "posY", "spawnY" }, out var yRaw) &&
+                   TryGetPayloadValue(payload, new[] { "z", "posZ", "spawnZ" }, out var zRaw) &&
+                   TryConvertToFloat(xRaw, out var x) &&
+                   TryConvertToFloat(yRaw, out var y) &&
+                   TryConvertToFloat(zRaw, out var z) &&
+                   AssignFloat3(x, y, z, out value);
+        }
+
+        private static bool AssignFloat3(float x, float y, float z, out float3 value)
+        {
+            value = new float3(x, y, z);
+            return true;
+        }
+
+        private static bool TryConvertToFloat(object? raw, out float value)
+        {
+            value = 0f;
+            if (raw == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                value = raw switch
+                {
+                    float f => f,
+                    double d => (float)d,
+                    int i => i,
+                    long l => l,
+                    _ => Convert.ToSingle(raw)
+                };
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryGetPayloadValue(object payload, string[] names, out object? value)
+        {
+            value = null;
+            if (payload == null || names == null || names.Length == 0)
+            {
+                return false;
+            }
+
+            if (payload is IReadOnlyDictionary<string, object> readOnlyDictionary)
+            {
+                foreach (var name in names)
+                {
+                    var match = readOnlyDictionary.FirstOrDefault(pair => string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrEmpty(match.Key))
+                    {
+                        value = match.Value;
+                        return true;
+                    }
+                }
+            }
+
+            if (payload is IDictionary<string, object> dictionary)
+            {
+                foreach (var name in names)
+                {
+                    var match = dictionary.FirstOrDefault(pair => string.Equals(pair.Key, name, StringComparison.OrdinalIgnoreCase));
+                    if (!string.IsNullOrEmpty(match.Key))
+                    {
+                        value = match.Value;
+                        return true;
+                    }
+                }
+            }
+
+            var property = payload
+                .GetType()
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .FirstOrDefault(p => p.CanRead && names.Any(name => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)));
+            if (property == null)
+            {
+                return false;
+            }
+
+            value = property.GetValue(payload);
+            return true;
+        }
+
+        private readonly record struct ExternalBossSpawnRequest(
+            string Prefab,
+            int ZoneHash,
+            int Quantity,
+            bool RandomInZone,
+            float3? Position);
+
         private void ExecuteAction(FlowAction action, Entity player, string zoneId, int zoneHash)
         {
             try
             {
+                if (action == null || string.IsNullOrWhiteSpace(action.Action))
+                {
+                    _log.LogWarning($"[FlowRegistry] ExecuteAction skipped: action null/empty. zone={zoneId} hash={zoneHash} player={player.Index}");
+                    return;
+                }
+
+                _log.LogInfo($"[FlowRegistry] Action '{action.Action}' executing. zone={zoneId} hash={zoneHash} player={player.Index}");
                 switch (action.Action)
                 {
                     case FlowActions.SetPvp:
@@ -361,25 +854,46 @@ namespace Blueluck.Services
             }
             catch (Exception ex)
             {
-                _log.LogError($"[FlowRegistry] Error executing action '{action.Action}': {ex.Message}");
+                _log.LogError($"[FlowRegistry] Error executing action '{action.Action}' in zone={zoneId} hash={zoneHash} player={player.Index}: {ex.Message}");
             }
         }
 
         private void HandleSetPvp(FlowAction action, Entity player, int zoneHash)
         {
             var enabled = action.Value is bool b && b;
-            if (!TryResolveUserEntity(player, out var userEntity) || !TryResolvePrefabGuid("Buff_PvP_Enabled", out var pvpBuffGuid))
+            if (!TryResolvePvpBuffGuid(out var pvpBuffGuid))
             {
+                _log.LogWarning($"[FlowRegistry] SetPvp skipped: PvP buff unresolved for player={player.Index} zoneHash={zoneHash} enabled={enabled}");
+                return;
+            }
+
+            if (!TryResolveUserEntity(player, out var userEntity))
+            {
+                _log.LogWarning($"[FlowRegistry] SetPvp skipped: user unresolved for player={player.Index} zoneHash={zoneHash} enabled={enabled}");
                 return;
             }
 
             if (enabled)
             {
-                GameActionService.InvokeAction("applybuff", new object[] { userEntity, player, pvpBuffGuid, -1f });
+                var ok = GameActionService.InvokeAction("applybuff", new object[] { userEntity, player, pvpBuffGuid, -1f });
+                if (!ok)
+                {
+                    _log.LogWarning($"[FlowRegistry] SetPvp apply failed for player={player.Index} zoneHash={zoneHash} buff={pvpBuffGuid.GuidHash}");
+                    return;
+                }
+
+                _log.LogInfo($"[FlowRegistry] SetPvp applied for player={player.Index} zoneHash={zoneHash} buff={pvpBuffGuid.GuidHash}");
             }
             else
             {
-                GameActionService.InvokeAction("removebuff", new object[] { player, pvpBuffGuid });
+                var ok = GameActionService.InvokeAction("removebuff", new object[] { player, pvpBuffGuid });
+                if (!ok)
+                {
+                    _log.LogWarning($"[FlowRegistry] SetPvp remove failed for player={player.Index} zoneHash={zoneHash} buff={pvpBuffGuid.GuidHash}");
+                    return;
+                }
+
+                _log.LogInfo($"[FlowRegistry] SetPvp removed for player={player.Index} zoneHash={zoneHash} buff={pvpBuffGuid.GuidHash}");
             }
         }
 
@@ -388,6 +902,7 @@ namespace Blueluck.Services
             var message = action.Message ?? action.Value?.ToString();
             if (string.IsNullOrWhiteSpace(message) || !TryResolveUserEntity(player, out var userEntity))
             {
+                _log.LogWarning($"[FlowRegistry] SendMessage skipped: message/user unresolved for player={player.Index} zoneHash={zoneHash}");
                 return;
             }
 
@@ -399,11 +914,13 @@ namespace Blueluck.Services
             var bossPrefab = action.Prefab?.ToString();
             if (string.IsNullOrWhiteSpace(bossPrefab) || !TryResolvePrefabGuid(bossPrefab, out var bossGuid))
             {
+                _log.LogWarning($"[FlowRegistry] SpawnBoss skipped: prefab unresolved '{bossPrefab}' zoneHash={zoneHash}");
                 return;
             }
 
             if (!UnifiedCore.TryGetPrefabEntity(bossGuid, out var prefabEntity) || prefabEntity == Entity.Null)
             {
+                _log.LogWarning($"[FlowRegistry] SpawnBoss skipped: prefab entity missing for '{bossPrefab}' guid={bossGuid.GuidHash} zoneHash={zoneHash}");
                 return;
             }
 
@@ -451,16 +968,19 @@ namespace Blueluck.Services
             var vfxPrefab = action.VfxPrefab?.ToString();
             if (string.IsNullOrWhiteSpace(vfxPrefab) || !TryResolvePrefabGuid(vfxPrefab, out var vfxGuid))
             {
+                _log.LogWarning($"[FlowRegistry] ApplyBorderFx skipped: VFX unresolved '{vfxPrefab}' zoneHash={zoneHash}");
                 return;
             }
 
             if (!UnifiedCore.TryGetPrefabEntity(vfxGuid, out var prefabEntity) || prefabEntity == Entity.Null)
             {
+                _log.LogWarning($"[FlowRegistry] ApplyBorderFx skipped: prefab entity missing for '{vfxPrefab}' guid={vfxGuid.GuidHash} zoneHash={zoneHash}");
                 return;
             }
 
             if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) != true || zone == null)
             {
+                _log.LogWarning($"[FlowRegistry] ApplyBorderFx skipped: zone {zoneHash} not found.");
                 return;
             }
 
@@ -492,6 +1012,7 @@ namespace Blueluck.Services
             var buffPrefab = action.BuffPrefab ?? action.Value?.ToString();
             if (string.IsNullOrWhiteSpace(buffPrefab) || !TryResolveUserEntity(player, out var userEntity) || !TryResolvePrefabGuid(buffPrefab, out var buffGuid))
             {
+                _log.LogWarning($"[FlowRegistry] ApplyZoneBuff skipped: buff/user unresolved for player={player.Index} buff='{buffPrefab ?? "<null>"}'");
                 return;
             }
 
@@ -504,6 +1025,7 @@ namespace Blueluck.Services
             var buffPrefab = action.BuffPrefab ?? action.Value?.ToString();
             if (string.IsNullOrWhiteSpace(buffPrefab) || !TryResolvePrefabGuid(buffPrefab, out var buffGuid))
             {
+                _log.LogWarning($"[FlowRegistry] RemoveZoneBuff skipped: buff unresolved '{buffPrefab ?? "<null>"}' player={player.Index}");
                 return;
             }
 
@@ -669,6 +1191,18 @@ namespace Blueluck.Services
             }
 
             return PrefabGuidConverter.TryGetGuid(token, out guid) && guid.GuidHash != 0;
+        }
+
+        private static bool TryResolvePvpBuffGuid(out PrefabGUID guid)
+        {
+            guid = PrefabGUID.Empty;
+
+            if (Plugin.PrefabToGuid?.IsInitialized == true && Plugin.PrefabToGuid.TryGetGuid("Buff_PvP_Enabled", out guid))
+            {
+                return guid.GuidHash != 0;
+            }
+
+            return PrefabGuidConverter.TryGetGuid("Buff_PvP_Enabled", out guid) && guid.GuidHash != 0;
         }
 
         private static bool TryResolveUserEntity(Entity player, out Entity userEntity)

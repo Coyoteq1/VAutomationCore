@@ -12,21 +12,30 @@ namespace Blueluck.Commands
     [CommandGroup("game", "g")]
     public static class GameSessionCommands
     {
+        [Command("help", adminOnly: false)]
+        public static void Help(ChatCommandContext ctx)
+        {
+            ctx.Reply("[Game] Commands: ready, unready, lobby, status, forcestart, start, end, reset, reload, debug, stun, unstun, tpallzone <zoneHash>, tpallpos <x> <y> <z>");
+        }
+
         [Command("ready", adminOnly: false)]
         public static void Ready(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "ready");
             ExecuteReady(ctx, true);
         }
 
         [Command("unready", adminOnly: false)]
         public static void Unready(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "unready");
             ExecuteReady(ctx, false);
         }
 
         [Command("lobby", adminOnly: false)]
         public static void Lobby(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "lobby");
             if (!TryGetCurrentSession(ctx, out var session, out _))
             {
                 ctx.Reply("Not in a session-enabled zone.");
@@ -39,12 +48,14 @@ namespace Blueluck.Commands
         [Command("status", adminOnly: false)]
         public static void Status(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "status");
             Lobby(ctx);
         }
 
         [Command("forcestart", adminOnly: true)]
         public static void ForceStart(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "forcestart");
             if (!TryGetCurrentZoneHash(ctx, out var zoneHash))
             {
                 ctx.Reply("Not in a session-enabled zone.");
@@ -58,11 +69,15 @@ namespace Blueluck.Commands
         [Command("start", adminOnly: true)]
         public static void Start(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "start");
             if (!TryGetCurrentZoneHash(ctx, out var zoneHash))
             {
                 ctx.Reply("Not in a session-enabled zone.");
                 return;
             }
+
+            var playersInZone = Plugin.ZoneTransition?.GetPlayersInZone(zoneHash) ?? new System.Collections.Generic.List<Entity>();
+            Plugin.Logger.LogInfo($"[Game] Auto-applying session start to {playersInZone.Count} player(s) currently inside zone {zoneHash}.");
 
             var ok = Plugin.GameSessions?.Start(zoneHash) == true;
             ctx.Reply(ok ? "[Game] Session start triggered." : "[Game] Session start failed.");
@@ -71,6 +86,7 @@ namespace Blueluck.Commands
         [Command("end", adminOnly: true)]
         public static void End(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "end");
             if (!TryGetCurrentSession(ctx, out _, out var zoneHash))
             {
                 ctx.Reply("Not in an active session.");
@@ -84,6 +100,7 @@ namespace Blueluck.Commands
         [Command("reset", adminOnly: true)]
         public static void Reset(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "reset");
             if (!TryGetCurrentSession(ctx, out var session, out var zoneHash))
             {
                 ctx.Reply("Not in an active session.");
@@ -98,14 +115,17 @@ namespace Blueluck.Commands
         [Command("reload", adminOnly: true)]
         public static void Reload(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "reload");
             Plugin.FlowRegistry?.Reload();
+            Plugin.ZoneConfig?.Reload();
             Plugin.GamePresets?.InvalidateAll();
-            ctx.Reply("[Game] Config reload requested.");
+            ctx.Reply("[Game] Flow and zone config reload requested.");
         }
 
         [Command("debug", adminOnly: true)]
         public static void Debug(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "debug");
             if (!TryGetCurrentSession(ctx, out var session, out _))
             {
                 ctx.Reply("Not in an active session.");
@@ -118,18 +138,21 @@ namespace Blueluck.Commands
         [Command("stun", adminOnly: true)]
         public static void Stun(ChatCommandContext ctx, float durationSeconds)
         {
+            LogCommand(ctx, "stun");
             ctx.Reply($"[Game] Stun command reserved for session flows. Duration={durationSeconds.ToString(CultureInfo.InvariantCulture)}");
         }
 
         [Command("unstun", adminOnly: true)]
         public static void Unstun(ChatCommandContext ctx)
         {
+            LogCommand(ctx, "unstun");
             ctx.Reply("[Game] Unstun command reserved for session flows.");
         }
 
-        [Command("tpall", adminOnly: true)]
+        [Command("tpallzone", adminOnly: true)]
         public static void TpAllZone(ChatCommandContext ctx, string targetZoneHash)
         {
+            LogCommand(ctx, "tpallzone");
             if (!TryGetCurrentSession(ctx, out var session, out _))
             {
                 ctx.Reply("Not in an active session.");
@@ -151,9 +174,9 @@ namespace Blueluck.Commands
                 return;
             }
 
-            var destination = targetZone.GetCenterFloat3();
             foreach (var participant in participants)
             {
+                var destination = targetZone.GetCenterFloat3();
                 GameActionService.InvokeAction("setposition", new object[] { participant, destination });
             }
 
@@ -161,9 +184,10 @@ namespace Blueluck.Commands
             ctx.Reply($"[Game] Teleported {participants.Length} participant(s) to zone {parsedZoneHash}.");
         }
 
-        [Command("tpall", adminOnly: true)]
+        [Command("tpallpos", adminOnly: true)]
         public static void TpAllPosition(ChatCommandContext ctx, float x, float y, float z)
         {
+            LogCommand(ctx, "tpallpos");
             if (!TryGetCurrentSession(ctx, out var session, out _))
             {
                 ctx.Reply("Not in an active session.");
@@ -229,5 +253,11 @@ namespace Blueluck.Commands
             zoneHash = Plugin.ZoneTransition.GetPlayerZone(player);
             return zoneHash != 0 && Plugin.GameSessions.IsSessionEnabledZone(zoneHash);
         }
+
+        private static void LogCommand(ChatCommandContext ctx, string commandName)
+        {
+            Plugin.Logger.LogInfo($"[Command] {ctx.User.CharacterName} executed game {commandName}");
+        }
+
     }
 }
