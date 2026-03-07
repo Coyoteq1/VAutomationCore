@@ -28,6 +28,7 @@ else {
 }
 
 $blueluckConfigDir = Join-Path $bepInExRoot 'config/Blueluck'
+$blueluckGameplayDir = Join-Path $blueluckConfigDir 'gameplay'
 
 if (-not $SkipBuild) {
     Write-Host "[deploy] Building projects..." -ForegroundColor Cyan
@@ -37,6 +38,7 @@ if (-not $SkipBuild) {
 Write-Host "[deploy] Ensuring target directories..." -ForegroundColor Cyan
 New-Item -ItemType Directory -Force -Path $plugins | Out-Null
 New-Item -ItemType Directory -Force -Path $blueluckConfigDir | Out-Null
+New-Item -ItemType Directory -Force -Path $blueluckGameplayDir | Out-Null
 
 Write-Host "[deploy] Collecting artifacts..." -ForegroundColor Cyan
 $tfm = 'net6.0'
@@ -56,7 +58,33 @@ foreach ($f in $artifacts) {
     Copy-Item -Force -Path $f -Destination $plugins
 }
 
-Write-Host "[deploy] Blueluck will generate config files on first run under: $blueluckConfigDir" -ForegroundColor Cyan
+$gameplayFiles = @(
+    'arena.settings.json',
+    'arena.zones.json',
+    'arena.rules.json',
+    'arena_flows.config.json',
+    'arena_presets.config.json',
+    'boss.settings.json',
+    'boss.zones.json',
+    'boss.rules.json',
+    'boss_flows.config.json',
+    'boss_presets.config.json'
+)
+
+Write-Host "[deploy] Copying Blueluck gameplay configs to: $blueluckGameplayDir" -ForegroundColor Cyan
+foreach ($fileName in $gameplayFiles) {
+    $source = Join-Path $root "Blueluck/config/$fileName"
+    if (Test-Path $source) {
+        Copy-Item -Force -Path $source -Destination $blueluckGameplayDir
+    }
+}
+
+$buffsSource = Join-Path $root 'Blueluck/config/buffs_numbered.txt'
+if (Test-Path $buffsSource) {
+    Copy-Item -Force -Path $buffsSource -Destination $blueluckConfigDir
+}
+
+Write-Host "[deploy] Blueluck configs copied under: $blueluckConfigDir" -ForegroundColor Cyan
 
 Write-Host "[deploy] Done." -ForegroundColor Green
 Write-Host "[deploy] BepInEx: $bepInExRoot" -ForegroundColor Green

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using BepInEx.Logging;
+using ProjectM;
 using Unity.Entities;
 using VAuto.Services.Interfaces;
 using Blueluck.Models;
@@ -10,7 +12,6 @@ namespace Blueluck.Services
 {
     /// <summary>
     /// Service for handling zone enter/exit transitions.
-    /// Implements IService from VAutomationCore.
     /// </summary>
     public class ZoneTransitionService : IService
     {
@@ -26,7 +27,7 @@ namespace Blueluck.Services
 
         private static ZoneConfigService? ZoneConfig => Plugin.ZoneConfig?.IsInitialized == true ? Plugin.ZoneConfig : null;
         private static FlowRegistryService? FlowRegistry => Plugin.FlowRegistry?.IsInitialized == true ? Plugin.FlowRegistry : null;
-        private static ProgressService? Progress => Plugin.Progress?.IsInitialized == true ? Plugin.Progress : null;
+        private static GameSessionManager? GameSessions => Plugin.GameSessions?.IsInitialized == true ? Plugin.GameSessions : null;
 
         public void Initialize()
         {
@@ -54,44 +55,17 @@ namespace Blueluck.Services
                 // Track player in zone
                 _playersInZones[player] = zone.Hash;
                 _zoneOccupancy[zone.Hash] = _zoneOccupancy.TryGetValue(zone.Hash, out var count) ? count + 1 : 1;
+                var sessionEnabled = GameSessions?.IsSessionEnabledZone(zone.Hash) == true;
 
-                // Handle zone-specific enter logic
-                switch (zone.Type)
-                {
-                    case "BossZone":
-                        HandleBossZoneEnter(player, zone);
-                        break;
-                    case "ArenaZone":
-                        HandleArenaZoneEnter(player, zone);
-                        break;
-                }
-
-                // Apply kit on enter for any zone type (after SaveProgress so snapshot isn't polluted by kit grants).
-                if (Plugin.Kits?.IsInitialized == true && !string.IsNullOrWhiteSpace(zone.KitOnEnter))
-                {
-                    Plugin.Kits.ApplyKit(player, zone.KitOnEnter);
-                }
-
-                // Apply ability set on enter for any zone type.
-                if (Plugin.Abilities?.IsInitialized == true)
-                {
-                    // Boss zones may specify an array; if so, use first as default.
-                    var bossDefault = zone is BossZoneConfig bossCfg && bossCfg.AbilitySets != null && bossCfg.AbilitySets.Length > 0
-                        ? bossCfg.AbilitySets[0]
-                        : null;
-
-                    var setName = !string.IsNullOrWhiteSpace(bossDefault) ? bossDefault : zone.AbilitySet;
-                    if (!string.IsNullOrWhiteSpace(setName))
-                    {
-                        Plugin.Abilities.ApplySet(player, setName);
-                    }
-                }
-
-                // Execute flow if configured
                 var flowRegistry = FlowRegistry;
-                if (!string.IsNullOrEmpty(zone.FlowOnEnter) && flowRegistry != null)
+                if (flowRegistry != null)
                 {
-                    flowRegistry.ExecuteFlow(zone.FlowOnEnter, player, zone.Name, zone.Hash);
+                    flowRegistry.ExecuteFlows(zone.ResolvedEntryFlows, player, zone.Name, zone.Hash);
+                }
+
+                if (sessionEnabled && TryGetPlatformId(player, out var platformId))
+                {
+                    GameSessions?.OnPlayerJoin(player, zone.Hash, platformId);
                 }
 
                 // Zone message (player-scoped; "broadcast" is treated as a label, not a server-wide broadcast)
@@ -139,34 +113,16 @@ namespace Blueluck.Services
                         _zoneOccupancy[zone.Hash] = newCount;
                 }
 
-                // Handle zone-specific exit logic
-                switch (zone.Type)
+                var sessionEnabled = GameSessions?.IsSessionEnabledZone(zone.Hash) == true;
+                if (sessionEnabled && TryGetPlatformId(player, out var platformId))
                 {
-                    case "BossZone":
-                        HandleBossZoneExit(player, zone);
-                        break;
-                    case "ArenaZone":
-                        HandleArenaZoneExit(player, zone);
-                        break;
+                    GameSessions?.OnPlayerLeave(zone.Hash, platformId);
                 }
 
-                // Apply kit on exit for any zone type (after RestoreProgress so restore wins).
-                if (Plugin.Kits?.IsInitialized == true && !string.IsNullOrWhiteSpace(zone.KitOnExit))
-                {
-                    Plugin.Kits.ApplyKit(player, zone.KitOnExit);
-                }
-
-                // Clear ability loadout on exit.
-                if (Plugin.Abilities?.IsInitialized == true)
-                {
-                    Plugin.Abilities.ClearAbilities(player);
-                }
-
-                // Execute flow if configured
                 var flowRegistry = FlowRegistry;
-                if (!string.IsNullOrEmpty(zone.FlowOnExit) && flowRegistry != null)
+                if (flowRegistry != null)
                 {
-                    flowRegistry.ExecuteFlow(zone.FlowOnExit, player, zone.Name, zone.Hash);
+                    flowRegistry.ExecuteFlows(zone.ResolvedExitFlows, player, zone.Name, zone.Hash);
                 }
 
                 // Zone message (player-scoped)
@@ -199,134 +155,6 @@ namespace Blueluck.Services
             }
         }
 
-        private void HandleBossZoneEnter(Entity player, ZoneDefinition zone)
-        {
-            if (zone is BossZoneConfig bossCfgCoop && bossCfgCoop.EnableSubclanCoop && Plugin.BossCoop?.IsInitialized == true)
-            {
-                Plugin.BossCoop.OnBossZoneEnter(player, zone.Hash, bossCfgCoop.ForceJoinClan, bossCfgCoop.ShuffleClan);
-            }
-
-            // Boss zones skip progress saving by default (NoProgress = true)
-            // This preserves player progression
-            if (zone is BossZoneConfig bossConfig && !bossConfig.NoProgress)
-            {
-                var progress = Progress;
-                if (progress != null)
-                {
-                    progress.SaveProgress(player);
-                }
-            }
-
-            // Fallback gameplay logic when no explicit flow is configured.
-            var flowRegistry = FlowRegistry;
-            if (zone is BossZoneConfig bossCfg && string.IsNullOrEmpty(zone.FlowOnEnter) && flowRegistry != null)
-            {
-                var isFirstPlayer = _zoneOccupancy.TryGetValue(zone.Hash, out var count) && count == 1;
-                if (isFirstPlayer)
-                {
-                    // Spawn boss once per zone occupancy (re-entering players won't re-spawn).
-                    if (!string.IsNullOrWhiteSpace(bossCfg.BossPrefab))
-                    {
-                        flowRegistry.EnsureBosses(player, zone.Hash, bossCfg.BossPrefab, bossCfg.BossQuantity, randomInZone: bossCfg.RandomSpawn);
-                    }
-                }
-            }
-        }
-
-        private void HandleBossZoneExit(Entity player, ZoneDefinition zone)
-        {
-            if (zone is BossZoneConfig bossCfgCoop && bossCfgCoop.EnableSubclanCoop && Plugin.BossCoop?.IsInitialized == true)
-            {
-                Plugin.BossCoop.OnBossZoneExit(player, zone.Hash);
-            }
-
-            // Boss zones skip progress restoration by default (NoProgress = true)
-            // This preserves player progression
-            if (zone is BossZoneConfig bossConfig && !bossConfig.NoProgress)
-            {
-                var progress = Progress;
-                if (progress != null)
-                {
-                    progress.RestoreProgress(player, clearAfter: true);
-                }
-            }
-
-            var flowRegistry = FlowRegistry;
-            if (zone is BossZoneConfig && string.IsNullOrEmpty(zone.FlowOnExit) && flowRegistry != null)
-            {
-                // Remove zone-level effects when last player leaves.
-                var isLastPlayer = !_zoneOccupancy.ContainsKey(zone.Hash);
-                if (isLastPlayer)
-                {
-                    flowRegistry.RemoveBosses(zone.Hash);
-                }
-            }
-        }
-
-        private void HandleArenaZoneEnter(Entity player, ZoneDefinition zone)
-        {
-            if (zone is not ArenaZoneConfig arenaConfig)
-            {
-                return;
-            }
-
-            if (arenaConfig.SaveProgress)
-            {
-                var progress = Progress;
-                if (progress != null)
-                {
-                    progress.SaveProgress(player);
-                }
-            }
-
-            // Arena ability set is required for deterministic arena loadouts.
-            if (string.IsNullOrWhiteSpace(arenaConfig.AbilitySet))
-            {
-                _log.LogWarning($"[ZoneTransition] Arena '{zone.Name}' is missing required AbilitySet.");
-            }
-
-            // Only apply abilitySet as kit fallback if no explicit kitOnEnter was already applied.
-            // This handles legacy configs where abilitySet was used as a kit name.
-            var kitAlreadyApplied = !string.IsNullOrWhiteSpace(zone.KitOnEnter);
-            if (!kitAlreadyApplied && Plugin.Kits?.IsInitialized == true && !string.IsNullOrWhiteSpace(arenaConfig.AbilitySet))
-            {
-                Plugin.Kits.ApplyKit(player, arenaConfig.AbilitySet);
-            }
-
-            // Execute explicit flow when configured; otherwise apply PvP fallback from arena config.
-            if (!string.IsNullOrWhiteSpace(zone.FlowOnEnter))
-            {
-                _log.LogInfo($"[ZoneTransition] Arena '{zone.Name}' enter flow configured: {zone.FlowOnEnter}");
-                return;
-            }
-
-            var flowRegistry = FlowRegistry;
-            if (flowRegistry != null)
-            {
-                flowRegistry.SetPvp(player, arenaConfig.PvpEnabled, zone.Hash);
-                _log.LogInfo($"[ZoneTransition] Arena '{zone.Name}' fallback PvP applied: {arenaConfig.PvpEnabled}");
-            }
-        }
-
-        private void HandleArenaZoneExit(Entity player, ZoneDefinition zone)
-        {
-            // Restore progress if enabled
-            if (zone is ArenaZoneConfig arenaConfig && arenaConfig.RestoreOnExit)
-            {
-                var progress = Progress;
-                if (progress != null)
-                {
-                    progress.RestoreProgress(player, clearAfter: true);
-                }
-            }
-
-            var flowRegistry = FlowRegistry;
-            if (zone is ArenaZoneConfig && string.IsNullOrEmpty(zone.FlowOnExit) && flowRegistry != null)
-            {
-                flowRegistry.SetPvp(player, enabled: false, zone.Hash);
-            }
-        }
-
         /// <summary>
         /// Gets the current zone hash for a player.
         /// </summary>
@@ -347,6 +175,47 @@ namespace Blueluck.Services
                 return zone.Type == zoneType;
 
             return false;
+        }
+
+        public List<Entity> GetPlayersInZone(int zoneHash)
+        {
+            var players = new List<Entity>();
+            foreach (var pair in _playersInZones)
+            {
+                if (pair.Value == zoneHash)
+                {
+                    players.Add(pair.Key);
+                }
+            }
+
+            return players;
+        }
+
+        private static bool TryGetPlatformId(Entity characterEntity, out ulong platformId)
+        {
+            platformId = 0;
+
+            try
+            {
+                var em = VAutomationCore.Core.UnifiedCore.EntityManager;
+                if (em == default || characterEntity == Entity.Null || !em.Exists(characterEntity) || !em.HasComponent<PlayerCharacter>(characterEntity))
+                {
+                    return false;
+                }
+
+                var playerCharacter = em.GetComponentData<PlayerCharacter>(characterEntity);
+                if (playerCharacter.UserEntity == Entity.Null || !em.Exists(playerCharacter.UserEntity) || !em.HasComponent<User>(playerCharacter.UserEntity))
+                {
+                    return false;
+                }
+
+                platformId = em.GetComponentData<User>(playerCharacter.UserEntity).PlatformId;
+                return platformId != 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

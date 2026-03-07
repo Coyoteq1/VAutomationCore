@@ -1,0 +1,217 @@
+{
+  "schemaVersion": "1.0.0",
+  "moduleId": "vautomationcore.zones",
+  "flows": {
+    "zone_ready": {
+      "description": "Fires when a zone becomes ready",
+      "steps": [
+        "check_zone_ready_state",
+        "apply_zone_ready_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_ready_all": {
+      "description": "Fires when all zones become ready",
+      "steps": [
+        "check_all_zones_ready",
+        "apply_all_zone_ready_effects",
+        "sendmessagetoall"
+      ]
+    },
+    "zone_preset_save": {
+      "description": "Save a zone preset configuration",
+      "steps": [
+        "validate_preset_params",
+        "serialize_zone_config",
+        "store_preset",
+        "sendmessagetouser"
+      ]
+    },
+    "zone_preset_load": {
+      "description": "Load a zone preset configuration",
+      "steps": [
+        "load_preset",
+        "apply_zone_config",
+        "sendmessagetouser"
+      ]
+    },
+    "zone_preset_delete": {
+      "description": "Delete a zone preset",
+      "steps": [
+        "remove_preset",
+        "sendmessagetouser"
+      ]
+    },
+    "zone_preset_list": {
+      "description": "List all zone presets",
+      "steps": [
+        "get_all_presets",
+        "format_preset_list",
+        "sendmessagetouser"
+      ]
+    },
+    "zone_enter": {
+      "description": "Player enters a zone",
+      "steps": [
+        "detect_zone_entry",
+        "apply_zone_entry_effects",
+        "trigger_zone_entry_events",
+        "sendmessagetouser",
+        "progress_achievement"
+      ]
+    },
+    "zone_exit": {
+      "description": "Player exits a zone",
+      "steps": [
+        "detect_zone_exit",
+        "apply_zone_exit_effects",
+        "trigger_zone_exit_events",
+        "sendmessagetouser",
+        "progress_achievement"
+      ]
+    },
+    "zone_transition": {
+      "description": "Player transitions between zones",
+      "steps": [
+        "detect_zone_transition",
+        "apply_transition_effects",
+        "trigger_transition_events",
+        "sendmessagetouser",
+        "progress_achievement"
+      ]
+    },
+    "sunblocker_region": {
+      "description": "Create a sunblocker region",
+      "steps": [
+        "create_sunblocker_region",
+        "apply_sunblocker_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "sunblocker_activate": {
+      "description": "Activate sunblocker in a zone",
+      "steps": [
+        "activate_sunblocker_region",
+        "apply_sunblocker_visuals",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "sunblocker_deactivate": {
+      "description": "Deactivate sunblocker in a zone",
+      "steps": [
+        "deactivate_sunblocker_region",
+        "remove_sunblocker_visuals",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_restrict_enable": {
+      "description": "Enable zone restriction",
+      "steps": [
+        "enable_zone_restriction",
+        "apply_restriction_effects",
+        "spawn_restriction_markers",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_restrict_disable": {
+      "description": "Disable zone restriction",
+      "steps": [
+        "disable_zone_restriction",
+        "remove_restriction_effects",
+        "clear_restriction_markers",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_environment_set": {
+      "description": "Set zone environment",
+      "steps": [
+        "set_zone_environment",
+        "apply_environment_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_weather_control": {
+      "description": "Control zone weather",
+      "steps": [
+        "control_zone_weather",
+        "apply_weather_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_security_enable": {
+      "description": "Enable zone security",
+      "steps": [
+        "enable_zone_security",
+        "apply_security_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_security_disable": {
+      "description": "Disable zone security",
+      "steps": [
+        "disable_zone_security",
+        "remove_security_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_event_trigger": {
+      "description": "Trigger a zone event",
+      "steps": [
+        "trigger_zone_event",
+        "apply_event_effects",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "zone_monitor_start": {
+      "description": "Start zone monitoring",
+      "steps": [
+        "start_zone_monitoring",
+        "apply_monitoring_effects",
+        "spawn_monitoring_indicators",
+        "sendmessagetouser",
+        "progress_achievement"
+      ]
+    },
+    "zone_monitor_stop": {
+      "description": "Stop zone monitoring",
+      "steps": [
+        "stop_zone_monitoring",
+        "remove_monitoring_effects",
+        "clear_monitoring_indicators",
+        "sendmessagetouser",
+        "progress_achievement"
+      ]
+    },
+    "zone_admin_create": {
+      "description": "Admin creates a zone",
+      "steps": [
+        "admin_validate_user",
+        "create_admin_zone",
+        "apply_admin_zone_effects",
+        "sendmessagetouser",
+        "sendmessagetoall"
+      ]
+    },
+    "zone_admin_delete": {
+      "description": "Admin deletes a zone",
+      "steps": [
+        "admin_validate_user",
+        "delete_admin_zone",
+        "cleanup_admin_zone_data",
+        "sendmessagetouser",
+        "sendmessagetoall"
+      ]
+    }
+  }
+}

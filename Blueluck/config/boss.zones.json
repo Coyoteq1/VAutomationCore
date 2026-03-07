@@ -1,0 +1,55 @@
+{
+  "zones": [
+    {
+      "type": "BossZone",
+      "name": "Gloomrot Boss Arena",
+      "hash": 1001,
+      "center": [-2000, 0, -500],
+      "entryRadius": 60,
+      "exitRadius": 60,
+      "enabled": true,
+      "priority": 1,
+      "fxPresetIndex": 201,
+      "presetIds": ["boss_encounter_core"],
+      "abilitySet": "boss",
+      "bossPrefab": "CHAR_Gloomrot_Purifier_VBlood",
+      "bossQuantity": 1,
+      "randomSpawn": true,
+      "noProgress": true
+    },
+    {
+      "type": "BossZone",
+      "name": "Tourok Boss Arena",
+      "hash": 1002,
+      "center": [500, 0, -300],
+      "entryRadius": 80,
+      "exitRadius": 80,
+      "enabled": true,
+      "priority": 1,
+      "fxPresetIndex": 2,
+      "presetIds": ["boss_encounter_core"],
+      "abilitySet": "boss",
+      "bossPrefab": "CHAR_Bandit_Tourok_VBlood",
+      "bossQuantity": 1,
+      "randomSpawn": true,
+      "noProgress": true
+    },
+    {
+      "type": "BossZone",
+      "name": "Multi Boss Arena",
+      "hash": 1005,
+      "center": [2000, 0, -600],
+      "entryRadius": 120,
+      "exitRadius": 120,
+      "enabled": true,
+      "priority": 2,
+      "fxPresetIndex": 5,
+      "presetIds": ["boss_encounter_core"],
+      "abilitySet": "boss",
+      "bossPrefab": "CHAR_Gloomrot_Purifier_VBlood",
+      "bossQuantity": 3,
+      "randomSpawn": true,
+      "noProgress": true
+    }
+  ]
+}

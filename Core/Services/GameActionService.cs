@@ -48,6 +48,12 @@ namespace VAutomationCore.Services
                     return customResult;
                 }
 
+                // Try to invoke a game-specific action
+                if (ModGameActionService.TryInvokeGameAction(actionName, args, entityMap, out var gameActionResult))
+                {
+                    return gameActionResult;
+                }
+
                 switch (actionName.Trim().ToLowerInvariant())
                 {
                     case "applybuff":

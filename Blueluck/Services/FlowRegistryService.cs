@@ -1,18 +1,14 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text.Json;
-using BepInEx;
 using BepInEx.Logging;
+using Blueluck.Models;
 using ProjectM;
-using ProjectM.Network;
 using Stunlock.Core;
 using Unity.Entities;
 using Unity.Mathematics;
 using VAuto.Core;
 using VAuto.Services.Interfaces;
-using Blueluck.Models;
 using VAutomationCore.Core;
 using VAutomationCore.Core.Api;
 using VAutomationCore.Services;
@@ -20,23 +16,20 @@ using VAutomationCore.Services;
 namespace Blueluck.Services
 {
     /// <summary>
-    /// Service for managing and executing flows on zone transitions.
-    /// Implements IService from VAutomationCore.
+    /// Service for managing and executing resolved arena/boss flows.
     /// </summary>
     public class FlowRegistryService : IService
     {
         private static readonly ManualLogSource _log = Logger.CreateLogSource("Blueluck.FlowRegistry");
-        
+
         public bool IsInitialized { get; private set; }
         public ManualLogSource Log => _log;
 
-        private string _configPath;
-        private readonly Dictionary<string, List<FlowAction>> _flows = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, GameplayFlowDefinitionConfig> _flowDefinitions = new(StringComparer.OrdinalIgnoreCase);
         private PrefabToGuidService? _prefabToGuid;
         private readonly Dictionary<int, List<Entity>> _borderFxByZone = new();
         private readonly Dictionary<int, List<Entity>> _bossesByZone = new();
 
-        // Essential flow actions only
         public static class FlowActions
         {
             public const string SetPvp = "zone.setpvp";
@@ -50,170 +43,121 @@ namespace Blueluck.Services
             public const string EnableCoop = "zone.enablecoop";
             public const string DisableCoop = "zone.disablecoop";
             public const string TriggerCoopEvent = "zone.triggercoop";
+            public const string ArenaApplyRuleProfile = "arena.applyruleprofile";
+            public const string ArenaRestoreSafeCombatState = "arena.restoresafecombatstate";
+            public const string ArenaApplyLoadoutState = "arena.applyloadoutstate";
+            public const string ArenaRestoreLoadoutState = "arena.restoreloadoutstate";
+            public const string ArenaApplyProgressionGate = "arena.applyprogressiongate";
+            public const string ArenaRestoreProgressionState = "arena.restoreprogressionstate";
+            public const string ArenaCaptureSnapshot = "arena.captureplayersnapshot";
+            public const string ArenaRestoreSnapshot = "arena.restoreplayersnapshot";
+            public const string ArenaApplyZoneVisuals = "arena.applyzonevisuals";
+            public const string ArenaClearZoneVisuals = "arena.clearzonevisuals";
+            public const string BossCreateEncounterGroup = "boss.createencountergroup";
+            public const string BossPrepareEncounterState = "boss.prepareencounterstate";
+            public const string BossSpawnEncounter = "boss.spawnencounter";
+            public const string BossApplyEncounterVisuals = "boss.applyencountervisuals";
+            public const string BossCleanupEncounterGroup = "boss.cleanupencountergroup";
+            public const string BossUnwindEncounterState = "boss.unwindencounterstate";
+            public const string BossRestoreEncounterOverrides = "boss.restoreencounteroverrides";
         }
 
         public void Initialize()
         {
-            Plugin.EnsureConfigFile(
-                "flows.json",
-                json =>
-                {
-                    using var doc = JsonDocument.Parse(json);
-                    return doc.RootElement.TryGetProperty("flows", out var flows)
-                        && flows.ValueKind == JsonValueKind.Object
-                        && flows.EnumerateObject().MoveNext();
-                },
-                new
-                {
-                    flows = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                });
-
-            _configPath = Path.Combine(Paths.ConfigPath, "Blueluck", "flows.json");
-            Directory.CreateDirectory(Path.GetDirectoryName(_configPath) ?? Paths.ConfigPath);
-
             _prefabToGuid = Plugin.PrefabToGuid;
-
             RegisterFlowActionAliases();
-            LoadFlows();
-
             IsInitialized = true;
-            _log.LogInfo($"[FlowRegistry] Initialized with {_flows.Count} flows.");
+            _log.LogInfo("[FlowRegistry] Initialized.");
         }
 
         public void Cleanup()
         {
             CleanupAllSpawnedEntities();
-            _flows.Clear();
+            _flowDefinitions.Clear();
             IsInitialized = false;
             _log.LogInfo("[FlowRegistry] Cleaned up.");
         }
 
-        /// <summary>
-        /// Registers flow action aliases with Core's FlowService.
-        /// </summary>
-        private void RegisterFlowActionAliases()
+        public void SetConfiguredFlows(IEnumerable<GameplayFlowDefinitionConfig> flowDefinitions)
         {
-            try
+            _flowDefinitions.Clear();
+            foreach (var definition in flowDefinitions ?? Array.Empty<GameplayFlowDefinitionConfig>())
             {
-                // Register only essential action aliases
-                FlowService.RegisterActionAlias(FlowActions.SetPvp, "SetPvp", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.SendMessage, "SendMessage", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.SpawnBoss, "SpawnBoss", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.RemoveBoss, "RemoveBoss", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.ApplyBorderFx, "ApplyBorderFx", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.RemoveBorderFx, "RemoveBorderFx", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.ApplyZoneBuff, "ApplyZoneBuff", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.RemoveZoneBuff, "RemoveZoneBuff", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.EnableCoop, "EnableCoop", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.DisableCoop, "DisableCoop", replace: true);
-                FlowService.RegisterActionAlias(FlowActions.TriggerCoopEvent, "TriggerCoopEvent", replace: true);
-
-                _log.LogInfo("[FlowRegistry] Registered essential action aliases.");
-            }
-            catch (Exception ex)
-            {
-                _log.LogError($"[FlowRegistry] Failed to register action aliases: {ex.Message}");
-            }
-        }
-
-        /// <summary>
-        /// Loads flows from config file.
-        /// </summary>
-        public void LoadFlows()
-        {
-            _flows.Clear();
-
-            try
-            {
-                if (!File.Exists(_configPath))
+                if (definition == null || string.IsNullOrWhiteSpace(definition.FlowId))
                 {
-                    CreateDefaultFlows();
-                    return;
+                    continue;
                 }
 
-                var json = File.ReadAllText(_configPath);
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    ReadCommentHandling = JsonCommentHandling.Skip,
-                    ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
-                    MaxDepth = 128
-                };
-
-                var config = JsonSerializer.Deserialize<FlowConfig>(json, options);
-                if (config?.Flows != null)
-                {
-                    foreach (var flow in config.Flows)
-                    {
-                        _flows[flow.Key] = flow.Value.ToList();
-                    }
-                }
-
-                _log.LogInfo($"[FlowRegistry] Loaded {_flows.Count} flows.");
+                definition.Actions ??= Array.Empty<FlowAction>();
+                _flowDefinitions[definition.FlowId] = definition;
             }
-            catch (Exception ex)
-            {
-                _log.LogError($"[FlowRegistry] Failed to load flows: {ex.Message}");
-            }
+
+            _log.LogInfo($"[FlowRegistry] Registered {_flowDefinitions.Count} configured flows.");
         }
 
-        /// <summary>
-        /// Reloads flows from disk.
-        /// </summary>
         public void Reload()
         {
-            LoadFlows();
+            Plugin.ZoneConfig?.Reload();
         }
 
-        /// <summary>
-        /// Executes a flow by ID for a player.
-        /// </summary>
+        public bool FlowExists(string flowId)
+        {
+            return !string.IsNullOrWhiteSpace(flowId) && _flowDefinitions.ContainsKey(flowId);
+        }
+
+        public bool TryGetFlowDefinition(string flowId, out GameplayFlowDefinitionConfig definition)
+        {
+            return _flowDefinitions.TryGetValue(flowId, out definition!);
+        }
+
+        public IReadOnlyCollection<string> GetFlowIds()
+        {
+            return _flowDefinitions.Keys.ToArray();
+        }
+
         public void ExecuteFlow(string flowId, Entity player, string zoneId, int zoneHash)
         {
-            if (string.IsNullOrEmpty(flowId))
-                return;
-
-            if (player == Entity.Null)
+            if (string.IsNullOrWhiteSpace(flowId) || player == Entity.Null)
             {
-                _log.LogWarning($"[FlowRegistry] ExecuteFlow called with null player for flow: {flowId}");
                 return;
             }
 
-            if (!_flows.TryGetValue(flowId, out var actions))
+            if (!_flowDefinitions.TryGetValue(flowId, out var definition))
             {
                 _log.LogWarning($"[FlowRegistry] Flow not found: {flowId}");
                 return;
             }
 
-            _log.LogInfo($"[FlowRegistry] Executing flow: {flowId} for player {player.Index}");
-
-            foreach (var action in actions)
+            foreach (var action in definition.Actions)
             {
                 ExecuteAction(action, player, zoneId, zoneHash);
             }
         }
 
-        // Public, non-config entry points for zone gameplay logic (ZoneTransitionService uses these as a fallback
-        // when no explicit FlowOnEnter/FlowOnExit is configured on the zone).
+        public void ExecuteFlows(IEnumerable<string> flowIds, Entity player, string zoneId, int zoneHash)
+        {
+            foreach (var flowId in flowIds ?? Array.Empty<string>())
+            {
+                ExecuteFlow(flowId, player, zoneId, zoneHash);
+            }
+        }
+
         public void SetPvp(Entity player, bool enabled, int zoneHash = 0)
         {
             if (player == Entity.Null)
             {
-                _log.LogWarning("[FlowRegistry] SetPvp called with null player");
                 return;
             }
+
             HandleSetPvp(new FlowAction { Action = FlowActions.SetPvp, Value = enabled }, player, zoneHash);
         }
 
         public void SendMessage(Entity player, string message, int zoneHash = 0)
         {
-            if (player == Entity.Null)
+            if (player == Entity.Null || string.IsNullOrWhiteSpace(message))
             {
-                _log.LogWarning("[FlowRegistry] SendMessage called with null player");
                 return;
             }
-            if (string.IsNullOrWhiteSpace(message))
-                return;
 
             HandleSendMessage(new FlowAction { Action = FlowActions.SendMessage, Message = message }, player, zoneHash);
         }
@@ -222,9 +166,9 @@ namespace Blueluck.Services
         {
             if (player == Entity.Null)
             {
-                _log.LogWarning("[FlowRegistry] ApplyBorderFx called with null player");
                 return;
             }
+
             HandleApplyBorderFx(new FlowAction
             {
                 Action = FlowActions.ApplyBorderFx,
@@ -241,18 +185,16 @@ namespace Blueluck.Services
 
         public bool EnsureBosses(Entity player, int zoneHash, string bossPrefab, int quantity = 1, bool randomInZone = true, float3? position = null)
         {
-            if (player == Entity.Null)
+            if (player == Entity.Null || string.IsNullOrWhiteSpace(bossPrefab))
             {
-                _log.LogWarning("[FlowRegistry] EnsureBosses called with null player");
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(bossPrefab))
-                return false;
-
             PruneDeadBossEntities(zoneHash);
             if (_bossesByZone.TryGetValue(zoneHash, out var existing) && existing.Count > 0)
+            {
                 return false;
+            }
 
             var action = new FlowAction
             {
@@ -261,7 +203,6 @@ namespace Blueluck.Services
                 Quantity = quantity,
                 RandomInZone = randomInZone
             };
-
             if (position.HasValue)
             {
                 action.Position = new[] { position.Value.x, position.Value.y, position.Value.z };
@@ -274,6 +215,65 @@ namespace Blueluck.Services
         public void RemoveBosses(int zoneHash)
         {
             RemoveBossesInternal(zoneHash);
+        }
+
+        public bool TryGetFlow(string flowId, out List<FlowAction> actions)
+        {
+            actions = new List<FlowAction>();
+            if (!_flowDefinitions.TryGetValue(flowId, out var definition))
+            {
+                return false;
+            }
+
+            actions.AddRange(definition.Actions);
+            return true;
+        }
+
+        private void RegisterFlowActionAliases()
+        {
+            try
+            {
+                var aliases = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    [FlowActions.SetPvp] = "SetPvp",
+                    [FlowActions.SendMessage] = "SendMessage",
+                    [FlowActions.SpawnBoss] = "SpawnBoss",
+                    [FlowActions.RemoveBoss] = "RemoveBoss",
+                    [FlowActions.ApplyBorderFx] = "ApplyBorderFx",
+                    [FlowActions.RemoveBorderFx] = "RemoveBorderFx",
+                    [FlowActions.ApplyZoneBuff] = "ApplyZoneBuff",
+                    [FlowActions.RemoveZoneBuff] = "RemoveZoneBuff",
+                    [FlowActions.EnableCoop] = "EnableCoop",
+                    [FlowActions.DisableCoop] = "DisableCoop",
+                    [FlowActions.TriggerCoopEvent] = "TriggerCoopEvent",
+                    [FlowActions.ArenaApplyRuleProfile] = "ArenaApplyRuleProfile",
+                    [FlowActions.ArenaRestoreSafeCombatState] = "ArenaRestoreSafeCombatState",
+                    [FlowActions.ArenaApplyLoadoutState] = "ArenaApplyLoadoutState",
+                    [FlowActions.ArenaRestoreLoadoutState] = "ArenaRestoreLoadoutState",
+                    [FlowActions.ArenaApplyProgressionGate] = "ArenaApplyProgressionGate",
+                    [FlowActions.ArenaRestoreProgressionState] = "ArenaRestoreProgressionState",
+                    [FlowActions.ArenaCaptureSnapshot] = "ArenaCaptureSnapshot",
+                    [FlowActions.ArenaRestoreSnapshot] = "ArenaRestoreSnapshot",
+                    [FlowActions.ArenaApplyZoneVisuals] = "ArenaApplyZoneVisuals",
+                    [FlowActions.ArenaClearZoneVisuals] = "ArenaClearZoneVisuals",
+                    [FlowActions.BossCreateEncounterGroup] = "BossCreateEncounterGroup",
+                    [FlowActions.BossPrepareEncounterState] = "BossPrepareEncounterState",
+                    [FlowActions.BossSpawnEncounter] = "BossSpawnEncounter",
+                    [FlowActions.BossApplyEncounterVisuals] = "BossApplyEncounterVisuals",
+                    [FlowActions.BossCleanupEncounterGroup] = "BossCleanupEncounterGroup",
+                    [FlowActions.BossUnwindEncounterState] = "BossUnwindEncounterState",
+                    [FlowActions.BossRestoreEncounterOverrides] = "BossRestoreEncounterOverrides"
+                };
+
+                foreach (var alias in aliases)
+                {
+                    FlowService.RegisterActionAlias(alias.Key, alias.Value, replace: true);
+                }
+            }
+            catch (Exception ex)
+            {
+                _log.LogWarning($"[FlowRegistry] Failed to register action aliases: {ex.Message}");
+            }
         }
 
         private void ExecuteAction(FlowAction action, Entity player, string zoneId, int zoneHash)
@@ -298,13 +298,61 @@ namespace Blueluck.Services
                         HandleApplyBorderFx(action, player, zoneHash);
                         break;
                     case FlowActions.RemoveBorderFx:
-                        HandleRemoveBorderFx(action, player, zoneHash);
+                        HandleRemoveBorderFx(zoneHash);
                         break;
                     case FlowActions.ApplyZoneBuff:
-                        HandleApplyZoneBuff(action, player, zoneHash);
+                        HandleApplyZoneBuff(action, player);
                         break;
                     case FlowActions.RemoveZoneBuff:
-                        HandleRemoveZoneBuff(action, player, zoneHash);
+                        HandleRemoveZoneBuff(action, player);
+                        break;
+                    case FlowActions.EnableCoop:
+                    case FlowActions.TriggerCoopEvent:
+                    case FlowActions.BossCreateEncounterGroup:
+                        HandleCreateEncounterGroup(player, zoneHash);
+                        break;
+                    case FlowActions.DisableCoop:
+                    case FlowActions.BossCleanupEncounterGroup:
+                        HandleCleanupEncounterGroup(player, zoneHash);
+                        break;
+                    case FlowActions.ArenaApplyRuleProfile:
+                        HandleArenaApplyRuleProfile(player, zoneHash);
+                        break;
+                    case FlowActions.ArenaRestoreSafeCombatState:
+                        SetPvp(player, false, zoneHash);
+                        break;
+                    case FlowActions.ArenaApplyLoadoutState:
+                        HandleArenaApplyLoadoutState(player, zoneHash);
+                        break;
+                    case FlowActions.ArenaRestoreLoadoutState:
+                        HandleArenaRestoreLoadoutState(player, zoneHash);
+                        break;
+                    case FlowActions.ArenaApplyProgressionGate:
+                    case FlowActions.ArenaCaptureSnapshot:
+                        HandleArenaSaveProgress(player, zoneHash);
+                        break;
+                    case FlowActions.ArenaRestoreProgressionState:
+                    case FlowActions.ArenaRestoreSnapshot:
+                        HandleArenaRestoreProgress(player, zoneHash);
+                        break;
+                    case FlowActions.ArenaApplyZoneVisuals:
+                    case FlowActions.BossApplyEncounterVisuals:
+                        HandleZoneVisuals(player, zoneHash, remove: false);
+                        break;
+                    case FlowActions.ArenaClearZoneVisuals:
+                        HandleZoneVisuals(player, zoneHash, remove: true);
+                        break;
+                    case FlowActions.BossPrepareEncounterState:
+                        HandleBossPrepareEncounterState(player, zoneHash);
+                        break;
+                    case FlowActions.BossSpawnEncounter:
+                        HandleBossSpawnEncounter(player, zoneHash);
+                        break;
+                    case FlowActions.BossUnwindEncounterState:
+                        HandleBossUnwindEncounterState(zoneHash);
+                        break;
+                    case FlowActions.BossRestoreEncounterOverrides:
+                        HandleBossRestoreEncounterOverrides(player, zoneHash);
                         break;
                     default:
                         _log.LogWarning($"[FlowRegistry] Unknown action: {action.Action}");
@@ -313,24 +361,15 @@ namespace Blueluck.Services
             }
             catch (Exception ex)
             {
-                _log.LogError($"[FlowRegistry] Error executing action {action.Action}: {ex.Message}");
+                _log.LogError($"[FlowRegistry] Error executing action '{action.Action}': {ex.Message}");
             }
         }
 
         private void HandleSetPvp(FlowAction action, Entity player, int zoneHash)
         {
             var enabled = action.Value is bool b && b;
-            _log.LogInfo($"[FlowRegistry] SetPvp: {enabled} for player {player.Index}");
-
-            if (!TryResolveUserEntity(player, out var userEntity))
+            if (!TryResolveUserEntity(player, out var userEntity) || !TryResolvePrefabGuid("Buff_PvP_Enabled", out var pvpBuffGuid))
             {
-                _log.LogWarning("[FlowRegistry] SetPvp skipped: user entity not resolved.");
-                return;
-            }
-
-            if (!TryResolvePrefabGuid("Buff_PvP_Enabled", out var pvpBuffGuid))
-            {
-                _log.LogWarning("[FlowRegistry] SetPvp skipped: Buff_PvP_Enabled prefab not resolved.");
                 return;
             }
 
@@ -347,50 +386,36 @@ namespace Blueluck.Services
         private void HandleSendMessage(FlowAction action, Entity player, int zoneHash)
         {
             var message = action.Message ?? action.Value?.ToString();
-            if (!string.IsNullOrEmpty(message))
+            if (string.IsNullOrWhiteSpace(message) || !TryResolveUserEntity(player, out var userEntity))
             {
-                _log.LogInfo($"[FlowRegistry] Message to player {player.Index}: {message}");
-
-                if (TryResolveUserEntity(player, out var userEntity))
-                {
-                    GameActionService.InvokeAction("sendmessagetouser", new object[] { userEntity, message });
-                }
+                return;
             }
+
+            GameActionService.InvokeAction("sendmessagetouser", new object[] { userEntity, message });
         }
 
         private void HandleSpawnBoss(FlowAction action, Entity player, int zoneHash)
         {
             var bossPrefab = action.Prefab?.ToString();
-            var qty = action.Quantity > 0 ? action.Quantity : 1;
-            var randomInZone = action.RandomInZone;
-            
-            _log.LogInfo($"[FlowRegistry] SpawnBoss: {bossPrefab} x{qty} for player {player.Index}, randomInZone: {randomInZone}");
-
-            if (string.IsNullOrWhiteSpace(bossPrefab))
+            if (string.IsNullOrWhiteSpace(bossPrefab) || !TryResolvePrefabGuid(bossPrefab, out var bossGuid))
             {
-                return;
-            }
-
-            if (!TryResolvePrefabGuid(bossPrefab, out var bossGuid))
-            {
-                _log.LogWarning($"[FlowRegistry] Boss prefab '{bossPrefab}' not resolved");
                 return;
             }
 
             if (!UnifiedCore.TryGetPrefabEntity(bossGuid, out var prefabEntity) || prefabEntity == Entity.Null)
             {
-                _log.LogWarning($"[FlowRegistry] Boss prefab entity not found for '{bossPrefab}' ({bossGuid.GuidHash})");
                 return;
             }
 
             ZoneDefinition? zone = null;
-            var zoneFound = Plugin.ZoneConfig != null && Plugin.ZoneConfig.TryGetZoneByHash(zoneHash, out zone) && zone != null;
-            for (int i = 0; i < qty; i++)
+            var zoneFound = Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out zone) == true && zone != null;
+            var quantity = action.Quantity > 0 ? action.Quantity : 1;
+            for (var i = 0; i < quantity; i++)
             {
                 var spawnPos = float3.zero;
                 if (zoneFound)
                 {
-                    if (randomInZone)
+                    if (action.RandomInZone)
                     {
                         spawnPos = zone!.GetRandomPositionInside();
                     }
@@ -406,58 +431,46 @@ namespace Blueluck.Services
 
                 var spawned = UnifiedCore.EntityManager.Instantiate(prefabEntity);
                 GameActionService.InvokeAction("setposition", new object[] { spawned, spawnPos });
-
                 if (!_bossesByZone.TryGetValue(zoneHash, out var list))
                 {
                     list = new List<Entity>();
                     _bossesByZone[zoneHash] = list;
                 }
+
                 list.Add(spawned);
             }
         }
 
         private void HandleRemoveBoss(FlowAction action, Entity player, int zoneHash)
         {
-            _log.LogInfo($"[FlowRegistry] RemoveBoss for zone {zoneHash} player {player.Index}");
             RemoveBossesInternal(zoneHash);
         }
 
         private void HandleApplyBorderFx(FlowAction action, Entity player, int zoneHash)
         {
             var vfxPrefab = action.VfxPrefab?.ToString();
-            var radius = action.Radius > 0 ? action.Radius : 50f;
-            var segments = action.Segments > 0 ? action.Segments : 24;
-            
-            _log.LogInfo($"[FlowRegistry] ApplyBorderFx: {vfxPrefab} with {segments} segments, radius {radius} for zone {zoneHash}");
-
-            if (string.IsNullOrWhiteSpace(vfxPrefab))
+            if (string.IsNullOrWhiteSpace(vfxPrefab) || !TryResolvePrefabGuid(vfxPrefab, out var vfxGuid))
             {
-                return;
-            }
-
-            if (!TryResolvePrefabGuid(vfxPrefab, out var vfxGuid))
-            {
-                _log.LogWarning($"[FlowRegistry] VFX prefab '{vfxPrefab}' not resolved");
                 return;
             }
 
             if (!UnifiedCore.TryGetPrefabEntity(vfxGuid, out var prefabEntity) || prefabEntity == Entity.Null)
             {
-                _log.LogWarning($"[FlowRegistry] VFX prefab entity not found for '{vfxPrefab}' ({vfxGuid.GuidHash})");
                 return;
             }
 
             if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) != true || zone == null)
             {
-                _log.LogWarning($"[FlowRegistry] Zone not found for border FX: {zoneHash}");
                 return;
             }
 
+            var radius = action.Radius > 0 ? action.Radius : zone.EntryRadius;
+            var segments = action.Segments > 0 ? action.Segments : 24;
             RemoveBorderFxInternal(zoneHash);
 
             var center = zone.GetCenterFloat3();
             var spawnedList = new List<Entity>(segments);
-            for (int i = 0; i < segments; i++)
+            for (var i = 0; i < segments; i++)
             {
                 var angle = i * math.PI * 2f / segments;
                 var pos = new float3(center.x + math.cos(angle) * radius, center.y, center.z + math.sin(angle) * radius);
@@ -469,58 +482,175 @@ namespace Blueluck.Services
             _borderFxByZone[zoneHash] = spawnedList;
         }
 
-        private void HandleRemoveBorderFx(FlowAction action, Entity player, int zoneHash)
+        private void HandleRemoveBorderFx(int zoneHash)
         {
-            _log.LogInfo($"[FlowRegistry] RemoveBorderFx for zone {zoneHash}");
             RemoveBorderFxInternal(zoneHash);
         }
 
-        private void HandleApplyZoneBuff(FlowAction action, Entity player, int zoneHash)
+        private void HandleApplyZoneBuff(FlowAction action, Entity player)
         {
-            var buffPrefab = action.BuffPrefab?.ToString();
-            var duration = action.Duration;
-            
-            _log.LogInfo($"[FlowRegistry] ApplyZoneBuff: {buffPrefab} for player {player.Index}, duration: {duration}");
-
-            if (string.IsNullOrWhiteSpace(buffPrefab))
+            var buffPrefab = action.BuffPrefab ?? action.Value?.ToString();
+            if (string.IsNullOrWhiteSpace(buffPrefab) || !TryResolveUserEntity(player, out var userEntity) || !TryResolvePrefabGuid(buffPrefab, out var buffGuid))
             {
                 return;
             }
 
-            if (!TryResolveUserEntity(player, out var userEntity))
-            {
-                _log.LogWarning("[FlowRegistry] ApplyZoneBuff skipped: user entity not resolved.");
-                return;
-            }
-
-            if (!TryResolvePrefabGuid(buffPrefab, out var buffGuid))
-            {
-                _log.LogWarning($"[FlowRegistry] Buff prefab '{buffPrefab}' not resolved");
-                return;
-            }
-
-            var appliedDuration = duration == 0f ? -1f : duration;
-            GameActionService.InvokeAction("applybuff", new object[] { userEntity, player, buffGuid, appliedDuration });
+            var duration = action.Duration == 0f ? -1f : action.Duration;
+            GameActionService.InvokeAction("applybuff", new object[] { userEntity, player, buffGuid, duration });
         }
 
-        private void HandleRemoveZoneBuff(FlowAction action, Entity player, int zoneHash)
+        private void HandleRemoveZoneBuff(FlowAction action, Entity player)
         {
-            var buffPrefab = action.BuffPrefab?.ToString();
-            
-            _log.LogInfo($"[FlowRegistry] RemoveZoneBuff: {buffPrefab} for player {player.Index}");
-
-            if (string.IsNullOrWhiteSpace(buffPrefab))
+            var buffPrefab = action.BuffPrefab ?? action.Value?.ToString();
+            if (string.IsNullOrWhiteSpace(buffPrefab) || !TryResolvePrefabGuid(buffPrefab, out var buffGuid))
             {
-                return;
-            }
-
-            if (!TryResolvePrefabGuid(buffPrefab, out var buffGuid))
-            {
-                _log.LogWarning($"[FlowRegistry] Buff prefab '{buffPrefab}' not resolved");
                 return;
             }
 
             GameActionService.InvokeAction("removebuff", new object[] { player, buffGuid });
+        }
+
+        private void HandleArenaApplyRuleProfile(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) != true || zone is not ArenaZoneConfig arena)
+            {
+                return;
+            }
+
+            SetPvp(player, arena.PvpEnabled, zoneHash);
+        }
+
+        private void HandleArenaApplyLoadoutState(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) != true)
+            {
+                return;
+            }
+
+            if (Plugin.Kits?.IsInitialized == true && !string.IsNullOrWhiteSpace(zone.KitOnEnter))
+            {
+                Plugin.Kits.ApplyKit(player, zone.KitOnEnter);
+            }
+
+            if (Plugin.Abilities?.IsInitialized == true)
+            {
+                var bossDefault = zone is BossZoneConfig bossCfg && bossCfg.AbilitySets != null && bossCfg.AbilitySets.Length > 0
+                    ? bossCfg.AbilitySets[0]
+                    : null;
+                var setName = !string.IsNullOrWhiteSpace(bossDefault) ? bossDefault : zone.AbilitySet;
+                if (!string.IsNullOrWhiteSpace(setName))
+                {
+                    Plugin.Abilities.ApplySet(player, setName);
+                }
+            }
+        }
+
+        private void HandleArenaRestoreLoadoutState(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) == true &&
+                Plugin.Kits?.IsInitialized == true &&
+                !string.IsNullOrWhiteSpace(zone.KitOnExit))
+            {
+                Plugin.Kits.ApplyKit(player, zone.KitOnExit);
+            }
+
+            Plugin.Abilities?.ClearAbilities(player);
+        }
+
+        private void HandleArenaSaveProgress(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) == true && zone is ArenaZoneConfig arena && arena.SaveProgress)
+            {
+                Plugin.Progress?.SaveProgress(player);
+            }
+        }
+
+        private void HandleArenaRestoreProgress(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) == true && zone is ArenaZoneConfig arena && arena.RestoreOnExit)
+            {
+                Plugin.Progress?.RestoreProgress(player, clearAfter: true);
+            }
+        }
+
+        private void HandleZoneVisuals(Entity player, int zoneHash, bool remove)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) != true || zone?.BorderVisual == null)
+            {
+                return;
+            }
+
+            var buffPrefab = zone.BorderVisual.BuffPrefabs?.FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(buffPrefab))
+            {
+                return;
+            }
+
+            if (remove)
+            {
+                HandleRemoveZoneBuff(new FlowAction { Action = FlowActions.RemoveZoneBuff, BuffPrefab = buffPrefab }, player);
+            }
+            else
+            {
+                HandleApplyZoneBuff(new FlowAction { Action = FlowActions.ApplyZoneBuff, BuffPrefab = buffPrefab, Duration = -1f }, player);
+            }
+        }
+
+        private void HandleCreateEncounterGroup(Entity player, int zoneHash)
+        {
+            if (Plugin.BossCoop?.IsInitialized != true || Plugin.ZoneTransition == null)
+            {
+                return;
+            }
+
+            foreach (var member in Plugin.ZoneTransition.GetPlayersInZone(zoneHash))
+            {
+                Plugin.BossCoop.OnBossZoneEnter(member, zoneHash, forceJoinClan: false, shuffleClan: false);
+            }
+        }
+
+        private void HandleCleanupEncounterGroup(Entity player, int zoneHash)
+        {
+            Plugin.BossCoop?.OnBossZoneExit(player, zoneHash);
+        }
+
+        private void HandleBossPrepareEncounterState(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) == true && zone is BossZoneConfig bossZone && !bossZone.NoProgress)
+            {
+                Plugin.Progress?.SaveProgress(player);
+            }
+        }
+
+        private void HandleBossSpawnEncounter(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) != true || zone is not BossZoneConfig bossZone)
+            {
+                return;
+            }
+
+            EnsureBosses(player, zoneHash, bossZone.BossPrefab, bossZone.BossQuantity, bossZone.RandomSpawn);
+        }
+
+        private void HandleBossUnwindEncounterState(int zoneHash)
+        {
+            if (Plugin.ZoneTransition == null || Plugin.ZoneTransition.GetPlayersInZone(zoneHash).Count > 0)
+            {
+                return;
+            }
+
+            RemoveBosses(zoneHash);
+            RemoveBorderFx(zoneHash);
+        }
+
+        private void HandleBossRestoreEncounterOverrides(Entity player, int zoneHash)
+        {
+            if (Plugin.ZoneConfig?.TryGetZoneByHash(zoneHash, out var zone) == true && zone is BossZoneConfig bossZone && !bossZone.NoProgress)
+            {
+                Plugin.Progress?.RestoreProgress(player, clearAfter: true);
+            }
+
+            Plugin.BossCoop?.OnBossZoneExit(player, zoneHash);
         }
 
         private bool TryResolvePrefabGuid(string prefabName, out PrefabGUID guid)
@@ -531,6 +661,7 @@ namespace Blueluck.Services
                 return false;
             }
 
+            _prefabToGuid ??= Plugin.PrefabToGuid;
             var token = prefabName.Trim();
             if (_prefabToGuid?.IsInitialized == true && _prefabToGuid.TryGetGuid(token, out guid))
             {
@@ -590,17 +721,23 @@ namespace Blueluck.Services
         private void PruneDeadBossEntities(int zoneHash)
         {
             if (!_bossesByZone.TryGetValue(zoneHash, out var entities) || entities.Count == 0)
+            {
                 return;
+            }
 
             try
             {
                 var em = UnifiedCore.EntityManager;
                 if (em == default)
+                {
                     return;
+                }
 
-                entities.RemoveAll(e => e == Entity.Null || !em.Exists(e));
+                entities.RemoveAll(entity => entity == Entity.Null || !em.Exists(entity));
                 if (entities.Count == 0)
+                {
                     _bossesByZone.Remove(zoneHash);
+                }
             }
             catch
             {
@@ -610,21 +747,18 @@ namespace Blueluck.Services
 
         private void CleanupAllSpawnedEntities()
         {
-            foreach (var kvp in _borderFxByZone.ToArray())
+            foreach (var zoneHash in _borderFxByZone.Keys.ToArray())
             {
-                RemoveBorderFxInternal(kvp.Key);
+                RemoveBorderFxInternal(zoneHash);
             }
 
-            foreach (var kvp in _bossesByZone.ToArray())
+            foreach (var zoneHash in _bossesByZone.Keys.ToArray())
             {
-                RemoveBossesInternal(kvp.Key);
+                RemoveBossesInternal(zoneHash);
             }
-
-            _borderFxByZone.Clear();
-            _bossesByZone.Clear();
         }
 
-        private static void TryDestroyEntities(List<Entity> entities)
+        private static void TryDestroyEntities(IEnumerable<Entity> entities)
         {
             try
             {
@@ -634,11 +768,11 @@ namespace Blueluck.Services
                     return;
                 }
 
-                foreach (var e in entities)
+                foreach (var entity in entities)
                 {
-                    if (e != Entity.Null && em.Exists(e))
+                    if (entity != Entity.Null && em.Exists(entity))
                     {
-                        em.DestroyEntity(e);
+                        em.DestroyEntity(entity);
                     }
                 }
             }
@@ -646,65 +780,6 @@ namespace Blueluck.Services
             {
                 // ignored
             }
-        }
-
-        private void CreateDefaultFlows()
-        {
-            var defaultFlows = new FlowConfig
-            {
-                Flows = new Dictionary<string, FlowAction[]>
-                {
-                    ["arena_enter"] = new FlowAction[]
-                    {
-                        new FlowAction { Action = FlowActions.SetPvp, Value = true },
-                        new FlowAction { Action = FlowActions.SendMessage, Message = "PvP Arena: Combat enabled!" }
-                    },
-                    ["arena_exit"] = new FlowAction[]
-                    {
-                        new FlowAction { Action = FlowActions.SetPvp, Value = false },
-                        new FlowAction { Action = FlowActions.SendMessage, Message = "PvP Arena: Combat disabled!" }
-                    },
-                    ["boss_enter"] = new FlowAction[]
-                    {
-                        new FlowAction { 
-                            Action = FlowActions.SpawnBoss, 
-                            Prefab = "CHAR_Gloomrot_Purifier_VBlood",
-                            Quantity = 1,
-                            RandomInZone = true
-                        },
-                        new FlowAction { Action = FlowActions.SendMessage, Message = "Boss encounter begins!" }
-                    },
-                    ["boss_exit"] = new FlowAction[]
-                    {
-                        new FlowAction { Action = FlowActions.RemoveBoss },
-                        new FlowAction { Action = FlowActions.SendMessage, Message = "Boss encounter ended!" }
-                    },
-                    // Optional examples (disabled by default; define additional zones to use them):
-                    // "buff_zone_enter"/"buff_zone_exit" can apply/remove buffs via zone.applyzonebuff/zone.removezonebuff.
-                }
-            };
-
-            var json = JsonSerializer.Serialize(defaultFlows, new JsonSerializerOptions
-            {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-
-            File.WriteAllText(_configPath, json);
-            _log.LogInfo("[FlowRegistry] Created default flows with multi-boss support");
-
-            foreach (var flow in defaultFlows.Flows)
-            {
-                _flows[flow.Key] = flow.Value.ToList();
-            }
-        }
-
-        /// <summary>
-        /// Gets a flow by ID.
-        /// </summary>
-        public bool TryGetFlow(string flowId, out List<FlowAction> actions)
-        {
-            return _flows.TryGetValue(flowId, out actions);
         }
     }
 }

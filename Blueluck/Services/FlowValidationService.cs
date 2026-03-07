@@ -173,6 +173,26 @@ namespace Blueluck.Services
                     "zone.removekit" => ValidateRemoveKit(action),
                     "zone.applyzonebuff" => ValidateApplyZoneBuff(action),
                     "zone.removezonebuff" => ValidateRemoveZoneBuff(action),
+                    "arena.applyruleprofile" => FlowActionValidationResult.Success(action.Action),
+                    "arena.restoresafecombatstate" => FlowActionValidationResult.Success(action.Action),
+                    "arena.applyloadoutstate" => FlowActionValidationResult.Success(action.Action),
+                    "arena.restoreloadoutstate" => FlowActionValidationResult.Success(action.Action),
+                    "arena.applyprogressiongate" => FlowActionValidationResult.Success(action.Action),
+                    "arena.restoreprogressionstate" => FlowActionValidationResult.Success(action.Action),
+                    "arena.captureplayersnapshot" => FlowActionValidationResult.Success(action.Action),
+                    "arena.restoreplayersnapshot" => FlowActionValidationResult.Success(action.Action),
+                    "arena.applyzonevisuals" => FlowActionValidationResult.Success(action.Action),
+                    "arena.clearzonevisuals" => FlowActionValidationResult.Success(action.Action),
+                    "boss.createencountergroup" => FlowActionValidationResult.Success(action.Action),
+                    "boss.prepareencounterstate" => FlowActionValidationResult.Success(action.Action),
+                    "boss.spawnencounter" => FlowActionValidationResult.Success(action.Action),
+                    "boss.applyencountervisuals" => FlowActionValidationResult.Success(action.Action),
+                    "boss.cleanupencountergroup" => FlowActionValidationResult.Success(action.Action),
+                    "boss.unwindencounterstate" => FlowActionValidationResult.Success(action.Action),
+                    "boss.restoreencounteroverrides" => FlowActionValidationResult.Success(action.Action),
+                    "zone.enablecoop" => FlowActionValidationResult.Success(action.Action),
+                    "zone.disablecoop" => FlowActionValidationResult.Success(action.Action),
+                    "zone.triggercoop" => FlowActionValidationResult.Success(action.Action),
                     _ => FlowActionValidationResult.Failure(action.Action, $"Unknown action type: {action.Action}")
                 };
             }
@@ -196,9 +216,17 @@ namespace Blueluck.Services
                 return result;
             }
 
-            // This would require exposing the flows dictionary from FlowRegistryService
-            // For now, we provide action-level validation
-            result.Warnings.Add("Flow-level validation requires FlowRegistry integration");
+            if (!_flowRegistry.TryGetFlow(flowId, out var actions))
+            {
+                result.AddResult(FlowActionValidationResult.Failure(flowId, $"Flow '{flowId}' not registered"));
+                return result;
+            }
+
+            foreach (var action in actions)
+            {
+                result.AddResult(ValidateAction(action));
+            }
+
             return result;
         }
 
@@ -420,14 +448,14 @@ namespace Blueluck.Services
                 result.Warnings.Add($"Arena zone '{zone.Name}' should set AbilitySet.");
             }
 
-            if (!string.IsNullOrEmpty(zone.FlowOnEnter))
+            foreach (var flowId in zone.ResolvedEntryFlows.Length > 0 ? zone.ResolvedEntryFlows : zone.EntryFlows)
             {
-                result.Warnings.Add($"Flow '{zone.FlowOnEnter}' on enter - validation not yet implemented");
+                AppendFlowValidation(result, flowId, "entry");
             }
 
-            if (!string.IsNullOrEmpty(zone.FlowOnExit))
+            foreach (var flowId in zone.ResolvedExitFlows.Length > 0 ? zone.ResolvedExitFlows : zone.ExitFlows)
             {
-                result.Warnings.Add($"Flow '{zone.FlowOnExit}' on exit - validation not yet implemented");
+                AppendFlowValidation(result, flowId, "exit");
             }
 
             if (!string.IsNullOrEmpty(zone.KitOnEnter))
@@ -439,6 +467,25 @@ namespace Blueluck.Services
             }
 
             return result;
+        }
+
+        private void AppendFlowValidation(FlowValidationResult result, string flowId, string lifecycle)
+        {
+            if (string.IsNullOrWhiteSpace(flowId))
+            {
+                return;
+            }
+
+            var flowResult = ValidateFlow(flowId);
+            if (!flowResult.IsValid)
+            {
+                result.Warnings.Add($"{lifecycle} flow '{flowId}' invalid: {string.Join("; ", flowResult.Errors)}");
+            }
+
+            foreach (var warning in flowResult.Warnings)
+            {
+                result.Warnings.Add($"{lifecycle} flow '{flowId}': {warning}");
+            }
         }
     }
 

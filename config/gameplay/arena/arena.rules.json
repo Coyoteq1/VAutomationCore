@@ -1,0 +1,8 @@
+[
+  {
+    "Id": "default",
+    "PvpEnabled": true,
+    "SpectatorsAllowed": true,
+    "MountsAllowed": false
+  }
+]

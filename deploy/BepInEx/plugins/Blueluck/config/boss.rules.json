@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "ruleProfileId": "boss_default",
+      "settings": {
+        "family": "boss",
+        "sameZoneOnly": true
+      }
+    }
+  ]
+}

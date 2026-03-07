@@ -1,3 +1,4 @@
+using System;
 using VAutomationCore.Core.Lifecycle;
 using Xunit;
 

@@ -16,6 +16,9 @@ namespace Blueluck.Services
 
         public static void ProcessTick()
         {
+            Plugin.TryPromoteLateEcsSystems();
+            Plugin.SessionTimers?.ProcessTick();
+
             if (!Plugin.FallbackZoneDetectionEnabled ||
                 Plugin.ZoneConfig?.IsInitialized != true ||
                 Plugin.ZoneTransition?.IsInitialized != true)

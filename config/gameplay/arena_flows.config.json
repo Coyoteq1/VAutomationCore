@@ -1,0 +1,261 @@
+{
+  "schemaVersion": "1.0.0",
+  "moduleId": "vautomationcore.arena",
+  "flows": {
+    "arena_enable": {
+      "description": "Enable an arena for gameplay",
+      "steps": [
+        "admin_validate_user",
+        "enable_arena",
+        "enable_zone_for_arena",
+        "apply_arena_rules_profile",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_disable": {
+      "description": "Disable an arena",
+      "steps": [
+        "admin_validate_user",
+        "disable_arena",
+        "disable_zone_for_arena",
+        "clear_arena_match_state",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_create": {
+      "description": "Create a new arena",
+      "steps": [
+        "admin_validate_user",
+        "create_arena",
+        "bind_arena_zone",
+        "apply_arena_rules_profile",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_delete": {
+      "description": "Delete an arena",
+      "steps": [
+        "admin_validate_user",
+        "disable_arena",
+        "unbind_arena_zone",
+        "delete_arena",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_bind_zone": {
+      "description": "Bind a zone to an arena",
+      "steps": [
+        "admin_validate_user",
+        "bind_arena_zone",
+        "apply_arena_rules_profile",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_unbind_zone": {
+      "description": "Unbind a zone from an arena",
+      "steps": [
+        "admin_validate_user",
+        "clear_arena_rules_profile",
+        "unbind_arena_zone",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_match_start": {
+      "description": "Start a match in an arena",
+      "steps": [
+        "ensure_arena_enabled",
+        "arena_assign_participants",
+        "arena_start_match",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_match_stop": {
+      "description": "Stop a match in an arena",
+      "steps": [
+        "arena_stop_match",
+        "arena_clear_match_effects",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_match_reset": {
+      "description": "Reset an arena match",
+      "steps": [
+        "arena_stop_match",
+        "arena_reset_state",
+        "arena_restore_zone_defaults",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_player_join": {
+      "description": "Player joins an arena",
+      "steps": [
+        "arena_add_player",
+        "teleport_entity",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_player_leave": {
+      "description": "Player leaves an arena",
+      "steps": [
+        "arena_remove_player",
+        "teleport_entity",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_spectator_enable": {
+      "description": "Enable spectator mode",
+      "steps": [
+        "admin_validate_user",
+        "arena_enable_spectator",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_spectator_disable": {
+      "description": "Disable spectator mode",
+      "steps": [
+        "admin_validate_user",
+        "arena_disable_spectator",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_status": {
+      "description": "Get arena status",
+      "steps": [
+        "arena_get_status",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_list": {
+      "description": "List all arenas",
+      "steps": [
+        "arena_list_all",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_pvp_enable": {
+      "description": "Enable PvP in arena",
+      "steps": [
+        "admin_validate_user",
+        "enable_arena_pvp",
+        "apply_pvp_rules",
+        "spawn_pvp_indicators",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_pvp_disable": {
+      "description": "Disable PvP in arena",
+      "steps": [
+        "admin_validate_user",
+        "disable_arena_pvp",
+        "apply_pvp_safety",
+        "clear_pvp_indicators",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_pvp_toggle": {
+      "description": "Toggle PvP in arena",
+      "steps": [
+        "admin_validate_user",
+        "toggle_arena_pvp",
+        "update_pvp_state",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_friendly_fire_enable": {
+      "description": "Enable friendly fire",
+      "steps": [
+        "admin_validate_user",
+        "enable_friendly_fire",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_friendly_fire_disable": {
+      "description": "Disable friendly fire",
+      "steps": [
+        "admin_validate_user",
+        "disable_friendly_fire",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_boss_spawn": {
+      "description": "Spawn a boss in arena",
+      "steps": [
+        "admin_validate_user",
+        "spawn_boss",
+        "apply_boss_buffs",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "arena_boss_defeat": {
+      "description": "Boss defeated in arena",
+      "steps": [
+        "track_boss_health",
+        "on_boss_defeated",
+        "distribute_rewards",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "arena_boss_escape": {
+      "description": "Boss escaped from arena",
+      "steps": [
+        "on_boss_escaped",
+        "apply_escape_penalty",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_wave_start": {
+      "description": "Start a wave in arena",
+      "steps": [
+        "start_wave",
+        "spawn_wave_enemies",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_wave_complete": {
+      "description": "Wave completed in arena",
+      "steps": [
+        "complete_wave",
+        "distribute_wave_rewards",
+        "sendmessagetoall",
+        "progress_achievement"
+      ]
+    },
+    "arena_wave_skip": {
+      "description": "Skip current wave",
+      "steps": [
+        "admin_validate_user",
+        "skip_wave",
+        "spawn_wave_enemies",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_difficulty_set": {
+      "description": "Set arena difficulty",
+      "steps": [
+        "admin_validate_user",
+        "set_arena_difficulty",
+        "apply_difficulty_modifiers",
+        "sendmessagetoall"
+      ]
+    },
+    "arena_enemy_spawn": {
+      "description": "Spawn enemy in arena",
+      "steps": [
+        "admin_validate_user",
+        "spawn_enemy",
+        "apply_enemy_modifiers",
+        "sendmessagetouser"
+      ]
+    },
+    "arena_enemy_clear": {
+      "description": "Clear all enemies from arena",
+      "steps": [
+        "admin_validate_user",
+        "clear_all_enemies",
+        "sendmessagetoall"
+      ]
+    }
+  }
+}

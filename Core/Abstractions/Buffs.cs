@@ -27,6 +27,11 @@ namespace VAutomationCore.Abstractions
                 }
 
                 var debugSystem = UnifiedCore.Server.GetExistingSystemManaged<DebugEventsSystem>();
+                if (debugSystem == null)
+                {
+                    return false;
+                }
+                
                 debugSystem.ApplyBuff(
                     new FromCharacter { User = userEntity, Character = targetEntity },
                     new ApplyBuffDebugEvent { BuffPrefabGUID = buffPrefab });

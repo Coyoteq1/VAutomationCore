@@ -11,8 +11,6 @@ jobs:
     strategy:
       matrix:
         project:
-          - Bluelock/VAutoZone.sln
-          - CycleBorn/Vlifecycle.sln
           - VAutomationCore.csproj
     steps:
       - uses: actions/checkout@v4

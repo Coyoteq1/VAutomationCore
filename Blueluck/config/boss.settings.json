@@ -1,0 +1,7 @@
+{
+  "detection": {
+    "checkIntervalMs": 500,
+    "positionThreshold": 1.0
+  },
+  "defaultRuleProfileId": "boss_default"
+}

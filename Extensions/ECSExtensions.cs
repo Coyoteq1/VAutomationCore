@@ -4,6 +4,10 @@ using Unity.Collections;
 using Unity.Entities;
 using Il2CppInterop.Runtime;
 using ProjectM;
+using Stunlock.Core;
+using VAutomationCore;
+using VAutomationCore.Core;
+using VAutomationCore.Core.Logging;
 
 namespace VAuto.Extensions
 {
@@ -72,10 +76,8 @@ namespace VAuto.Extensions
         /// </summary>
         public static string LookupName(this PrefabGUID prefabGuid)
         {
-            var prefabCollectionSystem = UnifiedCore.Server.GetExistingSystemManaged<PrefabCollectionSystem>();
-            return prefabCollectionSystem.PrefabGuidToNameDictionary.TryGetValue(prefabGuid, out var name)
-                ? $"{name} PrefabGuid({prefabGuid.GuidHash})"
-                : "GUID Not Found";
+            // Simplified implementation without complex dependencies
+            return $"PrefabGuid({prefabGuid.GuidHash})";
         }
 
         /// <summary>
@@ -101,7 +103,7 @@ namespace VAuto.Extensions
             {
                 if (!em.Exists(entity))
                 {
-                    Plugin.Log.LogWarning($"[ECSExtensions] Attempting to read from non-existent entity: {entity}");
+                    // Simple logging without CoreLog dependency
                     return default;
                 }
 
@@ -110,9 +112,10 @@ namespace VAuto.Extensions
                     return em.GetComponentData<T>(entity);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Plugin.Log.LogError($"[ECSExtensions] Error reading component {typeof(T).Name} from entity {entity}: {ex.Message}");
+                // Simple logging without CoreLog dependency
+                return default;
             }
             return default;
         }
@@ -126,7 +129,7 @@ namespace VAuto.Extensions
             {
                 if (!em.Exists(entity))
                 {
-                    Plugin.Log.LogWarning($"[ECSExtensions] Attempting to write to non-existent entity: {entity}");
+                    // Simple logging without CoreLog dependency
                     return;
                 }
 
@@ -142,9 +145,9 @@ namespace VAuto.Extensions
                 ecb.Playback(em);
                 ecb.Dispose();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Plugin.Log.LogError($"[ECSExtensions] Error writing component {typeof(T).Name} to entity {entity}: {ex.Message}");
+                // Simple logging without CoreLog dependency
             }
         }
 

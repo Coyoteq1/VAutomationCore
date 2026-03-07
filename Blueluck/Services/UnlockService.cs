@@ -32,6 +32,7 @@ namespace Blueluck.Services
 
         // Unlock method cache for performance
         private readonly Dictionary<UnlockType, string[]> _unlockMethods = new();
+        private bool _loggedUnavailable;
 
         public enum UnlockType
         {
@@ -51,14 +52,6 @@ namespace Blueluck.Services
                 return;
             }
 
-            // Get DebugEventsSystem
-            _debugEventsSystem = world.GetExistingSystemManaged<DebugEventsSystem>();
-            if (_debugEventsSystem == null)
-            {
-                _log.LogError("[Unlock] DebugEventsSystem not available");
-                return;
-            }
-
             // Setup ECS queries
             var em = world.EntityManager;
             _playerQuery = em.CreateEntityQuery(ComponentType.ReadOnly<LocalToWorld>());
@@ -68,6 +61,8 @@ namespace Blueluck.Services
             // Cache unlock methods
             CacheUnlockMethods();
 
+            EnsureDebugEventsSystem(world);
+
             IsInitialized = true;
             _log.LogInfo("[Unlock] Initialized with DebugEvent system");
         }
@@ -75,6 +70,7 @@ namespace Blueluck.Services
         public void Cleanup()
         {
             _debugEventsSystem = null;
+            _loggedUnavailable = false;
             _unlockMethods.Clear();
             IsInitialized = false;
             _log.LogInfo("[Unlock] Cleaned up");
@@ -85,6 +81,11 @@ namespace Blueluck.Services
         /// </summary>
         public bool UnlockAll(Entity player)
         {
+            if (!IsInitialized || _debugEventsSystem == null)
+            {
+                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+            }
+
             if (!IsInitialized || _debugEventsSystem == null)
             {
                 _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
@@ -131,6 +132,11 @@ namespace Blueluck.Services
         {
             if (!IsInitialized || _debugEventsSystem == null)
             {
+                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+            }
+
+            if (!IsInitialized || _debugEventsSystem == null)
+            {
                 _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
                 return false;
             }
@@ -161,6 +167,11 @@ namespace Blueluck.Services
         /// </summary>
         public bool ApplyBuff(Entity player, PrefabGUID buffPrefab, float duration = 0f)
         {
+            if (!IsInitialized || _debugEventsSystem == null)
+            {
+                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+            }
+
             if (!IsInitialized || _debugEventsSystem == null)
             {
                 _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
@@ -197,6 +208,11 @@ namespace Blueluck.Services
         /// </summary>
         public bool RemoveBuff(Entity player, PrefabGUID buffPrefab)
         {
+            if (!IsInitialized || _debugEventsSystem == null)
+            {
+                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+            }
+
             if (!IsInitialized || _debugEventsSystem == null)
             {
                 _log.LogWarning("[Unlock] Service not initialized or DebugEventsSystem unavailable");
@@ -371,7 +387,30 @@ namespace Blueluck.Services
         /// </summary>
         public bool IsDebugEventsSystemAvailable()
         {
+            EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
             return _debugEventsSystem != null && IsInitialized;
+        }
+
+        private void EnsureDebugEventsSystem(World? world)
+        {
+            if (_debugEventsSystem != null)
+            {
+                return;
+            }
+
+            _debugEventsSystem = Plugin.ResolveManagedWorldSystem<DebugEventsSystem>(world);
+            if (_debugEventsSystem != null)
+            {
+                _loggedUnavailable = false;
+                _log.LogInfo("[Unlock] DebugEventsSystem resolved lazily.");
+                return;
+            }
+
+            if (!_loggedUnavailable)
+            {
+                _loggedUnavailable = true;
+                _log.LogWarning("[Unlock] DebugEventsSystem still unavailable; unlock actions will retry later.");
+            }
         }
 
         /// <summary>

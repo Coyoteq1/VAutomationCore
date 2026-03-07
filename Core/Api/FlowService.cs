@@ -568,6 +568,7 @@ namespace VAutomationCore.Core.Api
 
         private static void RegisterDefaultActionAliases()
         {
+            // Original action aliases
             RegisterActionAlias("apply_buff", "ApplyBuff");
             RegisterActionAlias("clean_buff", "CleanBuff");
             RegisterActionAlias("remove_buff", "RemoveBuff");
@@ -576,6 +577,34 @@ namespace VAutomationCore.Core.Api
             RegisterActionAlias("message_all", "SendMessageToAll");
             RegisterActionAlias("message_platform", "SendMessageToPlatform");
             RegisterActionAlias("message_user", "SendMessageToUser");
+
+            // ECS action aliases
+            RegisterActionAlias("progress_achievement", "ProgressAchievement");
+            RegisterActionAlias("grant_achievement", "GrantAchievement");
+            RegisterActionAlias("achievement_progress_kill", "AchievementProgressKill");
+            RegisterActionAlias("achievement_progress_craft", "AchievementProgressCraft");
+            RegisterActionAlias("achievement_progress_item_gain", "AchievementProgressItemGain");
+            RegisterActionAlias("achievement_progress_consume", "AchievementProgressConsume");
+            RegisterActionAlias("unlock_progression", "UnlockProgression");
+            RegisterActionAlias("grant_progression", "GrantProgression");
+            RegisterActionAlias("unlock_spellbook_abilities", "UnlockSpellbookAbilities");
+            RegisterActionAlias("unlock_vblood_progression", "UnlockVBloodProgression");
+            RegisterActionAlias("admin_promote_user", "AdminPromoteUser");
+            RegisterActionAlias("admin_demote_user", "AdminDemoteUser");
+            RegisterActionAlias("admin_validate_user", "AdminValidateUser");
+            RegisterActionAlias("start_interactable_sequence", "StartInteractableSequence");
+            RegisterActionAlias("end_interactable_sequence", "EndInteractableSequence");
+            RegisterActionAlias("entity_tilt_to_location", "EntityTiltToLocation");
+            RegisterActionAlias("entity_set_spawn_location", "EntitySetSpawnLocation");
+
+            // Visual/Display action aliases
+            RegisterActionAlias("place_tilemodel_ability", "PlaceTilemodelAbility");
+            RegisterActionAlias("player_custom_marker", "PlayerCustomMarker");
+            RegisterActionAlias("play_mounted_sequence", "PlayMountedSequence");
+            RegisterActionAlias("is_previewing_placement", "IsPreviewingPlacement");
+
+            // Zone System action aliases
+            RegisterActionAlias("sunblocker_region", "SunBlockerRegion");
         }
     }
 }

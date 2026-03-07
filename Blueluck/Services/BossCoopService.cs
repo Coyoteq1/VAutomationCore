@@ -13,8 +13,8 @@ using VAutomationCore.Services;
 namespace Blueluck.Services
 {
     /// <summary>
-    /// Boss-zone co-op override using PvP buff state.
-    /// Players inside a co-op boss zone are forced to non-PvP together and restored on exit.
+    /// Boss-zone encounter override using PvP buff state.
+    /// Players inside the same boss zone are forced into a temporary local encounter group and restored on exit.
     /// </summary>
     public sealed class BossCoopService : IService
     {
@@ -30,6 +30,7 @@ namespace Blueluck.Services
         private Func<Entity, Entity, bool>? _forceJoinClan;
         private readonly System.Random _rng = new();
         private bool _loggedClanApiUnavailable;
+        private bool _loggedPvpBuffUnavailable;
 
         private sealed class PlayerCoopState
         {
@@ -43,15 +44,10 @@ namespace Blueluck.Services
             var world = World.DefaultGameObjectInjectionWorld;
             if (world != null && world.IsCreated)
             {
-                _debugEventsSystem = world.GetExistingSystemManaged<DebugEventsSystem>();
-                _forceJoinClan = BuildForceJoinClanInvoker(_debugEventsSystem);
+                EnsureDebugEventsSystem(world);
             }
 
-            // Resolve once. If this fails, service still initializes but becomes no-op.
-            if (!TryResolvePvpBuffGuid(out _pvpBuffGuid))
-            {
-                _log.LogWarning("[BossCoop] Buff_PvP_Enabled guid not resolved; co-op override disabled.");
-            }
+            EnsurePvpBuffGuid();
 
             _log.LogInfo("[BossCoop] Initialized.");
         }
@@ -80,12 +76,20 @@ namespace Blueluck.Services
             _playerStates.Clear();
             _debugEventsSystem = null;
             _forceJoinClan = null;
+            _pvpBuffGuid = PrefabGUID.Empty;
+            _loggedClanApiUnavailable = false;
+            _loggedPvpBuffUnavailable = false;
             IsInitialized = false;
             _log.LogInfo("[BossCoop] Cleaned up.");
         }
 
         public void OnBossZoneEnter(Entity player, int zoneHash, bool forceJoinClan, bool shuffleClan)
         {
+            if (!IsInitialized || player == Entity.Null || zoneHash == 0 || _pvpBuffGuid == PrefabGUID.Empty)
+            {
+                EnsurePvpBuffGuid();
+            }
+
             if (!IsInitialized || player == Entity.Null || zoneHash == 0 || _pvpBuffGuid == PrefabGUID.Empty)
             {
                 return;
@@ -107,15 +111,15 @@ namespace Blueluck.Services
             {
                 ForceNonPvp(member);
             }
-
-            if (forceJoinClan)
-            {
-                ForceJoinClanForZone(zoneHash, shuffleClan);
-            }
         }
 
         public void OnBossZoneExit(Entity player, int zoneHash)
         {
+            if (!IsInitialized || player == Entity.Null || zoneHash == 0 || _pvpBuffGuid == PrefabGUID.Empty)
+            {
+                EnsurePvpBuffGuid();
+            }
+
             if (!IsInitialized || player == Entity.Null || zoneHash == 0 || _pvpBuffGuid == PrefabGUID.Empty)
             {
                 return;
@@ -261,6 +265,8 @@ namespace Blueluck.Services
 
         private void ForceJoinClanForZone(int zoneHash, bool shuffle)
         {
+            EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
+
             if (!_membersByZone.TryGetValue(zoneHash, out var members) || members.Count < 2)
             {
                 return;
@@ -400,6 +406,38 @@ namespace Blueluck.Services
             }
 
             return null;
+        }
+
+        private void EnsureDebugEventsSystem(World? world)
+        {
+            if (_debugEventsSystem != null)
+            {
+                return;
+            }
+
+            _debugEventsSystem = Plugin.ResolveManagedWorldSystem<DebugEventsSystem>(world);
+            _forceJoinClan = BuildForceJoinClanInvoker(_debugEventsSystem);
+        }
+
+        private void EnsurePvpBuffGuid()
+        {
+            if (_pvpBuffGuid != PrefabGUID.Empty)
+            {
+                return;
+            }
+
+            if (TryResolvePvpBuffGuid(out _pvpBuffGuid) && _pvpBuffGuid != PrefabGUID.Empty)
+            {
+                _loggedPvpBuffUnavailable = false;
+                _log.LogInfo("[BossCoop] Buff_PvP_Enabled resolved lazily.");
+                return;
+            }
+
+            if (!_loggedPvpBuffUnavailable)
+            {
+                _loggedPvpBuffUnavailable = true;
+                _log.LogWarning("[BossCoop] Buff_PvP_Enabled guid still unresolved; co-op override will retry later.");
+            }
         }
 
         private static bool TryGetPlatformId(Entity characterEntity, out ulong platformId)

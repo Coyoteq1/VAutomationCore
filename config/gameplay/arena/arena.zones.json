@@ -1,0 +1,15 @@
+[
+  {
+    "ZoneId": "arena_main",
+    "Name": "Main Arena",
+    "ZoneType": "arena",
+    "ZoneShape": "Sphere",
+    "Center": [0.0, 0.0, 0.0],
+    "Radius": 50.0,
+    "Enabled": true,
+    "RuleProfileId": "default",
+    "EntryFlows": ["arena_player_join"],
+    "ExitFlows": ["arena_player_leave"],
+    "TickFlows": []
+  }
+]

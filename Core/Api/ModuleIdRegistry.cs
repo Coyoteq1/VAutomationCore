@@ -63,7 +63,7 @@ namespace VAutomationCore.Core.Api
             _logger = logger;
             
             // Register VAutomationCore as the base module
-            RegisterModule(KnownModules.VAutomationCore, "VAutomationCore", "1.0.1", isCore: true);
+            RegisterModule(KnownModules.VAutomationCore, "VAutomationCore", VAutomationCore.MyPluginInfo.VERSION, isCore: true);
             
             _initialized = true;
             _logger?.LogInfo($"[ModuleIdRegistry] Initialized with {RegisteredModules.Count} registered modules");

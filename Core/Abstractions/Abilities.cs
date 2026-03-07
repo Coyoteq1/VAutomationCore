@@ -68,6 +68,11 @@ namespace VAutomationCore.Abstractions
 
                 // Grant the ability through debug system
                 var debugSystem = UnifiedCore.Server.GetExistingSystemManaged<DebugEventsSystem>();
+                if (debugSystem == null)
+                {
+                    return false;
+                }
+                
                 debugSystem.ApplyBuff(
                     new FromCharacter { User = userEntity, Character = targetEntity },
                     new ApplyBuffDebugEvent { BuffPrefabGUID = abilityPrefab });

@@ -1,0 +1,32 @@
+namespace VAutomationCore.Core.Gameplay
+{
+    public enum FlowArgKind
+    {
+        Entity,
+        Player,
+        TargetEntity,
+        Prefab,
+        PrefabList,
+        Zone,
+        Gameplay,
+        Position,
+        Rotation,
+        Direction,
+        Bounds,
+        Radius,
+        Quantity,
+        Duration,
+        Bool,
+        Int,
+        Float,
+        String,
+        StringList,
+        Enum,
+        Settings,
+        RuleProfile,
+        RewardTable,
+        Team,
+        Tag,
+        Condition
+    }
+}

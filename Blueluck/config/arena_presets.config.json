@@ -1,0 +1,58 @@
+{
+  "presets": [
+    {
+      "presetId": "arena_pvp_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "session": {
+        "enabled": true,
+        "minPlayers": 2,
+        "maxPlayers": 16,
+        "countdownSeconds": 8,
+        "readyTimeoutSeconds": 90,
+        "postMatchResetDelaySeconds": 5,
+        "freezeDuringCountdown": true,
+        "resetOnEmpty": true
+      },
+      "sessionLifecycle": {
+        "lobbyOpenFlows": ["arena_pvp_core_enter"],
+        "lateJoinFlows": ["arena_pvp_core_enter"]
+      },
+      "objective": {
+        "objectiveType": "last_player_standing",
+        "endMatchOnObjective": true,
+        "treatTimeoutAsDraw": true
+      },
+      "entryFlows": ["arena_pvp_core_enter"],
+      "exitFlows": ["arena_pvp_core_exit"]
+    },
+    {
+      "presetId": "arena_loadout_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_loadout_core_enter"],
+      "exitFlows": ["arena_loadout_core_exit"]
+    },
+    {
+      "presetId": "arena_progression_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_progression_core_enter"],
+      "exitFlows": ["arena_progression_core_exit"]
+    },
+    {
+      "presetId": "arena_snapshot_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_snapshot_core_enter"],
+      "exitFlows": ["arena_snapshot_core_exit"]
+    },
+    {
+      "presetId": "arena_visuals_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_visuals_core_enter"],
+      "exitFlows": ["arena_visuals_core_exit"]
+    }
+  ]
+}

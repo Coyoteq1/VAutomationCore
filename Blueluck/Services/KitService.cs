@@ -31,6 +31,7 @@ namespace Blueluck.Services
         private DebugEventsSystem? _debugEventsSystem;
         private Dictionary<string, List<KitItem>> _kits = new(StringComparer.OrdinalIgnoreCase);
         private Func<FromCharacter, PrefabGUID, int, bool>? _giveItem;
+        private bool _loggedUnavailable;
 
         private sealed class KitConfig
         {
@@ -51,8 +52,7 @@ namespace Blueluck.Services
                 {
                     using var doc = JsonDocument.Parse(json);
                     return doc.RootElement.TryGetProperty("kits", out var kits)
-                        && kits.ValueKind == JsonValueKind.Object
-                        && kits.EnumerateObject().MoveNext();
+                        && kits.ValueKind == JsonValueKind.Object;
                 },
                 new
                 {
@@ -69,14 +69,8 @@ namespace Blueluck.Services
                 return;
             }
 
-            _debugEventsSystem = world.GetExistingSystemManaged<DebugEventsSystem>();
-            if (_debugEventsSystem == null)
-            {
-                _log.LogWarning("[Kits] DebugEventsSystem unavailable; kit grants will be disabled.");
-            }
-
             LoadKits();
-            _giveItem = BuildGiveItemInvoker(_debugEventsSystem);
+            EnsureDebugEventsSystem(world);
 
             IsInitialized = true;
             _log.LogInfo($"[Kits] Initialized with {_kits.Count} kits.");
@@ -87,6 +81,7 @@ namespace Blueluck.Services
             _debugEventsSystem = null;
             _kits.Clear();
             _giveItem = null;
+            _loggedUnavailable = false;
             IsInitialized = false;
             _log.LogInfo("[Kits] Cleaned up.");
         }
@@ -139,6 +134,11 @@ namespace Blueluck.Services
             {
                 _log.LogWarning($"[Kits] Failed to resolve FromCharacter for player {player.Index}");
                 return false;
+            }
+
+            if (_giveItem == null)
+            {
+                EnsureDebugEventsSystem(World.DefaultGameObjectInjectionWorld);
             }
 
             if (_giveItem == null)
@@ -409,6 +409,29 @@ namespace Blueluck.Services
             catch
             {
                 // ignored
+            }
+        }
+
+        private void EnsureDebugEventsSystem(World? world)
+        {
+            if (_giveItem != null)
+            {
+                return;
+            }
+
+            _debugEventsSystem = Plugin.ResolveManagedWorldSystem<DebugEventsSystem>(world);
+            _giveItem = BuildGiveItemInvoker(_debugEventsSystem);
+            if (_giveItem != null)
+            {
+                _loggedUnavailable = false;
+                _log.LogInfo("[Kits] DebugEventsSystem resolved lazily; kit grants enabled.");
+                return;
+            }
+
+            if (!_loggedUnavailable)
+            {
+                _loggedUnavailable = true;
+                _log.LogWarning("[Kits] DebugEventsSystem still unavailable; kit grants will retry later.");
             }
         }
     }

@@ -10,14 +10,20 @@ using HarmonyLib;
 using VampireCommandFramework;
 using VAutomationCore.Core;
 using VAutomationCore.Core.Api;
+using VAutomationCore.Core.Gameplay;
+using VAutomationCore.Core.Gameplay.Arena;
+using VAutomationCore.Core.Gameplay.Boss;
+using VAutomationCore.Core.Gameplay.Harvest;
 using VAutomationCore.Core.Logging;
 using VAutomationCore.Core.Automation;
+using VAutomationCore.Core.Flows;
 
 namespace VAutomationCore
 {
     [BepInPlugin(MyPluginInfo.GUID, MyPluginInfo.NAME, MyPluginInfo.VERSION)]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
+    [BepInProcess("VRising.exe")]
     public class Plugin : BasePlugin
     {
         private const string ConfigFileName = "gg.coyote.VAutomationCore.cfg";
@@ -79,6 +85,69 @@ namespace VAutomationCore
                 catch (Exception ex)
                 {
                     CoreLog.LogError($"[{MyPluginInfo.NAME}] Failed to initialize ModTalk automation: {ex.Message}");
+                }
+
+                // Register flows
+                try
+                {
+                    CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Initializing FlowRegistrySystem...");
+                    FlowRegistrySystem.Initialize();
+                    GameplayRegistry.Initialize();
+                    GameplayFlowRegistry.Initialize();
+                    ZoneRegistry.Initialize();
+                    
+                    CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Registering flows...");
+                    GameObjectsFlows.RegisterGameObjectsFlows();
+                    GlowFlows.RegisterGlowFlows();
+                    VBloodFlows.RegisterVBloodFlows();
+                    AbilitiesFlows.RegisterAbilitiesFlows();
+                    FXAndGameObjectsFlows.RegisterFXAndGameObjectsFlows();
+                    EquipmentAndKitsFlows.RegisterEquipmentAndKitsFlows();
+                    ZoneFlows.RegisterZoneFlows();
+                    ZoneRulesFlows.RegisterZoneRulesFlows();
+                    // ================================================================
+                    // NEW: Register isolated gameplay modules
+                    // ================================================================
+                    CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Registering gameplay modules...");
+                    
+                    // Register Arena module
+                    GameplayRegistry.RegisterModule(ArenaGameplayModule.Instance);
+                    
+                    // Register Boss module
+                    GameplayRegistry.RegisterModule(BossGameplayModule.Instance);
+                    
+                    // Register Harvest module
+                    GameplayRegistry.RegisterModule(HarvestGameplayModule.Instance);
+                    
+                    // Enable all modules
+                    GameplayRegistry.EnableAllModules();
+                    
+                    // Register Arena flows (legacy support)
+                    ArenaGameplayRegistration.Register();
+                    PlacementRestrictionFlows.RegisterPlacementRestrictionFlows();
+                    CastleBuildingFlows.RegisterCastleBuildingFlows();
+                    CastleTerritoryFlows.RegisterCastleTerritoryFlows();
+                    SpawnTagFlows.RegisterSpawnTagFlows();
+                    VisibilityAndStealthFlows.RegisterVisibilityAndStealthFlows();
+                    
+                    // Validate flow registry
+                    if (FlowRegistrySystem.ValidateRegistry())
+                    {
+                        CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Flow registry validation passed");
+                        CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Flows registered successfully.");
+                        CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Registry Summary:\n{FlowRegistrySystem.GetRegistrySummary()}");
+                        CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Gameplay Summary:\n{GameplayRegistry.GetSummary()}");
+                        CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Gameplay Flow Summary:\n{GameplayFlowRegistry.GetSummary()}");
+                        CoreLog.LogInfo($"[{MyPluginInfo.NAME}] Zone Summary:\n{ZoneRegistry.GetSummary()}");
+                    }
+                    else
+                    {
+                        CoreLog.LogError($"[{MyPluginInfo.NAME}] Flow registry validation failed");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CoreLog.LogError($"[{MyPluginInfo.NAME}] Failed to register flows: {ex.Message}");
                 }
 
                 LogStartupSummary();

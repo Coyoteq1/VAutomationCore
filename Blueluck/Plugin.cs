@@ -14,18 +14,14 @@ using Unity.Entities;
 using VampireCommandFramework;
 using VAuto.Services.Interfaces;
 using VAutomationCore;
-using VAutomationCore.Core;
-using VAutomationCore.Core.Lifecycle;
 using VAutomationCore.Core.Logging;
-using VAutomationCore.Services;
 using Blueluck.Services;
 using Blueluck.Systems;
-using Blueluck.Commands;
 
 namespace Blueluck
 {
     [BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
-    [BepInDependency("gg.coyote.VAutomationCore", "1.1.1")]
+    [BepInDependency("gg.coyote.VAutomationCore")]
     [BepInDependency("gg.deca.VampireCommandFramework", "0.10.4")]
     [BepInProcess("VRisingServer.exe")]
     public class Plugin : BasePlugin
@@ -42,6 +38,7 @@ namespace Blueluck
         private bool _ecsServicesInitialized;
         private bool _deferredEcsHookRegistered;
         private static bool _fallbackZoneDetectionEnabled;
+        private static float _nextLateEcsRetryTime;
 
         #region Config Entries
         // General
@@ -74,6 +71,13 @@ namespace Blueluck
         public static ZoneConfigService ZoneConfig { get; private set; }
         public static ZoneTransitionService ZoneTransition { get; private set; }
         public static FlowRegistryService FlowRegistry { get; private set; }
+        public static GameplayRegistrationService GameplayRegistration { get; private set; }
+        public static GamePresetService GamePresets { get; private set; }
+        public static ReadyLobbyService ReadyLobbies { get; private set; }
+        public static SessionTimerService SessionTimers { get; private set; }
+        public static ZonePrepService ZonePrep { get; private set; }
+        public static SessionOutcomeService SessionOutcomes { get; private set; }
+        public static GameSessionManager GameSessions { get; private set; }
         public static ProgressService Progress { get; private set; }
         public static AbilityService Abilities { get; private set; }
         public static BossCoopService BossCoop { get; private set; }
@@ -164,69 +168,12 @@ namespace Blueluck
             try
             {
                 CommandRegistry.RegisterAll(Assembly.GetExecutingAssembly());
-                VerifyAutomationCommandBindings();
                 Logger.LogInfo("[Blueluck] Commands registered successfully.");
             }
             catch (Exception ex)
             {
                 Logger.LogError($"[Blueluck] Failed to register commands: {ex.Message}");
             }
-        }
-
-        private static void VerifyAutomationCommandBindings()
-        {
-#if DEBUG
-            var required = new (Type Type, string Command)[]
-            {
-                (typeof(ZoneCommands), "zone status"),
-                (typeof(ZoneCommands), "zone list"),
-                (typeof(ZoneCommands), "zone reload"),
-                (typeof(ZoneCommands), "flow reload"),
-                (typeof(ZoneCommands), "zone debug"),
-                (typeof(KitCommands), "kit list"),
-                (typeof(KitCommands), "kit"),
-                (typeof(SnapshotCommands), "snap status"),
-                (typeof(SnapshotCommands), "snap save"),
-                (typeof(SnapshotCommands), "snap apply"),
-                (typeof(SnapshotCommands), "snap restore"),
-                (typeof(SnapshotCommands), "snap clear")
-            };
-
-            var missing = new List<string>();
-            foreach (var item in required)
-            {
-                var found = false;
-                var methods = item.Type.GetMethods(BindingFlags.Public | BindingFlags.Static);
-                foreach (var method in methods)
-                {
-                    var attribute = method.GetCustomAttribute<CommandAttribute>();
-                    if (attribute == null)
-                    {
-                        continue;
-                    }
-
-                    if (string.Equals(attribute.Name, item.Command, StringComparison.OrdinalIgnoreCase))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found)
-                {
-                    missing.Add($"{item.Type.Name}:{item.Command}");
-                }
-            }
-
-            if (missing.Count == 0)
-            {
-                Logger.LogInfo($"[Blueluck] Automation command verification passed ({required.Length} commands).");
-            }
-            else
-            {
-                Logger.LogWarning($"[Blueluck] Automation command verification missing: {string.Join(", ", missing)}");
-            }
-#endif
         }
 
         private void InitializeServices()
@@ -242,9 +189,21 @@ namespace Blueluck
             // Initialize non-ECS services first (these can initialize immediately)
             try
             {
-                // Core config service (no ECS dependency)
+                if (FlowSystemEnabled.Value)
+                {
+                    FlowRegistry = new FlowRegistryService();
+                    FlowRegistry.Initialize();
+                    Logger.LogInfo("[Blueluck] FlowRegistry initialized");
+                }
+
                 ZoneConfig = new ZoneConfigService();
                 ZoneConfig.Initialize();
+
+                GameplayRegistration = new GameplayRegistrationService();
+                GameplayRegistration.Initialize();
+
+                GamePresets = new GamePresetService();
+                GamePresets.Initialize();
                 
                 // Prefab remap service (no ECS dependency - uses static data)
                 PrefabRemap = new PrefabRemapService();
@@ -264,33 +223,96 @@ namespace Blueluck
             try
             {
                 var configDir = Path.Combine(Paths.ConfigPath, "Blueluck");
+                var gameplayConfigDir = Path.Combine(configDir, "gameplay");
                 Directory.CreateDirectory(configDir);
+                Directory.CreateDirectory(gameplayConfigDir);
 
                 EnsureConfigFile(
-                    "zones.json",
-                    IsZonesConfigValid,
+                    Path.Combine("gameplay", "arena.settings.json"),
+                    IsObjectConfigValid,
                     new
                     {
                         detection = new { checkIntervalMs = 500, positionThreshold = 1.0f },
-                        fxPresetList = Array.Empty<int>(),
+                        defaultRuleProfileId = "arena_default"
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "arena.zones.json"),
+                    IsZonesArrayConfigValid,
+                    new
+                    {
                         zones = Array.Empty<object>()
                     });
 
                 EnsureConfigFile(
-                    "flows.json",
-                    IsFlowsConfigValid,
+                    Path.Combine("gameplay", "arena.rules.json"),
+                    IsRulesConfigValid,
                     new
                     {
-                        flows = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
+                        rules = Array.Empty<object>()
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "arena_flows.config.json"),
+                    IsFlowDefinitionsConfigValid,
+                    new
+                    {
+                        flows = Array.Empty<object>()
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "arena_presets.config.json"),
+                    IsPresetsConfigValid,
+                    new
+                    {
+                        presets = Array.Empty<object>()
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "boss.settings.json"),
+                    IsObjectConfigValid,
+                    new
+                    {
+                        detection = new { checkIntervalMs = 500, positionThreshold = 1.0f },
+                        defaultRuleProfileId = "boss_default"
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "boss.zones.json"),
+                    IsZonesArrayConfigValid,
+                    new
+                    {
+                        zones = Array.Empty<object>()
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "boss.rules.json"),
+                    IsRulesConfigValid,
+                    new
+                    {
+                        rules = Array.Empty<object>()
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "boss_flows.config.json"),
+                    IsFlowDefinitionsConfigValid,
+                    new
+                    {
+                        flows = Array.Empty<object>()
+                    });
+
+                EnsureConfigFile(
+                    Path.Combine("gameplay", "boss_presets.config.json"),
+                    IsPresetsConfigValid,
+                    new
+                    {
+                        presets = Array.Empty<object>()
                     });
 
                 EnsureConfigFile(
                     "kits.json",
                     IsKitsConfigValid,
-                    new
-                    {
-                        kits = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
-                    });
+                    CreateDefaultKitsPayload());
 
                 EnsureConfigFile(
                     "abilities.json",
@@ -345,7 +367,7 @@ namespace Blueluck
                     Logger.LogWarning($"[Blueluck] Replacing invalid or empty config: {path}");
                 }
 
-                var content = GetEmbeddedTemplate(fileName);
+                var content = GetTemplateContent(fileName);
                 if (string.IsNullOrWhiteSpace(content))
                 {
                     content = JsonSerializer.Serialize(fallbackPayload, new JsonSerializerOptions
@@ -384,10 +406,10 @@ namespace Blueluck
                     Logger.LogWarning($"[Blueluck] Replacing invalid or empty text config: {path}");
                 }
 
-                var content = GetEmbeddedTemplate(fileName);
+                var content = GetTemplateContent(fileName);
                 if (string.IsNullOrWhiteSpace(content))
                 {
-                    Logger.LogWarning($"[Blueluck] No embedded template found for text config: {fileName}");
+                    Logger.LogWarning($"[Blueluck] No template found for text config: {fileName}");
                     return false;
                 }
 
@@ -415,6 +437,47 @@ namespace Blueluck
             return reader.ReadToEnd();
         }
 
+        private static string? GetTemplateContent(string fileName)
+        {
+            var embedded = GetEmbeddedTemplate(fileName);
+            if (!string.IsNullOrWhiteSpace(embedded))
+            {
+                return embedded;
+            }
+
+            foreach (var candidate in EnumerateTemplateCandidates(fileName))
+            {
+                if (!File.Exists(candidate))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    return File.ReadAllText(candidate);
+                }
+                catch (Exception ex)
+                {
+                    Logger.LogWarning($"[Blueluck] Failed reading template '{candidate}': {ex.Message}");
+                }
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<string> EnumerateTemplateCandidates(string fileName)
+        {
+            var assemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? string.Empty;
+            var pluginDirectory = Path.Combine(Paths.PluginPath, "Blueluck");
+            var configDirectory = Path.Combine(Paths.ConfigPath, "Blueluck");
+            var gameplayDirectory = Path.Combine(configDirectory, "gameplay");
+
+            yield return Path.Combine(assemblyDirectory, "config", fileName);
+            yield return Path.Combine(pluginDirectory, "config", fileName);
+            yield return Path.Combine(configDirectory, fileName);
+            yield return Path.Combine(gameplayDirectory, fileName);
+        }
+
         private static void BackupInvalidConfig(string path)
         {
             if (!File.Exists(path))
@@ -426,45 +489,76 @@ namespace Blueluck
             File.Copy(path, backupPath, overwrite: true);
         }
 
-        private static bool IsZonesConfigValid(string json)
-        {
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-            if (!root.TryGetProperty("zones", out var zones) || zones.ValueKind != JsonValueKind.Array || zones.GetArrayLength() == 0)
-            {
-                return false;
-            }
-
-            if (!root.TryGetProperty("fxPresetList", out var presets) || presets.ValueKind != JsonValueKind.Array || presets.GetArrayLength() == 0)
-            {
-                return false;
-            }
-
-            foreach (var item in presets.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.Number && item.TryGetInt32(out var value) && value != 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsFlowsConfigValid(string json)
-        {
-            using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.TryGetProperty("flows", out var flows)
-                && flows.ValueKind == JsonValueKind.Object
-                && flows.EnumerateObject().MoveNext();
-        }
-
         private static bool IsKitsConfigValid(string json)
         {
             using var doc = JsonDocument.Parse(json);
             return doc.RootElement.TryGetProperty("kits", out var kits)
-                && kits.ValueKind == JsonValueKind.Object
-                && kits.EnumerateObject().MoveNext();
+                && kits.ValueKind == JsonValueKind.Object;
+        }
+
+        private static object CreateDefaultKitsPayload()
+        {
+            return new
+            {
+                kits = new Dictionary<string, object[]>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Kit1"] = new object[]
+                    {
+                        new { qty = 1, prefab = "Item_Headgear_DraculaHelmet" },
+                        new { qty = 1, prefab = "Item_Chest_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Legs_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Gloves_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Boots_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Weapon_Sword_T09_ShadowMatter" }
+                    },
+                    ["Kit2"] = new object[]
+                    {
+                        new { qty = 1, prefab = "Item_Headgear_DraculaHelmet" },
+                        new { qty = 1, prefab = "Item_Chest_T09_Dracula_Brute" },
+                        new { qty = 1, prefab = "Item_Legs_T09_Dracula_Brute" },
+                        new { qty = 1, prefab = "Item_Gloves_T09_Dracula_Brute" },
+                        new { qty = 1, prefab = "Item_Boots_T09_Dracula_Brute" },
+                        new { qty = 1, prefab = "Item_Weapon_Mace_T09_ShadowMatter" }
+                    },
+                    ["Kit3"] = new object[]
+                    {
+                        new { qty = 1, prefab = "Item_Headgear_DraculaHelmet" },
+                        new { qty = 1, prefab = "Item_Chest_T09_Dracula_Rogue" },
+                        new { qty = 1, prefab = "Item_Legs_T09_Dracula_Rogue" },
+                        new { qty = 1, prefab = "Item_Gloves_T09_Dracula_Rogue" },
+                        new { qty = 1, prefab = "Item_Boots_T09_Dracula_Rogue" },
+                        new { qty = 1, prefab = "Item_Weapon_Slashers_T09_ShadowMatter" }
+                    },
+                    ["Kit4"] = new object[]
+                    {
+                        new { qty = 1, prefab = "Item_Headgear_DraculaHelmet" },
+                        new { qty = 1, prefab = "Item_Chest_T09_Dracula_Scholar" },
+                        new { qty = 1, prefab = "Item_Legs_T09_Dracula_Scholar" },
+                        new { qty = 1, prefab = "Item_Gloves_T09_Dracula_Scholar" },
+                        new { qty = 1, prefab = "Item_Boots_T09_Dracula_Scholar" },
+                        new { qty = 1, prefab = "Item_Weapon_Reaper_T09_ShadowMatter" }
+                    },
+                    ["Kit5"] = new object[]
+                    {
+                        new { qty = 1, prefab = "Item_Headgear_DraculaHelmet" },
+                        new { qty = 1, prefab = "Item_Chest_T09_Dracula" },
+                        new { qty = 1, prefab = "Item_Legs_T09_Dracula" },
+                        new { qty = 1, prefab = "Item_Gloves_T09_Dracula" },
+                        new { qty = 1, prefab = "Item_Boots_T09_Dracula" },
+                        new { qty = 1, prefab = "Item_Weapon_Whip_T09_ShadowMatter" }
+                    },
+                    ["arena_enter"] = new object[]
+                    {
+                        new { qty = 1, prefab = "Item_Headgear_DraculaHelmet" },
+                        new { qty = 1, prefab = "Item_Chest_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Legs_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Gloves_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Boots_T09_Dracula_Warrior" },
+                        new { qty = 1, prefab = "Item_Weapon_Sword_T09_ShadowMatter" }
+                    },
+                    ["arena_exit"] = Array.Empty<object>()
+                }
+            };
         }
 
         private static bool IsAbilitiesConfigValid(string json)
@@ -483,6 +577,40 @@ namespace Blueluck
                 && mappings.ValueKind == JsonValueKind.Array
                 && doc.RootElement.TryGetProperty("aliases", out var aliases)
                 && aliases.ValueKind == JsonValueKind.Array;
+        }
+
+        private static bool IsObjectConfigValid(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.ValueKind == JsonValueKind.Object;
+        }
+
+        private static bool IsZonesArrayConfigValid(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("zones", out var zones)
+                && zones.ValueKind == JsonValueKind.Array;
+        }
+
+        private static bool IsRulesConfigValid(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("rules", out var rules)
+                && rules.ValueKind == JsonValueKind.Array;
+        }
+
+        private static bool IsPresetsConfigValid(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("presets", out var presets)
+                && presets.ValueKind == JsonValueKind.Array;
+        }
+
+        private static bool IsFlowDefinitionsConfigValid(string json)
+        {
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.TryGetProperty("flows", out var flows)
+                && flows.ValueKind == JsonValueKind.Array;
         }
 
         private static bool IsBuffsNumberedValid(string text)
@@ -539,14 +667,8 @@ namespace Blueluck
                     EnsureSystemInSimulationGroup<ZoneBorderVisualSystem>(world);
                 _fallbackZoneDetectionEnabled = !ecsZoneDetectionReady;
 
-                // Flow system
-                if (FlowSystemEnabled.Value)
+                if (FlowSystemEnabled.Value && FlowRegistry != null)
                 {
-                    FlowRegistry = new FlowRegistryService();
-                    FlowRegistry.Initialize();
-                    Logger.LogInfo("[Blueluck] FlowRegistry initialized");
-
-                    // Initialize validation service after FlowRegistry
                     FlowValidation = new FlowValidationService();
                     FlowValidation.Initialize();
                     FlowValidation.SetDependencies(PrefabToGuid, Kits, ZoneConfig, FlowRegistry);
@@ -579,6 +701,26 @@ namespace Blueluck
                 CoopEvents.Initialize();
                 Logger.LogInfo("[Blueluck] CoopEvents initialized");
 
+                ReadyLobbies = new ReadyLobbyService();
+                ReadyLobbies.Initialize();
+                Logger.LogInfo("[Blueluck] ReadyLobbies initialized");
+
+                SessionTimers = new SessionTimerService();
+                SessionTimers.Initialize();
+                Logger.LogInfo("[Blueluck] SessionTimers initialized");
+
+                ZonePrep = new ZonePrepService();
+                ZonePrep.Initialize();
+                Logger.LogInfo("[Blueluck] ZonePrep initialized");
+
+                SessionOutcomes = new SessionOutcomeService();
+                SessionOutcomes.Initialize();
+                Logger.LogInfo("[Blueluck] SessionOutcomes initialized");
+
+                GameSessions = new GameSessionManager();
+                GameSessions.Initialize();
+                Logger.LogInfo("[Blueluck] GameSessions initialized");
+
                 // ZoneTransition depends on the services above for enter/exit side effects.
                 ZoneTransition = new ZoneTransitionService();
                 ZoneTransition.Initialize();
@@ -588,6 +730,7 @@ namespace Blueluck
                 {
                     // Spawn zone entities only after all enter/exit dependencies are ready.
                     ZoneConfig.SpawnZoneEntitiesIfReady();
+                    GameplayRegistration?.Refresh();
                     Logger.LogInfo("[Blueluck] Zone entities spawned for detection");
                 }
                 else
@@ -803,15 +946,87 @@ namespace Blueluck
             return null;
         }
 
+        internal static T? ResolveManagedWorldSystem<T>(World? world, bool allowCreate = true) where T : ComponentSystemBase
+        {
+            if (world == null || !world.IsCreated)
+            {
+                return null;
+            }
+
+            var system = ResolveManagedSystem(world, typeof(T));
+            if (system is T typed)
+            {
+                return typed;
+            }
+
+            if (!allowCreate)
+            {
+                return null;
+            }
+
+            return ResolveManagedSystem(world, typeof(T)) as T;
+        }
+
+        internal static void TryPromoteLateEcsSystems()
+        {
+            if (!_fallbackZoneDetectionEnabled)
+            {
+                return;
+            }
+
+            var now = UnityEngine.Time.realtimeSinceStartup;
+            if (now < _nextLateEcsRetryTime)
+            {
+                return;
+            }
+
+            _nextLateEcsRetryTime = now + 5f;
+
+            try
+            {
+                var world = World.DefaultGameObjectInjectionWorld;
+                if (world == null || !world.IsCreated)
+                {
+                    return;
+                }
+
+                var ecsZoneDetectionReady =
+                    EnsureSystemInSimulationGroup<ZoneDetectionSystem>(world) &&
+                    EnsureSystemInSimulationGroup<ZoneTransitionRouterSystem>(world) &&
+                    EnsureSystemInSimulationGroup<ZoneBorderVisualSystem>(world);
+
+                if (!ecsZoneDetectionReady)
+                {
+                    return;
+                }
+
+                _fallbackZoneDetectionEnabled = false;
+                ZoneConfig?.SpawnZoneEntitiesIfReady();
+                GameplayRegistration?.Refresh();
+                Logger.LogInfo("[Blueluck] Late ECS system promotion succeeded; fallback zone detection disabled.");
+            }
+            catch (Exception ex)
+            {
+                Logger.LogDebug($"[Blueluck] Late ECS system promotion skipped: {ex.Message}");
+            }
+        }
+
         private void CleanupServices()
         {
             // Cleanup in reverse order
+            GameSessions?.Cleanup();
+            GameplayRegistration?.Cleanup();
+            SessionOutcomes?.Cleanup();
+            ZonePrep?.Cleanup();
+            SessionTimers?.Cleanup();
+            ReadyLobbies?.Cleanup();
             CoopEvents?.Cleanup();
             BossCoop?.Cleanup();
             Abilities?.Cleanup();
             Progress?.Cleanup();
             FlowRegistry?.Cleanup();
             ZoneTransition?.Cleanup();
+            GamePresets?.Cleanup();
             Unlock?.Cleanup();
             Kits?.Cleanup();
             PrefabToGuid?.Cleanup();

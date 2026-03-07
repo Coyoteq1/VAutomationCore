@@ -126,6 +126,14 @@ namespace VAutomationCore.Core.Patches
         /// Check if the world is ready and all systems are initialized.
         /// </summary>
         public static bool IsWorldReady => _isReady;
+
+        /// <summary>
+        /// Compatibility shim for modules that subscribe to shutdown notifications.
+        /// </summary>
+        public static void RaiseServerShutdown(object? sender = null)
+        {
+            OnServerShutdown?.Invoke(sender ?? typeof(ServerBootstrapSystemPatch), EventArgs.Empty);
+        }
     }
 
     /// <summary>

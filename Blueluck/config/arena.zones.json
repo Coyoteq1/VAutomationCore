@@ -1,0 +1,68 @@
+{
+  "zones": [
+    {
+      "type": "ArenaZone",
+      "name": "PVP Arena",
+      "hash": 2001,
+      "center": [-1000, 0, -500],
+      "entryRadius": 60,
+      "exitRadius": 60,
+      "enabled": true,
+      "priority": 0,
+      "fxPresetIndex": 1,
+      "presetIds": [
+        "arena_pvp_core",
+        "arena_loadout_core",
+        "arena_progression_core",
+        "arena_snapshot_core",
+        "arena_visuals_core"
+      ],
+      "kitOnEnter": "Kit1",
+      "kitOnExit": "arena_exit",
+      "abilitySet": "arena",
+      "pvpEnabled": true,
+      "respawnEnabled": false,
+      "saveProgress": true,
+      "restoreOnExit": true
+    },
+    {
+      "type": "ArenaZone",
+      "name": "FFA Pit",
+      "hash": 2002,
+      "center": [-1500, 0, -800],
+      "entryRadius": 80,
+      "exitRadius": 80,
+      "enabled": true,
+      "priority": 0,
+      "fxPresetIndex": 6,
+      "presetIds": [
+        "arena_pvp_core",
+        "arena_loadout_core",
+        "arena_visuals_core"
+      ],
+      "kitOnEnter": "Kit1",
+      "kitOnExit": "arena_exit",
+      "abilitySet": "arena",
+      "pvpEnabled": true,
+      "respawnEnabled": false,
+      "saveProgress": true,
+      "restoreOnExit": true
+    },
+    {
+      "type": "ArenaZone",
+      "name": "Trading Post",
+      "hash": 3001,
+      "center": [0, 0, 0],
+      "entryRadius": 40,
+      "exitRadius": 40,
+      "enabled": true,
+      "priority": 0,
+      "fxPresetIndex": 7,
+      "entryFlows": ["sanctuary_enter"],
+      "exitFlows": ["sanctuary_exit"],
+      "pvpEnabled": false,
+      "saveProgress": false,
+      "restoreOnExit": false
+    }
+  ]
+}

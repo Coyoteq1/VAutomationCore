@@ -34,11 +34,20 @@ namespace Blueluck.Models
         [JsonPropertyName("priority")]
         public int Priority { get; set; } = 0;
 
-        [JsonPropertyName("flowOnEnter")]
-        public string FlowOnEnter { get; set; } = string.Empty;
+        [JsonPropertyName("presetIds")]
+        public string[] PresetIds { get; set; } = Array.Empty<string>();
 
-        [JsonPropertyName("flowOnExit")]
-        public string FlowOnExit { get; set; } = string.Empty;
+        [JsonPropertyName("entryFlows")]
+        public string[] EntryFlows { get; set; } = Array.Empty<string>();
+
+        [JsonPropertyName("exitFlows")]
+        public string[] ExitFlows { get; set; } = Array.Empty<string>();
+
+        [JsonPropertyName("tickFlows")]
+        public string[] TickFlows { get; set; } = Array.Empty<string>();
+
+        [JsonPropertyName("ruleProfileId")]
+        public string? RuleProfileId { get; set; }
 
         [JsonPropertyName("onEnter")]
         public ZoneEventConfig? OnEnter { get; set; }
@@ -58,11 +67,70 @@ namespace Blueluck.Models
         [JsonPropertyName("borderVisual")]
         public BorderVisualConfig? BorderVisual { get; set; }
 
+        [JsonPropertyName("session")]
+        public GameSessionConfig? Session { get; set; }
+
+        [JsonPropertyName("sessionLifecycle")]
+        public SessionLifecycleConfig? SessionLifecycle { get; set; }
+
+        [JsonPropertyName("objective")]
+        public GameObjectiveConfig? Objective { get; set; }
+
         /// <summary>
         /// 1-based index into ZonesConfig.FxPresetList used for this zone's border visual preset.
         /// </summary>
         [JsonPropertyName("fxPresetIndex")]
         public int FxPresetIndex { get; set; } = 1;
+
+        [JsonIgnore]
+        public string GameplayType { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public string[] ResolvedEntryFlows { get; set; } = Array.Empty<string>();
+
+        [JsonIgnore]
+        public string[] ResolvedExitFlows { get; set; } = Array.Empty<string>();
+
+        [JsonIgnore]
+        public string[] ResolvedTickFlows { get; set; } = Array.Empty<string>();
+
+        [JsonIgnore]
+        public string? ResolvedRuleProfileId { get; set; }
+
+        [JsonIgnore]
+        public GameplayPresetConfig[] ResolvedPresets { get; set; } = Array.Empty<GameplayPresetConfig>();
+
+        [JsonIgnore]
+        public bool UsesResolvedLifecycle =>
+            ResolvedEntryFlows.Length > 0 ||
+            ResolvedExitFlows.Length > 0 ||
+            ResolvedTickFlows.Length > 0;
+
+        [JsonIgnore]
+        public bool HasLifecycleConfig =>
+            PresetIds.Length > 0 ||
+            EntryFlows.Length > 0 ||
+            ExitFlows.Length > 0 ||
+            TickFlows.Length > 0;
+
+        [JsonIgnore]
+        public string NormalizedZoneType
+        {
+            get
+            {
+                if (string.Equals(Type, "ArenaZone", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "arena";
+                }
+
+                if (string.Equals(Type, "BossZone", StringComparison.OrdinalIgnoreCase))
+                {
+                    return "boss";
+                }
+
+                return (Type ?? string.Empty).Trim().ToLowerInvariant();
+            }
+        }
 
         /// <summary>
         /// Gets the center as float3 for ECS operations.
@@ -353,6 +421,12 @@ namespace Blueluck.Models
 
         [JsonPropertyName("duration")]
         public float Duration { get; set; } = -1f;
+
+        [JsonPropertyName("targetZoneHash")]
+        public string? TargetZoneHash { get; set; }
+
+        [JsonPropertyName("snapRotation")]
+        public float? SnapRotation { get; set; }
     }
 
     /// <summary>

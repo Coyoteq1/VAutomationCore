@@ -1,0 +1,11 @@
+{
+  "presets": [
+    {
+      "presetId": "boss_encounter_core",
+      "gameplayType": "boss",
+      "supportedZoneTypes": ["boss"],
+      "entryFlows": ["boss_encounter_core_enter"],
+      "exitFlows": ["boss_encounter_core_exit"]
+    }
+  ]
+}

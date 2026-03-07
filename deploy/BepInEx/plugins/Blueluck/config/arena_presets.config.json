@@ -1,0 +1,39 @@
+{
+  "presets": [
+    {
+      "presetId": "arena_pvp_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_pvp_core_enter"],
+      "exitFlows": ["arena_pvp_core_exit"]
+    },
+    {
+      "presetId": "arena_loadout_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_loadout_core_enter"],
+      "exitFlows": ["arena_loadout_core_exit"]
+    },
+    {
+      "presetId": "arena_progression_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_progression_core_enter"],
+      "exitFlows": ["arena_progression_core_exit"]
+    },
+    {
+      "presetId": "arena_snapshot_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_snapshot_core_enter"],
+      "exitFlows": ["arena_snapshot_core_exit"]
+    },
+    {
+      "presetId": "arena_visuals_core",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "entryFlows": ["arena_visuals_core_enter"],
+      "exitFlows": ["arena_visuals_core_exit"]
+    }
+  ]
+}

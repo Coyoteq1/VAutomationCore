@@ -10,7 +10,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>annotations</Nullable>
     <IsPackable>true</IsPackable>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <PackageOutputPath>artifacts\nuget</PackageOutputPath>
 
     <!-- NuGet package metadata -->
@@ -177,10 +177,11 @@
     <Compile Include="Core\ECS\ZoneDetectionOrdering.cs" />
     <Compile Include="Core\ECS\ZoneStateMapper.cs" />
     <Compile Include="Core\Automation\*.cs" />
+    <Compile Include="Core\Contracts\*.cs" />
     <Compile Include="Core\Extensions\*.cs" />
+    <Compile Include="Core\Gameplay\**\*.cs" />
     <Compile Include="Core\ECS\Components\*.cs" />
     <Compile Include="Core\Commands\ChatColor.cs" />
-    <Compile Include="Core\Contracts\*.cs" />
     <Compile Include="Core\Api\**\*.cs" />
     <Compile Include="Core\Lifecycle\*.cs" />
     <Compile Include="Core\TrapLifecycle\*.cs" />
@@ -189,14 +190,34 @@
     <Compile Include="Core\Services\ServiceInitializer.cs" />
     <Compile Include="Core\Services\ModCommunicationService.cs" />
     <Compile Include="Core\Services\GameActionService.cs" />
+    <Compile Include="Core\Services\ModGameActionService.cs" />
+    <Compile Include="Core\Services\BridgeEventService.cs" />
     <Compile Include="Core\Services\DebugEventBridge.cs" />
     <Compile Include="Core\Services\SandboxSnapshotStore.cs" />
     <Compile Include="Core\Services\SandboxCsvWriter.cs" />
     <Compile Include="Core\Services\SandboxDeltaComputer.cs" />
+    <Compile Include="Core\Services\ZUIInputBlocker.cs" />
+    <Compile Include="Core\Services\AbilitySlotUIService.cs" />
     <Compile Include="Core\Services\Sandbox\*.cs" />
+    <Compile Include="Core\Flows\GameObjectsFlows.cs" />
+    <Compile Include="Core\Flows\GlowFlows.cs" />
+    <Compile Include="Core\Flows\VBloodFlows.cs" />
+    <Compile Include="Core\Flows\AbilitiesFlows.cs" />
+    <Compile Include="Core\Flows\FXAndGameObjectsFlows.cs" />
+    <Compile Include="Core\Flows\EquipmentAndKitsFlows.cs" />
+    <Compile Include="Core\Flows\ZoneFlows.cs" />
+    <Compile Include="Core\Flows\ZoneRulesFlows.cs" />
+    <Compile Include="Core\Flows\ArenaFlows.cs" />
+    <Compile Include="Core\Flows\PlacementRestrictionFlows.cs" />
+    <Compile Include="Core\Flows\CastleBuildingFlows.cs" />
+    <Compile Include="Core\Flows\CastleTerritoryFlows.cs" />
+    <Compile Include="Core\Flows\SpawnTagFlows.cs" />
+    <Compile Include="Core\Flows\VisibilityAndStealthFlows.cs" />
     <Compile Include="Core\Patches\ServerBootstrapSystemPatch.cs" />
+    <Compile Include="Core\Data\DataType\Prefabs.cs" />
     <Compile Include="Core\Data\*.cs" />
     <Compile Include="Core\Abstractions\*.cs" />
+    <Compile Include="Extensions\ECSExtensions.cs" />
     <Compile Include="Chat\ChatService.cs" />
     <Compile Include="Models\GlowZoneEntry.cs" />
     <Compile Include="Models\BloodType.cs" />
@@ -219,6 +240,13 @@
     <Compile Update="Core\**\*.cs">
       <Link>VAuto\%(RecursiveDir)%(Filename)%(Extension)</Link>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lib.Unhollowed.VRising" Version="1.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

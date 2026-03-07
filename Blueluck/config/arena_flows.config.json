@@ -1,0 +1,103 @@
+{
+  "flows": [
+    {
+      "flowId": "arena_pvp_core_enter",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.applyruleprofile" },
+        { "action": "zone.sendmessage", "message": "Arena rules applied." }
+      ]
+    },
+    {
+      "flowId": "arena_pvp_core_exit",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.restoresafecombatstate" },
+        { "action": "zone.sendmessage", "message": "Arena combat state restored." }
+      ]
+    },
+    {
+      "flowId": "arena_loadout_core_enter",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.applyloadoutstate" }
+      ]
+    },
+    {
+      "flowId": "arena_loadout_core_exit",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.restoreloadoutstate" }
+      ]
+    },
+    {
+      "flowId": "arena_progression_core_enter",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.applyprogressiongate" }
+      ]
+    },
+    {
+      "flowId": "arena_progression_core_exit",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.restoreprogressionstate" }
+      ]
+    },
+    {
+      "flowId": "arena_snapshot_core_enter",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.captureplayersnapshot" }
+      ]
+    },
+    {
+      "flowId": "arena_snapshot_core_exit",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.restoreplayersnapshot" }
+      ]
+    },
+    {
+      "flowId": "arena_visuals_core_enter",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.applyzonevisuals" }
+      ]
+    },
+    {
+      "flowId": "arena_visuals_core_exit",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.clearzonevisuals" }
+      ]
+    },
+    {
+      "flowId": "sanctuary_enter",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "arena.restoresafecombatstate" },
+        { "action": "zone.sendmessage", "message": "Sanctuary entered." }
+      ]
+    },
+    {
+      "flowId": "sanctuary_exit",
+      "gameplayType": "arena",
+      "supportedZoneTypes": ["arena"],
+      "actions": [
+        { "action": "zone.sendmessage", "message": "Leaving sanctuary." }
+      ]
+    }
+  ]
+}
