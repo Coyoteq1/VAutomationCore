@@ -17,9 +17,6 @@ using VAutomationCore.Extensions;
 // JSON types
 using VAutomationCore.Json;
 
-// Configuration types
-using VAutomationCore.Configuration;
-
 // Model types
 using VAutomationCore.Models;
 

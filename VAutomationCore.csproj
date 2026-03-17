@@ -186,8 +186,8 @@
     <Compile Include="Plugin.cs" />
     <Compile Include="PrefabGuidConverter.cs" />
     <Compile Include="IService.cs" />
-    <Compile Include="Configuration\PluginManifest.cs" />
-    <Compile Include="Configuration\ZoneLifecycleConfig.cs" />
+    <Compile Include="Core\Config\PluginManifest.cs" />
+    <Compile Include="Core\Config\ZoneLifecycleConfig.cs" />
     <Compile Include="Json\PrefabGuidJsonConverter.cs" />
     <Compile Include="Json\VAutoJsonOptions.cs" />
     <Compile Include="MyPluginInfo.cs" />

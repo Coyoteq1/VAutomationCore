@@ -1,6 +1,6 @@
 using System;
 
-namespace VAuto.Core.Configuration
+namespace VAutomationCore.Core.Config
 {
     public enum PluginKey
     {

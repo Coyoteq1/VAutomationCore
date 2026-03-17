@@ -114,26 +114,16 @@ namespace VAutomationCore.Core
             var prefabSystem = PrefabCollection;
             if (prefabSystem == null) return false;
             
-            // Access the dictionary directly (common V Rising pattern)
-            var field = typeof(PrefabCollectionSystem).GetField(
-                "_PrefabGuidToEntityDictionary", 
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            if (field == null) return false;
-            
-            var dictionary = field.GetValue(prefabSystem) as System.Collections.IDictionary;
-            if (dictionary == null) return false;
-            
-            if (!dictionary.Contains(guid)) return false;
-            
-            var result = dictionary[guid];
-            if (result is Entity e)
+            try
             {
-                entity = e;
+                // Direct IL2CPP property access — reflection doesn't work on IL2CPP native maps
+                entity = prefabSystem._PrefabGuidToEntityMap[guid];
                 return entity != Entity.Null;
             }
-            
-            return false;
+            catch
+            {
+                return false;
+            }
         }
         
         /// <summary>

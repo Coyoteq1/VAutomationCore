@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace VAutomationCore.Configuration
+namespace VAutomationCore.Core.Config
 {
     /// <summary>
     /// Zone-Lifecycle wiring configuration model for V Rising mods.
