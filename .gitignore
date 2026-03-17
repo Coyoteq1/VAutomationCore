@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+.qodo/
+artifacts/
+*.user
+*.suo
+*.DotSettings.user

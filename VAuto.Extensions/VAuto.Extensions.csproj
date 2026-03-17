@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+    
+    <!-- NuGet Package Metadata -->
+    <PackageId>VAuto.Extensions</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>VAutomation</Authors>
+    <Company>VAutomation</Company>
+    <Product>VAuto.Extensions</Product>
+    <Description>Generic extension methods for V Rising modding - string, collection, datetime, dictionary, and exception utilities</Description>
+    <Copyright>Copyright 2024</Copyright>
+    <RepositoryUrl>https://github.com/vautomation/vautomationcore</RepositoryUrl>
+    <PackageTags>v-rising,modding,bepinex,extensions</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+</Project>

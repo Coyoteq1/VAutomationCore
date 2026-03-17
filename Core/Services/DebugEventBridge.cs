@@ -1,0 +1,2182 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using ProjectM;
+using ProjectM.Gameplay.Systems;
+using ProjectM.Network;
+using Stunlock.Core;
+using Unity.Collections;
+using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
+using VAutomationCore.Core;
+
+namespace VAuto.Core.Services
+{
+    public static class DebugEventBridge
+    {
+        private static readonly string[] ProgressionKeywords =
+        {
+            "Research", "VBlood", "Achievement", "Unlock", "Tech", "Recipe", "Progress",
+            // Include spell/ability progression components so boss spell unlock state is captured/restored.
+            "Spell", "Ability", "Boss", "Knowledge", "Journal", "Slot", "Power", "School", "Mod"
+        };
+        private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNameCaseInsensitive = true, WriteIndented = true, IncludeFields = true };
+        private static readonly ISnapshotCaptureService SnapshotCaptureService = new SnapshotCaptureService();
+        private static readonly ISnapshotDiffService SnapshotDiffService = new SnapshotDiffService();
+        private static readonly ISnapshotPersistenceService SnapshotPersistenceService = new SnapshotPersistenceService();
+        private static readonly IProgressionRestoreService ProgressionRestoreService = new ProgressionRestoreService();
+
+        private static bool _enabled = true;
+        private static bool _persistSnapshots = true;
+        private static string _snapshotPath = string.Empty;
+        private static bool _verboseLogs;
+        private const string BaselineCsvFileName = "sandbox_progression_baseline.csv.gz";
+        private const string DeltaCsvFileName = "sandbox_progression_delta.csv.gz";
+        private const string ProgressionJournalJsonlFileName = "sandbox_progression_journal.jsonl";
+        private const string BlueLockAssemblyName = "BlueLock";
+        private const string BufferTypePrefix = "buffer:";
+
+        private static readonly HashSet<ulong> _unlockAppliedThisSession = new();
+        private static readonly object _snapshotFileLock = new();
+        private static readonly object _stateLock = new();
+        private static bool _snapshotsLoaded;
+
+        private static readonly MethodInfo? GetComponentDataGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(m => m.Name == "GetComponentData" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo? SetComponentDataGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(m => m.Name == "SetComponentData" && m.IsGenericMethodDefinition && m.GetParameters().Length == 2 && m.GetParameters()[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo? HasComponentGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(m => m.Name == "HasComponent" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo? AddComponentGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(m => m.Name == "AddComponent" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo? RemoveComponentGeneric = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .FirstOrDefault(m => m.Name == "RemoveComponent" && m.IsGenericMethodDefinition && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(Entity));
+        private static readonly MethodInfo[] HasBufferGenericMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "HasBuffer" && m.IsGenericMethodDefinition && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(Entity))
+            .ToArray();
+        private static readonly MethodInfo[] GetBufferGenericMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "GetBuffer" && m.IsGenericMethodDefinition && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(Entity))
+            .ToArray();
+        private static readonly MethodInfo[] AddBufferGenericMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "AddBuffer" && m.IsGenericMethodDefinition && m.GetParameters().Length >= 1 && m.GetParameters()[0].ParameterType == typeof(Entity))
+            .ToArray();
+        private static readonly MethodInfo[] GetComponentTypesMethods = typeof(EntityManager).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => m.Name == "GetComponentTypes" && !m.IsGenericMethod)
+            .ToArray();
+
+        public static void ConfigureSandboxProgression(bool enabled, bool persistSnapshots, string snapshotPath, bool verboseLogs)
+        {
+            _enabled = enabled;
+            _persistSnapshots = persistSnapshots;
+            _snapshotPath = snapshotPath ?? string.Empty;
+            _verboseLogs = verboseLogs;
+            _snapshotsLoaded = false;
+
+            EnsureSnapshotsLoaded();
+            LogInfo($"Configured sandbox progression: enabled={_enabled}, persist={_persistSnapshots}, path='{_snapshotPath}'.");
+        }
+
+        public static void OnZoneEnterStart(Entity character, string zoneId) => OnZoneEnterStart(character, zoneId, true);
+        public static void OnPlayerEnter(Entity character, string zoneId) => OnPlayerEnter(character, zoneId, true);
+        public static void OnPlayerExit(Entity character, string zoneId) => OnPlayerExit(character, zoneId, true);
+        public static void OnPlayerIsInZone(Entity character, string zoneId) => OnPlayerIsInZone(character, zoneId, true);
+        public static void OnPlayerEnterZone(Entity character) => OnPlayerEnterZone(character, true);
+        public static void OnPlayerIsInZone(Entity character) => OnPlayerIsInZone(character, true);
+        public static void OnPlayerExitZone(Entity character) => OnPlayerExitZone(character, true);
+        public static void FlushSnapshotsToDisk() => PersistSnapshotsToDisk();
+
+        public static void ClearSnapshots()
+        {
+            SandboxSnapshotStore.ClearAll();
+            PersistSnapshotsToDisk();
+            LogInfo("Cleared all sandbox snapshots.");
+        }
+
+        /// <summary>
+        /// Public wrapper for resolving player identity from character entity.
+        /// Exposed for Blueluck plugin use.
+        /// </summary>
+        public static bool TryResolvePlayerIdentityCore(Entity character, out ulong platformId, out string characterName)
+        {
+            return TryResolvePlayerIdentity(character, out platformId, out characterName, out _);
+        }
+
+        /// <summary>
+        /// Public wrapper for getting user entity from character entity.
+        /// Exposed for Blueluck plugin use.
+        /// </summary>
+        public static bool TryGetUserEntityCore(Entity character, out Entity userEntity)
+        {
+            return TryGetUserEntity(character, out userEntity);
+        }
+
+        // ============== Diagnostic Methods ==============
+        
+        /// <summary>
+        /// Get sandbox snapshot counts for diagnostics.
+        /// </summary>
+        public static (int activeBaselines, int pendingContexts, int activeDeltas, bool isDirty) GetSnapshotCounts()
+        {
+            return SandboxSnapshotStore.GetSnapshotCounts();
+        }
+        
+        /// <summary>
+        /// Get baseline info for a player.
+        /// </summary>
+        public static (string? zoneId, int rowCount, DateTime? capturedUtc) GetBaselineInfo(ulong platformId)
+        {
+            return SandboxSnapshotStore.GetBaselineInfo(platformId);
+        }
+        
+        /// <summary>
+        /// Check if player has active baseline.
+        /// </summary>
+        public static bool HasActiveBaseline(ulong platformId)
+        {
+            return SandboxSnapshotStore.HasActiveBaseline(platformId);
+        }
+        
+        public static void OnPlayerEnter(Entity character, string zoneId, bool enableUnlock)
+        {
+            OnZoneEnterStart(character, zoneId, enableUnlock);
+            OnPlayerEnterZone(character, enableUnlock);
+        }
+
+        public static void OnPlayerExit(Entity character, string zoneId, bool enableUnlock)
+        {
+            OnPlayerExitZone(character, enableUnlock);
+        }
+
+        public static void OnPlayerIsInZone(Entity character, string zoneId, bool enableUnlock)
+        {
+            OnPlayerIsInZone(character, enableUnlock);
+        }
+
+        public static void OnZoneEnterStart(Entity character, string zoneId, bool enableUnlock)
+        {
+            if (!_enabled || !enableUnlock)
+            {
+                return;
+            }
+
+            EnsureSnapshotsLoaded();
+
+            if (!TryResolvePlayerIdentity(character, out var platformId, out var characterName, out _))
+            {
+                return;
+            }
+
+            var playerKey = SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
+            var capturedUtc = DateTime.UtcNow;
+            var snapshotId = SnapshotCaptureService.BuildSnapshotId(platformId, characterName, capturedUtc);
+            var preSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
+            var baselineRows = SnapshotCaptureService.BuildBaselineRows(preSnapshot, playerKey, characterName, platformId, zoneId, snapshotId, capturedUtc);
+            var preZoneEntities = SnapshotCaptureService.CaptureZoneEntityMap(zoneId);
+
+            var pending = new SandboxPendingContext
+            {
+                PlayerKey = playerKey,
+                CharacterName = characterName,
+                PlatformId = platformId,
+                ZoneId = zoneId ?? string.Empty,
+                SnapshotId = snapshotId,
+                CapturedUtc = capturedUtc,
+                ComponentRows = baselineRows,
+                PreEnterZoneEntities = preZoneEntities
+            };
+
+            SandboxSnapshotStore.UpsertPendingContext(pending);
+            if (baselineRows.Length == 0)
+            {
+                LogWarning($"Captured sandbox baseline is empty for key='{playerKey}', zone='{zoneId}'. Progression component filter matched 0 components.");
+            }
+            LogDebug($"Captured sandbox baseline for key='{playerKey}', zone='{zoneId}', components={baselineRows.Length}, entities={preZoneEntities.Length}.");
+        }
+
+        public static void OnPlayerEnterZone(Entity character, bool enableUnlock)
+        {
+            if (!_enabled || !enableUnlock)
+            {
+                return;
+            }
+
+            EnsureSnapshotsLoaded();
+
+            if (!TryResolvePlayerIdentity(character, out var platformId, out var characterName, out _))
+            {
+                return;
+            }
+
+            lock (_stateLock)
+            {
+                if (_unlockAppliedThisSession.Contains(platformId))
+                {
+                    return;
+                }
+            }
+
+            if (!SandboxSnapshotStore.TryTakePendingContext(characterName, platformId, out var playerKey, out var pending) || pending == null)
+            {
+                var fallbackCapturedUtc = DateTime.UtcNow;
+                var fallbackSnapshotId = SnapshotCaptureService.BuildSnapshotId(platformId, characterName, fallbackCapturedUtc);
+                playerKey = SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
+                var fallbackBaselineSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
+                pending = new SandboxPendingContext
+                {
+                    PlayerKey = playerKey,
+                    CharacterName = characterName,
+                    PlatformId = platformId,
+                    ZoneId = string.Empty,
+                    SnapshotId = fallbackSnapshotId,
+                    CapturedUtc = fallbackCapturedUtc,
+                    ComponentRows = SnapshotCaptureService.BuildBaselineRows(fallbackBaselineSnapshot, playerKey, characterName, platformId, string.Empty, fallbackSnapshotId, fallbackCapturedUtc),
+                    PreEnterZoneEntities = Array.Empty<ZoneEntityEntry>()
+                };
+            }
+
+            ApplyFullUnlock(character);
+
+            var finalizedUtc = DateTime.UtcNow;
+            var postSnapshot = SnapshotCaptureService.CaptureProgressionSnapshot(character);
+            var postRows = SnapshotCaptureService.BuildBaselineRows(postSnapshot, playerKey, characterName, platformId, pending.ZoneId, pending.SnapshotId, finalizedUtc);
+            if (postRows.Length == 0)
+            {
+                LogWarning($"Post-unlock sandbox snapshot is empty for key='{playerKey}', zone='{pending.ZoneId}'. Unlock may run but capture matched 0 components.");
+            }
+
+            var deltaRows = new List<DeltaRow>();
+            deltaRows.AddRange(SnapshotDiffService.ComputeComponentDelta(pending.ComponentRows, postRows));
+            deltaRows.AddRange(SnapshotDiffService.ExtractOpenedTech(pending.ComponentRows, postRows));
+            deltaRows.AddRange(SnapshotDiffService.ComputeEntityDelta(pending.PreEnterZoneEntities, SnapshotCaptureService.CaptureZoneEntityMap(pending.ZoneId)));
+            StampDeltaRows(deltaRows, playerKey, characterName, platformId, pending.ZoneId, pending.SnapshotId, finalizedUtc);
+
+            var baselineSnapshot = new SandboxBaselineSnapshot
+            {
+                PlayerKey = playerKey,
+                CharacterName = characterName,
+                PlatformId = platformId,
+                ZoneId = pending.ZoneId,
+                SnapshotId = pending.SnapshotId,
+                CapturedUtc = pending.CapturedUtc,
+                Rows = pending.ComponentRows
+            };
+
+            var deltaSnapshot = new SandboxDeltaSnapshot
+            {
+                PlayerKey = playerKey,
+                CharacterName = characterName,
+                PlatformId = platformId,
+                ZoneId = pending.ZoneId,
+                SnapshotId = pending.SnapshotId,
+                CapturedUtc = finalizedUtc,
+                Rows = deltaRows.ToArray()
+            };
+
+            SandboxSnapshotStore.PutActiveSnapshots(playerKey, baselineSnapshot, deltaSnapshot);
+            SandboxSnapshotStore.MarkDirty();
+
+            // Scope 1 journal: append deterministic progression mutations in JSONL format.
+            // Keep CSV snapshots unchanged for fallback compatibility.
+            TryAppendProgressionJournal(playerKey, pending, postRows, finalizedUtc);
+
+            lock (_stateLock)
+            {
+                _unlockAppliedThisSession.Add(platformId);
+            }
+
+            LogDebug($"Finalized sandbox baseline+delta for key='{playerKey}', zone='{pending.ZoneId}', deltaRows={deltaRows.Count}.");
+        }
+
+        public static void OnPlayerIsInZone(Entity character, bool enableUnlock)
+        {
+            // Unlock intentionally runs on enter only.
+        }
+
+        public static void OnPlayerExitZone(Entity character, bool enableUnlock)
+        {
+            if (!TryResolvePlayerIdentity(character, out var platformId, out var characterName, out _))
+            {
+                return;
+            }
+
+            if (!enableUnlock)
+            {
+                lock (_stateLock)
+                {
+                    _unlockAppliedThisSession.Remove(platformId);
+                }
+                return;
+            }
+
+            if (!SandboxSnapshotStore.TryGetActiveSnapshots(characterName, platformId, out var playerKey, out var baseline, out var delta) || baseline == null)
+            {
+                lock (_stateLock)
+                {
+                    _unlockAppliedThisSession.Remove(platformId);
+                }
+                LogDebug($"No active sandbox baseline found for character='{characterName}', platformId={platformId}.");
+                return;
+            }
+
+            ProgressionRestoreService.TryApplyDeltaEntityCleanup(delta, baseline.ZoneId);
+            var restoreSnapshot = BuildSnapshotFromBaselineRows(baseline.Rows, baseline.PlatformId, baseline.CapturedUtc);
+            if (restoreSnapshot.Components.Count == 0)
+            {
+                LogWarning($"Restore snapshot has 0 components for playerKey='{playerKey}', zone='{baseline.ZoneId}'. Nothing will be restored.");
+            }
+
+            if (!ProgressionRestoreService.RestoreProgressionSnapshot(character, restoreSnapshot))
+            {
+                LogWarning($"Restore failed for playerKey='{playerKey}', platformId={platformId}.");
+            }
+
+            ProgressionRestoreService.ValidateDeltaAfterRestore(delta, baseline.ZoneId);
+            SandboxSnapshotStore.RemoveActiveSnapshots(playerKey);
+            SandboxSnapshotStore.MarkDirty();
+
+            lock (_stateLock)
+            {
+                _unlockAppliedThisSession.Remove(platformId);
+            }
+
+            FlushSnapshotsToDisk();
+        }
+
+        private static bool TryGetPlatformId(Entity character, out ulong platformId)
+        {
+            return TryResolvePlayerIdentity(character, out platformId, out _, out _);
+        }
+
+        private static bool TryGetUserEntity(Entity character, out Entity userEntity)
+        {
+            return TryResolvePlayerIdentity(character, out _, out _, out userEntity);
+        }
+
+        private static bool TryResolvePlayerIdentity(Entity character, out ulong platformId, out string characterName, out Entity userEntity)
+        {
+            platformId = 0;
+            characterName = string.Empty;
+            userEntity = Entity.Null;
+
+            try
+            {
+                var em = UnifiedCore.EntityManager;
+                if (em == default || !em.Exists(character) || !em.HasComponent<PlayerCharacter>(character))
+                {
+                    return false;
+                }
+
+                var playerCharacter = em.GetComponentData<PlayerCharacter>(character);
+                if (!em.Exists(playerCharacter.UserEntity) || !em.HasComponent<User>(playerCharacter.UserEntity))
+                {
+                    return false;
+                }
+
+                var user = em.GetComponentData<User>(playerCharacter.UserEntity);
+                platformId = user.PlatformId;
+                if (platformId == 0)
+                {
+                    LogWarning("Sandbox progression skipped: platformId == 0.");
+                    return false;
+                }
+
+                userEntity = playerCharacter.UserEntity;
+                characterName = NormalizeCharacterName(user.CharacterName.ToString(), platformId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"TryResolvePlayerIdentity failed: {ex}");
+                return false;
+            }
+        }
+
+        private static string NormalizeCharacterName(string? rawName, ulong platformId)
+        {
+            var normalized = (rawName ?? string.Empty).Trim();
+            if (normalized.Length == 0)
+            {
+                return platformId.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return normalized;
+        }
+
+        private static void ApplyFullUnlock(Entity character)
+        {
+            try
+            {
+                if (!TryGetUserEntity(character, out var userEntity))
+                {
+                    return;
+                }
+
+                var debugSystem = UnifiedCore.Server.GetExistingSystemManaged<DebugEventsSystem>();
+                if (debugSystem == null)
+                {
+                    LogWarning("ApplyFullUnlock skipped: DebugEventsSystem unavailable.");
+                    return;
+                }
+
+                var fromCharacter = new FromCharacter { User = userEntity, Character = character };
+                var type = debugSystem.GetType();
+
+                var researchOk = TryInvokeUnlock(
+                    type,
+                    debugSystem,
+                    new[] { "UnlockAllResearch", "TriggerUnlockAllResearch" },
+                    fromCharacter,
+                    userEntity,
+                    new[] { "Research", "Tech" });
+                var vbloodOk = TryInvokeUnlock(
+                    type,
+                    debugSystem,
+                    new[] { "UnlockAllVBloods", "UnlockAllVBlood", "TriggerUnlockAllVBlood" },
+                    fromCharacter,
+                    userEntity,
+                    new[] { "VBlood", "Blood" });
+                var achievementOk = TryInvokeUnlock(
+                    type,
+                    debugSystem,
+                    new[] { "CompleteAllAchievements", "TriggerCompleteAllAchievements" },
+                    fromCharacter,
+                    userEntity,
+                    new[] { "Achievement" });
+                var spellsOk = TryInvokeUnlock(type, debugSystem, new[]
+                {
+                    "UnlockAllSpells", "UnlockAllAbilities", "TriggerUnlockAllSpells", "TriggerUnlockAllAbilities",
+                    "UnlockAllSpellSchools", "UnlockAllMagic", "UnlockAllPowers", "CompleteAllSpells"
+                },
+                fromCharacter,
+                userEntity,
+                new[] { "Spell", "Ability", "Magic", "Power", "School" });
+
+                if (!researchOk || !vbloodOk || !achievementOk || !spellsOk)
+                {
+                    LogWarning($"ApplyFullUnlock partial failure: research={researchOk}, vblood={vbloodOk}, achievements={achievementOk}, spells={spellsOk}.");
+                }
+                else
+                {
+                    LogDebug("ApplyFullUnlock succeeded.");
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"ApplyFullUnlock failed: {ex}");
+            }
+        }
+
+        private static bool TryInvokeUnlock(
+            Type systemType,
+            object instance,
+            string[] methodNames,
+            FromCharacter fromCharacter,
+            Entity userEntity,
+            string[]? heuristicTokens = null)
+        {
+            var methods = systemType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+            foreach (var methodName in methodNames)
+            {
+                foreach (var method in methods.Where(m => string.Equals(m.Name, methodName, StringComparison.Ordinal)))
+                {
+                    if (TryInvokeUnlockMethod(method, instance, fromCharacter, userEntity))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            if (heuristicTokens == null || heuristicTokens.Length == 0)
+            {
+                return false;
+            }
+
+            foreach (var method in methods.OrderBy(m => m.Name, StringComparer.Ordinal))
+            {
+                var name = method.Name;
+                if (!(name.IndexOf("Unlock", StringComparison.OrdinalIgnoreCase) >= 0
+                      || name.IndexOf("Complete", StringComparison.OrdinalIgnoreCase) >= 0
+                      || name.IndexOf("Grant", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    continue;
+                }
+
+                if (!heuristicTokens.Any(token => name.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    continue;
+                }
+
+                if (TryInvokeUnlockMethod(method, instance, fromCharacter, userEntity))
+                {
+                    LogDebug($"ApplyFullUnlock fallback invoked '{method.Name}'.");
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryInvokeUnlockMethod(MethodInfo method, object instance, FromCharacter fromCharacter, Entity userEntity)
+        {
+            var parameters = method.GetParameters();
+            if (parameters.Length == 0)
+            {
+                try
+                {
+                    method.Invoke(instance, Array.Empty<object>());
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+
+            if (parameters.Length != 1)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (parameters[0].ParameterType == typeof(FromCharacter))
+                {
+                    method.Invoke(instance, new object[] { fromCharacter });
+                    return true;
+                }
+
+                if (parameters[0].ParameterType == typeof(Entity))
+                {
+                    method.Invoke(instance, new object[] { userEntity });
+                    return true;
+                }
+            }
+            catch
+            {
+                // Try next overload.
+            }
+
+            return false;
+        }
+
+        internal static SandboxProgressionSnapshot CaptureProgressionSnapshotCore(Entity character)
+        {
+            var snapshot = new SandboxProgressionSnapshot
+            {
+                CapturedUtc = DateTime.UtcNow
+            };
+
+            if (!TryGetPlatformId(character, out var platformId))
+            {
+                return snapshot;
+            }
+
+            snapshot.PlatformId = platformId;
+
+            if (!TryGetUserEntity(character, out var userEntity))
+            {
+                return snapshot;
+            }
+
+            var em = UnifiedCore.EntityManager;
+            if (em == default || !em.Exists(userEntity))
+            {
+                return snapshot;
+            }
+
+            CaptureEntityProgressionComponents(em, userEntity, snapshot);
+
+            // Fallback: some progression data (notably spells/abilities) can live on character entities.
+            // If user entity probing yields nothing, probe character entity as a secondary source.
+            if (snapshot.Components.Count == 0 && em.Exists(character))
+            {
+                CaptureEntityProgressionComponents(em, character, snapshot);
+            }
+
+            return snapshot;
+        }
+
+        internal static bool RestoreProgressionSnapshotCore(Entity character, SandboxProgressionSnapshot snapshot)
+        {
+            if (!TryGetUserEntity(character, out var userEntity))
+            {
+                return false;
+            }
+
+            var em = UnifiedCore.EntityManager;
+            if (em == default || !em.Exists(userEntity))
+            {
+                return false;
+            }
+
+            var ok = true;
+            var snapshotTypeKeys = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var entry in snapshot.Components.Values)
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                if (TryResolveSnapshotType(entry.AssemblyQualifiedType, out var resolvedSnapshotType, out _))
+                {
+                    var aqn = resolvedSnapshotType.AssemblyQualifiedName ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(aqn))
+                    {
+                        snapshotTypeKeys.Add(aqn);
+                    }
+
+                    var fullName = resolvedSnapshotType.FullName ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(fullName))
+                    {
+                        snapshotTypeKeys.Add(fullName);
+                    }
+                }
+                else
+                {
+                    var normalized = NormalizeSnapshotTypeToken(entry.AssemblyQualifiedType);
+                    if (!string.IsNullOrWhiteSpace(normalized))
+                    {
+                        snapshotTypeKeys.Add(normalized);
+                    }
+                }
+            }
+
+            if (TryGetComponentTypeEnumerable(em, userEntity, out var currentTypes, out var currentTypesDisposable))
+            {
+                try
+                {
+                    foreach (var componentTypeObj in currentTypes)
+                    {
+                        if (!TryResolveManagedType(componentTypeObj, out var managedType) || managedType == null)
+                        {
+                            continue;
+                        }
+
+                        if (!IsProgressionComponentType(managedType))
+                        {
+                            continue;
+                        }
+
+                        var typeKey = managedType.AssemblyQualifiedName ?? managedType.FullName ?? managedType.Name;
+                        var fullName = managedType.FullName ?? string.Empty;
+                        if (snapshotTypeKeys.Contains(typeKey) || (!string.IsNullOrWhiteSpace(fullName) && snapshotTypeKeys.Contains(fullName)))
+                        {
+                            continue;
+                        }
+
+                        if (TryHasComponent(em, userEntity, managedType) && !TryRemoveComponent(em, userEntity, managedType, out _))
+                        {
+                            ok = false;
+                        }
+                    }
+                }
+                finally
+                {
+                    currentTypesDisposable?.Dispose();
+                }
+            }
+
+            foreach (var kv in snapshot.Components)
+            {
+                var state = kv.Value;
+                if (state == null)
+                {
+                    continue;
+                }
+
+                if (!TryResolveSnapshotType(state.AssemblyQualifiedType, out var resolvedType, out var isBuffer) || !IsProgressionComponentType(resolvedType))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    if (!state.Existed)
+                    {
+                        if (TryHasComponent(em, userEntity, resolvedType))
+                        {
+                            ok &= TryRemoveComponent(em, userEntity, resolvedType, out _);
+                        }
+                        continue;
+                    }
+
+                    if (isBuffer)
+                    {
+                        if (!TryRestoreBufferSnapshot(em, userEntity, resolvedType, state.JsonPayload))
+                        {
+                            ok = false;
+                        }
+                        continue;
+                    }
+
+                    if (!TryHasComponent(em, userEntity, resolvedType) && !TryAddComponent(em, userEntity, resolvedType, out _))
+                    {
+                        ok = false;
+                        continue;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(state.JsonPayload))
+                    {
+                        ok = false;
+                        continue;
+                    }
+
+                    var deserialized = JsonSerializer.Deserialize(state.JsonPayload, resolvedType, JsonOpts);
+                    if (deserialized == null || !TrySetComponentData(em, userEntity, resolvedType, deserialized, out _))
+                    {
+                        ok = false;
+                    }
+                }
+                catch
+                {
+                    ok = false;
+                }
+            }
+
+            return ok;
+        }
+
+        internal static string BuildSnapshotIdCore(ulong platformId, string characterName, DateTime capturedUtc)
+        {
+            var safeName = (characterName ?? string.Empty).Trim();
+            if (safeName.Length == 0)
+            {
+                safeName = platformId.ToString(CultureInfo.InvariantCulture);
+            }
+
+            safeName = safeName.Replace("|", "_", StringComparison.Ordinal);
+            return $"{capturedUtc:yyyyMMddHHmmssfff}_{safeName}_{platformId.ToString(CultureInfo.InvariantCulture)}";
+        }
+
+        internal static BaselineRow[] BuildBaselineRowsCore(
+            SandboxProgressionSnapshot snapshot,
+            string playerKey,
+            string characterName,
+            ulong platformId,
+            string zoneId,
+            string snapshotId,
+            DateTime capturedUtc)
+        {
+            var rows = new List<BaselineRow>(snapshot.Components.Count);
+            foreach (var pair in snapshot.Components)
+            {
+                var state = pair.Value;
+                if (state == null)
+                {
+                    continue;
+                }
+
+                var assemblyQualifiedType = !string.IsNullOrWhiteSpace(state.AssemblyQualifiedType)
+                    ? state.AssemblyQualifiedType
+                    : pair.Key;
+                if (string.IsNullOrWhiteSpace(assemblyQualifiedType))
+                {
+                    continue;
+                }
+
+                var payload = state.JsonPayload ?? string.Empty;
+                rows.Add(new BaselineRow
+                {
+                    Version = 1,
+                    SnapshotId = snapshotId,
+                    PlayerKey = playerKey,
+                    CharacterName = characterName,
+                    PlatformId = platformId,
+                    ZoneId = zoneId ?? string.Empty,
+                    CapturedUtc = capturedUtc,
+                    RowType = "component",
+                    ComponentType = ResolveComponentTypeName(assemblyQualifiedType),
+                    AssemblyQualifiedType = assemblyQualifiedType,
+                    Existed = state.Existed,
+                    PayloadBase64 = EncodePayload(payload),
+                    PayloadHash = ComputePayloadHash(payload)
+                });
+            }
+
+            return rows.ToArray();
+        }
+
+        private static SandboxProgressionSnapshot BuildSnapshotFromBaselineRows(IEnumerable<BaselineRow> rows, ulong platformId, DateTime capturedUtc)
+        {
+            var snapshot = new SandboxProgressionSnapshot
+            {
+                PlatformId = platformId,
+                CapturedUtc = capturedUtc
+            };
+
+            foreach (var row in rows ?? Array.Empty<BaselineRow>())
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+
+                var typeName = !string.IsNullOrWhiteSpace(row.AssemblyQualifiedType)
+                    ? row.AssemblyQualifiedType
+                    : row.ComponentType;
+                if (string.IsNullOrWhiteSpace(typeName))
+                {
+                    continue;
+                }
+
+                snapshot.Components[typeName] = new SnapshotComponentState
+                {
+                    Existed = row.Existed,
+                    AssemblyQualifiedType = typeName,
+                    JsonPayload = DecodePayload(row.PayloadBase64)
+                };
+            }
+
+            return snapshot;
+        }
+
+        private static string ResolveComponentTypeName(string assemblyQualifiedType)
+        {
+            try
+            {
+                var resolved = ResolveTypeByName(assemblyQualifiedType);
+                if (resolved != null)
+                {
+                    return resolved.Name;
+                }
+            }
+            catch
+            {
+                // Fall through to lightweight parser.
+            }
+
+            var shortName = assemblyQualifiedType.Split(',')[0];
+            var lastDot = shortName.LastIndexOf('.');
+            return lastDot >= 0 && lastDot + 1 < shortName.Length
+                ? shortName.Substring(lastDot + 1)
+                : shortName;
+        }
+
+        private static string EncodePayload(string payload)
+        {
+            var bytes = Encoding.UTF8.GetBytes(payload ?? string.Empty);
+            return Convert.ToBase64String(bytes);
+        }
+
+        private static string DecodePayload(string payloadBase64)
+        {
+            if (string.IsNullOrWhiteSpace(payloadBase64))
+            {
+                return string.Empty;
+            }
+
+            try
+            {
+                return Encoding.UTF8.GetString(Convert.FromBase64String(payloadBase64));
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private static string ComputePayloadHash(string payload)
+        {
+            using var sha = SHA256.Create();
+            var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(payload ?? string.Empty));
+            return Convert.ToHexString(hash);
+        }
+
+        private static void StampDeltaRows(
+            IEnumerable<DeltaRow> rows,
+            string playerKey,
+            string characterName,
+            ulong platformId,
+            string zoneId,
+            string snapshotId,
+            DateTime capturedUtc)
+        {
+            foreach (var row in rows ?? Array.Empty<DeltaRow>())
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+
+                row.Version = 1;
+                row.SnapshotId = snapshotId;
+                row.PlayerKey = playerKey;
+                row.CharacterName = characterName;
+                row.PlatformId = platformId;
+                row.ZoneId = zoneId ?? string.Empty;
+                row.CapturedUtc = capturedUtc;
+            }
+        }
+
+        internal static ZoneEntityEntry[] CaptureZoneEntityMapCore(string zoneId)
+        {
+            if (string.IsNullOrWhiteSpace(zoneId))
+            {
+                return Array.Empty<ZoneEntityEntry>();
+            }
+
+            var contains = ResolveZoneContainsPredicate(zoneId);
+            if (contains == null)
+            {
+                return Array.Empty<ZoneEntityEntry>();
+            }
+
+            try
+            {
+                var em = UnifiedCore.EntityManager;
+                if (em == default)
+                {
+                    return Array.Empty<ZoneEntityEntry>();
+                }
+
+                var query = em.CreateEntityQuery(ComponentType.ReadOnly<PrefabGUID>());
+                var entities = query.ToEntityArray(Allocator.Temp);
+                try
+                {
+                    var results = new List<ZoneEntityEntry>(Math.Min(entities.Length, 2048));
+
+                    for (var i = 0; i < entities.Length; i++)
+                    {
+                        var entity = entities[i];
+                        if (!TryGetBestPosition(em, entity, out var pos))
+                        {
+                            continue;
+                        }
+
+                        if (!contains(pos.x, pos.z))
+                        {
+                            continue;
+                        }
+
+                        var prefab = em.GetComponentData<PrefabGUID>(entity);
+                        results.Add(new ZoneEntityEntry
+                        {
+                            EntityIndex = entity.Index,
+                            EntityVersion = entity.Version,
+                            PrefabGuidHash = prefab.GuidHash,
+                            PrefabName = ResolvePrefabName(prefab),
+                            PosX = pos.x,
+                            PosY = pos.y,
+                            PosZ = pos.z
+                        });
+                    }
+
+                    return results.ToArray();
+                }
+                finally
+                {
+                    if (entities.IsCreated)
+                    {
+                        entities.Dispose();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"CaptureZoneEntityMap failed for zone '{zoneId}': {ex}");
+                return Array.Empty<ZoneEntityEntry>();
+            }
+        }
+
+        private static bool TryGetBestPosition(EntityManager em, Entity entity, out float3 position)
+        {
+            position = default;
+
+            try
+            {
+                if (em.HasComponent<LocalTransform>(entity))
+                {
+                    position = em.GetComponentData<LocalTransform>(entity).Position;
+                    return true;
+                }
+
+                if (em.HasComponent<Translation>(entity))
+                {
+                    position = em.GetComponentData<Translation>(entity).Value;
+                    return true;
+                }
+
+                if (em.HasComponent<LastTranslation>(entity))
+                {
+                    position = em.GetComponentData<LastTranslation>(entity).Value;
+                    return true;
+                }
+
+                if (em.HasComponent<SpawnTransform>(entity))
+                {
+                    position = em.GetComponentData<SpawnTransform>(entity).Position;
+                    return true;
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return false;
+        }
+
+        private static Func<float, float, bool>? ResolveZoneContainsPredicate(string zoneId)
+        {
+            if (string.IsNullOrWhiteSpace(zoneId))
+            {
+                return null;
+            }
+
+            try
+            {
+                var zoneConfigType = Type.GetType($"VAuto.Zone.Services.ZoneConfigService, {BlueLockAssemblyName}", throwOnError: false)
+                                     ?? Type.GetType("VAuto.Zone.Services.ZoneConfigService", throwOnError: false);
+                if (zoneConfigType == null)
+                {
+                    return null;
+                }
+
+                var getZoneById = zoneConfigType.GetMethod(
+                    "GetZoneById",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(string) },
+                    null);
+                if (getZoneById == null)
+                {
+                    return null;
+                }
+
+                var zone = getZoneById.Invoke(null, new object[] { zoneId });
+                if (zone == null)
+                {
+                    return null;
+                }
+
+                var isInside = zone.GetType().GetMethod(
+                    "IsInside",
+                    BindingFlags.Public | BindingFlags.Instance,
+                    null,
+                    new[] { typeof(float), typeof(float) },
+                    null);
+                if (isInside == null)
+                {
+                    return null;
+                }
+
+                return (x, z) =>
+                {
+                    try
+                    {
+                        return isInside.Invoke(zone, new object[] { x, z }) is bool inside && inside;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string ResolvePrefabName(PrefabGUID prefabGuid)
+        {
+            if (prefabGuid.GuidHash == 0)
+            {
+                return string.Empty;
+            }
+
+            return $"Prefab_{prefabGuid.GuidHash.ToString(CultureInfo.InvariantCulture)}";
+        }
+
+        internal static void TryApplyDeltaEntityCleanupCore(SandboxDeltaSnapshot? deltaSnapshot, string zoneId)
+        {
+            if (deltaSnapshot?.Rows == null || deltaSnapshot.Rows.Length == 0)
+            {
+                return;
+            }
+
+            var contains = ResolveZoneContainsPredicate(zoneId);
+
+            var em = UnifiedCore.EntityManager;
+            if (em == default)
+            {
+                return;
+            }
+
+            var removedStrict = 0;
+            var removedForce = 0;
+
+            // Pass 1 (strict): original behavior with zone/prefab guards.
+            foreach (var row in deltaSnapshot.Rows)
+            {
+                if (row == null || !string.Equals(row.RowType, "entity_created", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var entity = new Entity { Index = row.EntityIndex, Version = row.EntityVersion };
+                if (!em.Exists(entity))
+                {
+                    continue;
+                }
+
+                if (contains == null || !TryGetBestPosition(em, entity, out var position) || !contains(position.x, position.z))
+                {
+                    continue;
+                }
+
+                if (row.PrefabGuid != 0 && em.HasComponent<PrefabGUID>(entity))
+                {
+                    var currentPrefab = em.GetComponentData<PrefabGUID>(entity).GuidHash;
+                    if (currentPrefab != (int)row.PrefabGuid)
+                    {
+                        continue;
+                    }
+                }
+
+                try
+                {
+                    em.DestroyEntity(entity);
+                    removedStrict++;
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Delta cleanup failed for entity {entity.Index}:{entity.Version}: {ex}");
+                }
+            }
+
+            // Pass 2 (force fallback): if entity still exists, destroy by captured entity id
+            // even when zone/prefab checks are inconclusive (common after transforms/versions drift).
+            foreach (var row in deltaSnapshot.Rows)
+            {
+                if (row == null || !string.Equals(row.RowType, "entity_created", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var entity = new Entity { Index = row.EntityIndex, Version = row.EntityVersion };
+                if (!em.Exists(entity))
+                {
+                    continue;
+                }
+
+                if (row.PrefabGuid != 0 && em.HasComponent<PrefabGUID>(entity))
+                {
+                    var currentPrefab = em.GetComponentData<PrefabGUID>(entity).GuidHash;
+                    if (currentPrefab != (int)row.PrefabGuid)
+                    {
+                        continue;
+                    }
+                }
+
+                try
+                {
+                    em.DestroyEntity(entity);
+                    removedForce++;
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Delta force-cleanup failed for entity {entity.Index}:{entity.Version}: {ex}");
+                }
+            }
+
+            var removed = removedStrict + removedForce;
+            if (removed > 0)
+            {
+                LogDebug($"Delta cleanup removed {removed} created entities for zone '{zoneId}' (strict={removedStrict}, force={removedForce}).");
+            }
+        }
+
+        internal static void ValidateDeltaAfterRestoreCore(SandboxDeltaSnapshot? deltaSnapshot, string zoneId)
+        {
+            if (deltaSnapshot?.Rows == null || deltaSnapshot.Rows.Length == 0)
+            {
+                return;
+            }
+
+            var em = UnifiedCore.EntityManager;
+            if (em == default)
+            {
+                return;
+            }
+
+            var unresolvedCreates = 0;
+            foreach (var row in deltaSnapshot.Rows)
+            {
+                if (row == null || !string.Equals(row.RowType, "entity_created", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var entity = new Entity { Index = row.EntityIndex, Version = row.EntityVersion };
+                if (em.Exists(entity))
+                {
+                    unresolvedCreates++;
+                }
+            }
+
+            if (unresolvedCreates > 0)
+            {
+                LogWarning($"Delta validation found {unresolvedCreates} unresolved created entities for zone '{zoneId}'.");
+            }
+        }
+
+        private static bool TryGetComponentTypeEnumerable(EntityManager em, Entity userEntity, out IEnumerable componentTypes, out IDisposable? disposable)
+        {
+            componentTypes = Array.Empty<object>();
+            disposable = null;
+
+            foreach (var method in GetComponentTypesMethods)
+            {
+                var parameters = method.GetParameters();
+                if (parameters.Length != 2 || parameters[0].ParameterType != typeof(Entity))
+                {
+                    continue;
+                }
+
+                if (!TryGetAllocatorArgument(parameters[1].ParameterType, out var allocatorArgument))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var result = method.Invoke(em, new[] { (object)userEntity, allocatorArgument });
+                    if (TryConvertToEnumerable(result, out componentTypes))
+                    {
+                        disposable = result as IDisposable;
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Try next overload.
+                }
+            }
+
+            return false;
+        }
+
+        private static void CaptureEntityProgressionComponents(EntityManager em, Entity sourceEntity, SandboxProgressionSnapshot snapshot)
+        {
+            if (!TryGetComponentTypeEnumerable(em, sourceEntity, out var componentTypes, out var disposable))
+            {
+                return;
+            }
+
+            try
+            {
+                foreach (var componentTypeObj in componentTypes)
+                {
+                    if (!TryResolveManagedType(componentTypeObj, out var managedType) || managedType == null)
+                    {
+                        continue;
+                    }
+
+                    var isBuffer = IsBufferType(managedType);
+                    if (!isBuffer && !IsProgressionComponentType(managedType))
+                    {
+                        continue;
+                    }
+
+                    if (isBuffer)
+                    {
+                        if (!IsProgressionComponentType(managedType))
+                        {
+                            continue;
+                        }
+
+                        if (!TryHasBuffer(em, sourceEntity, managedType))
+                        {
+                            continue;
+                        }
+
+                        if (!TrySerializeBuffer(em, sourceEntity, managedType, out var bufferPayload))
+                        {
+                            continue;
+                        }
+
+                        var bufferTypeKey = BuildBufferTypeKey(managedType);
+                        if (string.IsNullOrWhiteSpace(bufferTypeKey))
+                        {
+                            continue;
+                        }
+
+                        snapshot.Components[bufferTypeKey] = new SnapshotComponentState
+                        {
+                            Existed = true,
+                            AssemblyQualifiedType = bufferTypeKey,
+                            JsonPayload = bufferPayload
+                        };
+                        continue;
+                    }
+
+                    if (!TryHasComponent(em, sourceEntity, managedType))
+                    {
+                        continue;
+                    }
+
+                    if (!TryGetComponentData(em, sourceEntity, managedType, out var componentValue, out _))
+                    {
+                        continue;
+                    }
+
+                    var typeKey = managedType.AssemblyQualifiedName ?? managedType.FullName ?? managedType.Name;
+                    if (string.IsNullOrWhiteSpace(typeKey))
+                    {
+                        continue;
+                    }
+
+                    string payload;
+                    try
+                    {
+                        payload = JsonSerializer.Serialize(componentValue, managedType, JsonOpts);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    snapshot.Components[typeKey] = new SnapshotComponentState
+                    {
+                        Existed = true,
+                        AssemblyQualifiedType = typeKey,
+                        JsonPayload = payload
+                    };
+                }
+            }
+            finally
+            {
+                disposable?.Dispose();
+            }
+        }
+
+        private static bool TryGetAllocatorArgument(Type allocatorParamType, out object allocatorArgument)
+        {
+            allocatorArgument = default!;
+
+            if (allocatorParamType == typeof(Allocator))
+            {
+                allocatorArgument = Allocator.Temp;
+                return true;
+            }
+
+            if (allocatorParamType.IsEnum)
+            {
+                allocatorArgument = Enum.ToObject(allocatorParamType, (int)Allocator.Temp);
+                return true;
+            }
+
+            // Unity versions may use AllocatorManager.AllocatorHandle (struct) instead of Allocator enum.
+            if (allocatorParamType.IsValueType &&
+                string.Equals(allocatorParamType.FullName, "Unity.Collections.AllocatorManager+AllocatorHandle", StringComparison.Ordinal))
+            {
+                try
+                {
+                    var tempField = allocatorParamType.GetField("Temp", BindingFlags.Public | BindingFlags.Static);
+                    if (tempField != null)
+                    {
+                        var value = tempField.GetValue(null);
+                        if (value != null)
+                        {
+                            allocatorArgument = value;
+                            return true;
+                        }
+                    }
+
+                    var tempProp = allocatorParamType.GetProperty("Temp", BindingFlags.Public | BindingFlags.Static);
+                    if (tempProp != null)
+                    {
+                        var value = tempProp.GetValue(null);
+                        if (value != null)
+                        {
+                            allocatorArgument = value;
+                            return true;
+                        }
+                    }
+                }
+                catch
+                {
+                    // fallback below
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryConvertToEnumerable(object? value, out IEnumerable enumerable)
+        {
+            if (value is IEnumerable directEnumerable)
+            {
+                enumerable = directEnumerable;
+                return true;
+            }
+
+            enumerable = Array.Empty<object>();
+            return false;
+        }
+
+        private static bool TryResolveSnapshotType(string? encodedType, out Type? type, out bool isBuffer)
+        {
+            isBuffer = false;
+            type = null;
+
+            if (string.IsNullOrWhiteSpace(encodedType))
+            {
+                return false;
+            }
+
+            var raw = encodedType.Trim();
+            if (raw.StartsWith(BufferTypePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                isBuffer = true;
+                raw = raw.Substring(BufferTypePrefix.Length);
+            }
+
+            type = ResolveTypeByName(raw);
+            if (type != null)
+            {
+                return true;
+            }
+
+            // Fall back to short name search across loaded assemblies.
+            var shortName = raw.Split(',')[0].Trim();
+            type = ResolveTypeByName(shortName);
+            return type != null;
+        }
+
+        private static string NormalizeSnapshotTypeToken(string? encodedType)
+        {
+            return (encodedType ?? string.Empty).Trim();
+        }
+
+        private static string BuildBufferTypeKey(Type bufferElementType)
+        {
+            var aqn = bufferElementType.AssemblyQualifiedName ?? bufferElementType.FullName ?? bufferElementType.Name;
+            return string.IsNullOrWhiteSpace(aqn) ? string.Empty : $"{BufferTypePrefix}{aqn}";
+        }
+
+        private static bool IsBufferType(Type managedType)
+        {
+            try
+            {
+                return typeof(IBufferElementData).IsAssignableFrom(managedType);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryHasBuffer(EntityManager em, Entity entity, Type bufferType)
+        {
+            foreach (var method in HasBufferGenericMethods)
+            {
+                try
+                {
+                    var result = method.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                    if (result is bool has && has)
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // try next
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TrySerializeBuffer(EntityManager em, Entity entity, Type bufferType, out string payload)
+        {
+            payload = string.Empty;
+
+            foreach (var method in GetBufferGenericMethods)
+            {
+                try
+                {
+                    var bufferObj = method.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                    if (bufferObj == null)
+                    {
+                        continue;
+                    }
+
+                    var bufferEnumerable = bufferObj as IEnumerable;
+                    if (bufferEnumerable == null)
+                    {
+                        continue;
+                    }
+
+                    var listType = typeof(List<>).MakeGenericType(bufferType);
+                    var list = (IList)Activator.CreateInstance(listType)!;
+                    foreach (var item in bufferEnumerable)
+                    {
+                        list.Add(item);
+                    }
+
+                    payload = JsonSerializer.Serialize(list, listType, JsonOpts);
+                    return true;
+                }
+                catch
+                {
+                    // try next overload
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryRestoreBufferSnapshot(EntityManager em, Entity entity, Type bufferType, string jsonPayload)
+        {
+            try
+            {
+                // Ensure buffer exists.
+                if (!TryHasBuffer(em, entity, bufferType))
+                {
+                    foreach (var add in AddBufferGenericMethods)
+                    {
+                        try
+                        {
+                            add.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                            break;
+                        }
+                        catch
+                        {
+                            // try next
+                        }
+                    }
+                }
+
+                foreach (var getter in GetBufferGenericMethods)
+                {
+                    try
+                    {
+                        var bufferObj = getter.MakeGenericMethod(bufferType).Invoke(em, new object[] { entity });
+                        if (bufferObj == null)
+                        {
+                            continue;
+                        }
+
+                        var bufferTypeRuntime = bufferObj.GetType();
+                        var clear = bufferTypeRuntime.GetMethod("Clear", BindingFlags.Public | BindingFlags.Instance);
+                        clear?.Invoke(bufferObj, null);
+
+                        if (string.IsNullOrWhiteSpace(jsonPayload))
+                        {
+                            return true;
+                        }
+
+                        var listType = typeof(List<>).MakeGenericType(bufferType);
+                        var items = JsonSerializer.Deserialize(jsonPayload, listType, JsonOpts) as IEnumerable;
+                        if (items == null)
+                        {
+                            return false;
+                        }
+
+                        var addMethod = bufferTypeRuntime.GetMethod("Add", BindingFlags.Public | BindingFlags.Instance, null, new[] { bufferType }, null)
+                                        ?? bufferTypeRuntime.GetMethods(BindingFlags.Public | BindingFlags.Instance).FirstOrDefault(m => m.Name == "Add");
+                        foreach (var item in items)
+                        {
+                            addMethod?.Invoke(bufferObj, new[] { item });
+                        }
+
+                        return true;
+                    }
+                    catch
+                    {
+                        // try next getter
+                    }
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveManagedType(object componentTypeObj, out Type? managedType)
+        {
+            managedType = null;
+            if (componentTypeObj == null)
+            {
+                return false;
+            }
+
+            var componentType = componentTypeObj.GetType();
+            var getManagedType = componentType.GetMethod("GetManagedType", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, null, Type.EmptyTypes, null);
+            if (getManagedType != null)
+            {
+                try
+                {
+                    var raw = getManagedType.Invoke(componentTypeObj, null);
+                    if (TryCoerceToManagedType(raw, out managedType))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Continue to fallback probes.
+                }
+            }
+
+            foreach (var propertyName in new[] { "ManagedType", "Type" })
+            {
+                var property = componentType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (property == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var raw = property.GetValue(componentTypeObj);
+                    if (TryCoerceToManagedType(raw, out managedType))
+                    {
+                        return true;
+                    }
+                }
+                catch
+                {
+                    // Try next property.
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryCoerceToManagedType(object? rawType, out Type? managedType)
+        {
+            managedType = null;
+            if (rawType == null)
+            {
+                return false;
+            }
+
+            if (rawType is Type directType)
+            {
+                managedType = directType;
+                return true;
+            }
+
+            var raw = rawType.GetType();
+            var aqn = raw.GetProperty("AssemblyQualifiedName", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(rawType) as string;
+            managedType = ResolveTypeByName(aqn);
+            if (managedType != null)
+            {
+                return true;
+            }
+
+            var fullName = raw.GetProperty("FullName", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)?.GetValue(rawType) as string;
+            managedType = ResolveTypeByName(fullName);
+            return managedType != null;
+        }
+
+        private static bool IsProgressionComponentType(Type managedType)
+        {
+            var name = managedType.FullName ?? managedType.Name;
+            return ProgressionKeywords.Any(keyword => name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static Type? ResolveTypeByName(string? typeName)
+        {
+            if (string.IsNullOrWhiteSpace(typeName))
+            {
+                return null;
+            }
+
+            var resolved = Type.GetType(typeName, false);
+            if (resolved != null)
+            {
+                return resolved;
+            }
+
+            var shortName = typeName.Split(',')[0].Trim();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                resolved = assembly.GetType(shortName, false);
+                if (resolved != null)
+                {
+                    return resolved;
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryGetComponentData(EntityManager em, Entity entity, Type componentType, out object? value, out string error)
+        {
+            value = null;
+            error = string.Empty;
+
+            if (GetComponentDataGeneric == null)
+            {
+                error = "GetComponentData<T> method unavailable";
+                return false;
+            }
+
+            try
+            {
+                value = GetComponentDataGeneric.MakeGenericMethod(componentType).Invoke(em, new object[] { entity });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static bool TrySetComponentData(EntityManager em, Entity entity, Type componentType, object value, out string error)
+        {
+            error = string.Empty;
+
+            if (SetComponentDataGeneric == null)
+            {
+                error = "SetComponentData<T> method unavailable";
+                return false;
+            }
+
+            try
+            {
+                SetComponentDataGeneric.MakeGenericMethod(componentType).Invoke(em, new[] { (object)entity, value });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static bool TryHasComponent(EntityManager em, Entity entity, Type componentType)
+        {
+            if (HasComponentGeneric == null)
+            {
+                return false;
+            }
+
+            try
+            {
+                var result = HasComponentGeneric.MakeGenericMethod(componentType).Invoke(em, new object[] { entity });
+                return result is bool has && has;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryAddComponent(EntityManager em, Entity entity, Type componentType, out string error)
+        {
+            error = string.Empty;
+
+            if (AddComponentGeneric == null)
+            {
+                error = "AddComponent<T> method unavailable";
+                return false;
+            }
+
+            try
+            {
+                AddComponentGeneric.MakeGenericMethod(componentType).Invoke(em, new object[] { entity });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static bool TryRemoveComponent(EntityManager em, Entity entity, Type componentType, out string error)
+        {
+            error = string.Empty;
+
+            if (RemoveComponentGeneric == null)
+            {
+                error = "RemoveComponent<T> method unavailable";
+                return false;
+            }
+
+            try
+            {
+                RemoveComponentGeneric.MakeGenericMethod(componentType).Invoke(em, new object[] { entity });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static void EnsureSnapshotsLoaded()
+        {
+            if (_snapshotsLoaded)
+            {
+                return;
+            }
+
+            lock (_snapshotFileLock)
+            {
+                if (_snapshotsLoaded)
+                {
+                    return;
+                }
+
+                SandboxSnapshotStore.ClearAll();
+
+                if (!_persistSnapshots)
+                {
+                    _snapshotsLoaded = true;
+                    return;
+                }
+
+                var snapshotDirectory = ResolveSnapshotDirectory();
+                if (string.IsNullOrWhiteSpace(snapshotDirectory))
+                {
+                    _snapshotsLoaded = true;
+                    return;
+                }
+
+                var baselinePath = Path.Combine(snapshotDirectory, BaselineCsvFileName);
+                var deltaPath = Path.Combine(snapshotDirectory, DeltaCsvFileName);
+
+                try
+                {
+                    if (File.Exists(baselinePath) || File.Exists(deltaPath))
+                    {
+                        var baselineRows = SnapshotPersistenceService.ReadBaseline(baselinePath);
+                        var deltaRows = SnapshotPersistenceService.ReadDelta(deltaPath);
+                        var baselines = BuildBaselineSnapshotsFromRows(baselineRows);
+                        var deltas = BuildDeltaSnapshotsFromRows(deltaRows);
+                        SandboxSnapshotStore.ImportActiveSnapshots(baselines, deltas, markDirty: false);
+                        LogDebug($"Loaded sandbox snapshots from CSV: baselines={baselines.Length}, deltas={deltas.Length}.");
+                        _snapshotsLoaded = true;
+                        return;
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Snapshot file load failed: {ex}");
+                }
+
+                _snapshotsLoaded = true;
+            }
+        }
+
+        private static void PersistSnapshotsToDisk()
+        {
+            if (!_persistSnapshots || !SandboxSnapshotStore.IsDirty)
+            {
+                return;
+            }
+
+            var snapshotDirectory = ResolveSnapshotDirectory();
+            if (string.IsNullOrWhiteSpace(snapshotDirectory))
+            {
+                return;
+            }
+
+            var baselinePath = Path.Combine(snapshotDirectory, BaselineCsvFileName);
+            var deltaPath = Path.Combine(snapshotDirectory, DeltaCsvFileName);
+
+            lock (_snapshotFileLock)
+            {
+                if (!SandboxSnapshotStore.IsDirty)
+                {
+                    return;
+                }
+
+                try
+                {
+                    Directory.CreateDirectory(snapshotDirectory);
+
+                    var baselineRows = SandboxSnapshotStore.GetActiveBaselines()
+                        .SelectMany(snapshot => snapshot.Rows ?? Array.Empty<BaselineRow>())
+                        .ToArray();
+                    var deltaRows = SandboxSnapshotStore.GetActiveDeltas()
+                        .SelectMany(snapshot => snapshot.Rows ?? Array.Empty<DeltaRow>())
+                        .ToArray();
+
+                    if (baselineRows.Length == 0)
+                    {
+                        DeleteIfExists(baselinePath);
+                    }
+                    else
+                    {
+                        SnapshotPersistenceService.WriteBaseline(baselinePath, baselineRows);
+                    }
+
+                    if (deltaRows.Length == 0)
+                    {
+                        DeleteIfExists(deltaPath);
+                    }
+                    else
+                    {
+                        SnapshotPersistenceService.WriteDelta(deltaPath, deltaRows);
+                    }
+
+                    SandboxSnapshotStore.MarkClean();
+                }
+                catch (Exception ex)
+                {
+                    LogWarning($"Snapshot persist failed: {ex}");
+                }
+            }
+        }
+
+        private static void TryAppendProgressionJournal(string playerKey, SandboxPendingContext pending, BaselineRow[] postRows, DateTime capturedUtc)
+        {
+            if (!_persistSnapshots)
+            {
+                return;
+            }
+
+            var snapshotDirectory = ResolveSnapshotDirectory();
+            if (string.IsNullOrWhiteSpace(snapshotDirectory))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(snapshotDirectory);
+                var journalPath = Path.Combine(snapshotDirectory, ProgressionJournalJsonlFileName);
+
+                var preRows = pending?.ComponentRows ?? Array.Empty<BaselineRow>();
+                postRows ??= Array.Empty<BaselineRow>();
+
+                var preByType = preRows
+                    .Where(r => r != null && string.Equals(r.RowType, "component", StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(r => r.AssemblyQualifiedType ?? string.Empty, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+
+                var postByType = postRows
+                    .Where(r => r != null && string.Equals(r.RowType, "component", StringComparison.OrdinalIgnoreCase))
+                    .GroupBy(r => r.AssemblyQualifiedType ?? string.Empty, StringComparer.Ordinal)
+                    .ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+
+                var keys = new HashSet<string>(preByType.Keys, StringComparer.Ordinal);
+                keys.UnionWith(postByType.Keys);
+
+                using var stream = new FileStream(journalPath, FileMode.Append, FileAccess.Write, FileShare.Read);
+                using var writer = new StreamWriter(stream, Encoding.UTF8);
+
+                foreach (var typeKey in keys)
+                {
+                    preByType.TryGetValue(typeKey, out var beforeRow);
+                    postByType.TryGetValue(typeKey, out var afterRow);
+
+                    var beforePayload = DecodePayload(beforeRow?.PayloadBase64 ?? string.Empty);
+                    var afterPayload = DecodePayload(afterRow?.PayloadBase64 ?? string.Empty);
+
+                    if (string.Equals(beforePayload, afterPayload, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    var op = beforeRow == null
+                        ? "add"
+                        : afterRow == null
+                            ? "remove"
+                            : "modify";
+
+                    var evt = new ProgressionJournalEvent
+                    {
+                        Version = 1,
+                        SnapshotId = pending?.SnapshotId ?? string.Empty,
+                        PlayerKey = playerKey ?? string.Empty,
+                        CharacterName = pending?.CharacterName ?? string.Empty,
+                        PlatformId = pending?.PlatformId ?? 0,
+                        ZoneId = pending?.ZoneId ?? string.Empty,
+                        CapturedUtc = capturedUtc,
+                        Operation = op,
+                        ComponentType = ResolveComponentTypeName(typeKey),
+                        AssemblyQualifiedType = typeKey,
+                        BeforeJson = beforePayload,
+                        AfterJson = afterPayload
+                    };
+
+                    writer.WriteLine(JsonSerializer.Serialize(evt, JsonOpts));
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"Progression journal append failed: {ex}");
+            }
+        }
+
+        private static string ResolveSnapshotDirectory()
+        {
+            if (string.IsNullOrWhiteSpace(_snapshotPath))
+            {
+                return string.Empty;
+            }
+
+            var normalized = _snapshotPath.Trim();
+            if (Path.HasExtension(normalized))
+            {
+                return Path.GetDirectoryName(normalized) ?? string.Empty;
+            }
+
+            return normalized;
+        }
+
+
+        private static SandboxBaselineSnapshot[] BuildBaselineSnapshotsFromRows(IEnumerable<BaselineRow> rows)
+        {
+            return (rows ?? Array.Empty<BaselineRow>())
+                .Where(row => row != null)
+                .GroupBy(
+                    row => ResolvePlayerKey(row.PlayerKey, row.CharacterName, row.PlatformId),
+                    StringComparer.Ordinal)
+                .Select(group =>
+                {
+                    var ordered = group.OrderBy(row => row.CapturedUtc).ToArray();
+                    var first = ordered[0];
+                    return new SandboxBaselineSnapshot
+                    {
+                        PlayerKey = group.Key,
+                        CharacterName = first.CharacterName,
+                        PlatformId = first.PlatformId,
+                        ZoneId = first.ZoneId,
+                        SnapshotId = first.SnapshotId,
+                        CapturedUtc = first.CapturedUtc,
+                        Rows = ordered
+                    };
+                })
+                .ToArray();
+        }
+
+        private static SandboxDeltaSnapshot[] BuildDeltaSnapshotsFromRows(IEnumerable<DeltaRow> rows)
+        {
+            return (rows ?? Array.Empty<DeltaRow>())
+                .Where(row => row != null)
+                .GroupBy(
+                    row => ResolvePlayerKey(row.PlayerKey, row.CharacterName, row.PlatformId),
+                    StringComparer.Ordinal)
+                .Select(group =>
+                {
+                    var ordered = group.OrderBy(row => row.CapturedUtc).ToArray();
+                    var first = ordered[0];
+                    return new SandboxDeltaSnapshot
+                    {
+                        PlayerKey = group.Key,
+                        CharacterName = first.CharacterName,
+                        PlatformId = first.PlatformId,
+                        ZoneId = first.ZoneId,
+                        SnapshotId = first.SnapshotId,
+                        CapturedUtc = first.CapturedUtc,
+                        Rows = ordered
+                    };
+                })
+                .ToArray();
+        }
+
+        private static string ResolvePlayerKey(string? key, string characterName, ulong platformId)
+        {
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                return key;
+            }
+
+            return SandboxSnapshotStore.GetPreferredPlayerKey(characterName, platformId);
+        }
+
+
+        private static void DeleteIfExists(string path)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"Failed deleting snapshot file '{path}': {ex}");
+            }
+        }
+
+        private static void LogInfo(string message)
+        {
+            try
+            {
+                VAutomationCore.Plugin.CoreLog.LogInfo($"[DebugEventBridge] {message}");
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        private static void LogWarning(string message)
+        {
+            try
+            {
+                VAutomationCore.Plugin.CoreLog.LogWarning($"[DebugEventBridge] {message}");
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        private static void LogDebug(string message)
+        {
+            if (_verboseLogs)
+            {
+                LogInfo(message);
+            }
+        }
+
+    }
+
+    public sealed class SandboxProgressionSnapshot
+    {
+        public ulong PlatformId { get; set; }
+        public DateTime CapturedUtc { get; set; }
+        public Dictionary<string, SnapshotComponentState> Components { get; set; } = new(StringComparer.Ordinal);
+    }
+
+    public sealed class SnapshotComponentState
+    {
+        public bool Existed { get; set; }
+        public string AssemblyQualifiedType { get; set; } = string.Empty;
+        public string JsonPayload { get; set; } = string.Empty;
+    }
+
+    internal sealed class ProgressionJournalEvent
+    {
+        public int Version { get; set; } = 1;
+        public string SnapshotId { get; set; } = string.Empty;
+        public string PlayerKey { get; set; } = string.Empty;
+        public string CharacterName { get; set; } = string.Empty;
+        public ulong PlatformId { get; set; }
+        public string ZoneId { get; set; } = string.Empty;
+        public DateTime CapturedUtc { get; set; }
+        public string Operation { get; set; } = string.Empty;
+        public string ComponentType { get; set; } = string.Empty;
+        public string AssemblyQualifiedType { get; set; } = string.Empty;
+        public string BeforeJson { get; set; } = string.Empty;
+        public string AfterJson { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,205 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DisableImplicitNamespaceImports>true</DisableImplicitNamespaceImports>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>annotations</Nullable>
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageOutputPath>artifacts\nuget</PackageOutputPath>
+
+    <!-- NuGet package metadata -->
+    <PackageId>VAutomationCore</PackageId>
+    <Version>1.1.1</Version>
+    <Authors>Coyoteq1</Authors>
+    <Company>VAutomation</Company>
+    <Description>Core library for V Rising automation mods providing shared utilities, ECS helpers, and configuration management.</Description>
+    <PackageTags>vrising;modding;bepinex;il2cpp;ecs;automation</PackageTags>
+    <PackageProjectUrl>https://bio.site/stnexgen.com</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Coyoteq1</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageReleaseNotes>Update docs/wiki hosting links, support/community references, and package documentation alignment. Includes package icon/readme, SourceLink, symbols, and XML API documentation.</PackageReleaseNotes>
+    <Copyright>Copyright (c) Coyoteq1 2026</Copyright>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+
+    <!-- Better debugging/source experience -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+    <Deterministic>true</Deterministic>
+    <UseServerAssembliesForBuild Condition="'$(UseServerAssembliesForBuild)' == ''">true</UseServerAssembliesForBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="packaging\VAutomationCore\icon.png" Pack="true" PackagePath="\" Visible="false" Link="icon.png" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseServerAssembliesForBuild)' != 'true'">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" IncludeAssets="compile" />
+    <PackageReference Include="VampireReferenceAssemblies" Version="1.1.11-r96495-b8" />
+    <PackageReference Include="VRising.VampireCommandFramework" Version="0.10.4" />
+    <PackageReference Include="Lib.Harmony" Version="2.2.2" />
+    <PackageReference Include="Il2CppInterop.Runtime" Version="1.4.6-ci.426" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(UseServerAssembliesForBuild)' == 'true'">
+    <PackageReference Include="BepInEx.Unity.IL2CPP" Version="6.0.0-be.733" IncludeAssets="compile" />
+    <PackageReference Include="Lib.Harmony" Version="2.2.2" />
+    <PackageReference Include="Il2CppInterop.Runtime" Version="1.4.6-ci.426" />
+    <PackageReference Include="VampireReferenceAssemblies" Version="1.1.11-r96495-b8" />
+    <PackageReference Include="VRising.VampireCommandFramework" Version="0.10.4" Condition="!Exists('$(BepInExPluginsPath)\\VampireCommandFramework.dll')" />
+
+    <Reference Include="VampireCommandFramework" Condition="Exists('$(BepInExPluginsPath)\\VampireCommandFramework.dll')">
+      <HintPath>$(BepInExPluginsPath)\VampireCommandFramework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(VAutoServerInteropPath)Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Entities">
+      <HintPath>$(VAutoServerInteropPath)Unity.Entities.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Collections">
+      <HintPath>$(VAutoServerInteropPath)Unity.Collections.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Mathematics">
+      <HintPath>$(VAutoServerInteropPath)Unity.Mathematics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Burst">
+      <HintPath>$(VAutoServerInteropPath)Unity.Burst.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Transforms">
+      <HintPath>$(VAutoServerInteropPath)Unity.Transforms.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.Physics">
+      <HintPath>$(VAutoServerInteropPath)Unity.Physics.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(VAutoServerInteropPath)UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="ProjectM">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.Gameplay.Systems">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.Gameplay.Systems.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.Gameplay.Scripting">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.Gameplay.Scripting.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.Shared">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.Shared.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ProjectM.GeneratedNetCode">
+      <HintPath>$(VAutoServerInteropPath)ProjectM.GeneratedNetCode.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="VRising.GameData" Condition="Exists('$(VAutoServerInteropPath)VRising.GameData.dll')">
+      <HintPath>$(VAutoServerInteropPath)VRising.GameData.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Stunlock.Core">
+      <HintPath>$(VAutoServerInteropPath)Stunlock.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Core\UnifiedCore.cs" />
+    <Compile Include="Core\Logging\CoreLogger.cs" />
+    <Compile Include="Core\Logging\CoreLoggerExtensions.cs" />
+    <Compile Include="Core\Arena\ArenaLifecycleManager.cs" />
+    <Compile Include="Core\Config\ConfigService.cs" />
+    <Compile Include="Core\Config\JsonConverters.cs" />
+    <Compile Include="Core\Config\TypedJsonConfigManager.cs" />
+    <Compile Include="Core\Config\IConfigMigration.cs" />
+    <Compile Include="Core\Config\IZoneConfigValidator.cs" />
+    <Compile Include="Core\Config\MigrationReport.cs" />
+    <Compile Include="Core\ECS\EntityQueryHelper.cs" />
+    <Compile Include="Core\ECS\EntityExtensions.cs" />
+    <Compile Include="Core\ECS\PrefabGUIDExtensions.cs" />
+    <Compile Include="Core\ECS\ZoneHashUtility.cs" />
+    <Compile Include="Core\ECS\ZoneDetectionOrdering.cs" />
+    <Compile Include="Core\ECS\ZoneStateMapper.cs" />
+    <Compile Include="Core\Automation\*.cs" />
+    <Compile Include="Core\Extensions\*.cs" />
+    <Compile Include="Core\ECS\Components\*.cs" />
+    <Compile Include="Core\Commands\ChatColor.cs" />
+    <Compile Include="Core\Contracts\*.cs" />
+    <Compile Include="Core\Api\**\*.cs" />
+    <Compile Include="Core\Lifecycle\*.cs" />
+    <Compile Include="Core\TrapLifecycle\*.cs" />
+    <Compile Include="Core\Events\*.cs" />
+    <Compile Include="Core\AssemblyInfo.cs" />
+    <Compile Include="Core\Services\ServiceInitializer.cs" />
+    <Compile Include="Core\Services\ModCommunicationService.cs" />
+    <Compile Include="Core\Services\GameActionService.cs" />
+    <Compile Include="Core\Services\DebugEventBridge.cs" />
+    <Compile Include="Core\Services\GlowTileGeometry.cs" />
+    <Compile Include="Core\Services\SandboxSnapshotStore.cs" />
+    <Compile Include="Core\Services\SandboxCsvWriter.cs" />
+    <Compile Include="Core\Services\SandboxDeltaComputer.cs" />
+    <Compile Include="Core\Services\Sandbox\*.cs" />
+    <Compile Include="Core\Patches\ServerBootstrapSystemPatch.cs" />
+    <Compile Include="Core\Patches\ZoneLifecyclePatch.cs" />
+    <Compile Include="Core\Patches\DeathEventSystemPatch.cs" />
+    <Compile Include="Core\Patches\DownedEventSystemPatch.cs" />
+    <Compile Include="Core\Data\*.cs" />
+    <Compile Include="Core\Abstractions\*.cs" />
+    <Compile Include="Chat\ChatService.cs" />
+    <Compile Include="Models\GlowZoneEntry.cs" />
+    <Compile Include="Models\BloodType.cs" />
+    <Compile Include="Models\PlayerZoneState.cs" />
+    <Compile Include="Services\ZoneEventBridge.cs" />
+
+    <Compile Include="Plugin.cs" />
+    <Compile Include="PrefabGuidConverter.cs" />
+    <Compile Include="IService.cs" />
+    <Compile Include="Configuration\PluginManifest.cs" />
+    <Compile Include="Configuration\ZoneLifecycleConfig.cs" />
+    <Compile Include="Json\PrefabGuidJsonConverter.cs" />
+    <Compile Include="Json\VAutoJsonOptions.cs" />
+    <Compile Include="MyPluginInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Keep physical paths under Core/ for compatibility, but expose them as VAuto/ in project metadata. -->
+    <Compile Update="Core\**\*.cs">
+      <Link>VAuto\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Compile>
+  </ItemGroup>
+
+</Project>
